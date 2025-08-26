@@ -1796,7 +1796,7 @@
             Invoked when the current user joins a lobby.
             </summary>
         </member>
-        <member name="E:Steamworks.SteamMatchmaking.OnLobbyCreated">
+        <member name="E:Steamworks.SteamMatchmaking.OnLobbyCreateRequested">
             <summary>
             Invoked when the current user creates a lobby.
             </summary>

@@ -4,58 +4,33 @@ using UnityEngine;
 
 public class ClientLobby : Lobby
 {
-    public static ClientLobby Instance { get; private set; }
+    public ClientLobbyGameData GameData { get; private set; } = new ClientLobbyGameData();
+    public Map Map { get; private set; }
 
     private Dictionary<ServiceType, ClientService> services = new Dictionary<ServiceType, ClientService>();
 
-    void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple instances of ClientLobby detected. Destroying duplicate instance.");
-            Destroy(gameObject);
-        }
-    }
-
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+    private string gameServerToken;
+#endif
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        LobbyManager.Instance.OnLobbyCreated += HandleLobbyCreated;
-        LobbyManager.Instance.OnLobbyJoined += HandleLobbyJoined;
-        NetworkManager.Instance.OnNetworkReceived += ReceiveData;
+
     }
 
-#if CNS_TOKEN_VERIFIER
-    private void HandleLobbyCreated(LobbyData lobbyData, GameServerData gameServerData, string gameServerToken)
-#else
-    private void HandleLobbyCreated(LobbyData lobbyData, GameServerData gameServerData)
-#endif
+    public override void Init(int lobbyId, NetTransport transport)
     {
-        LobbyData = lobbyData;
+        base.Init(lobbyId, transport);
+        transport.Initialize();
     }
 
-#if CNS_TOKEN_VERIFIER
-    private void HandleLobbyJoined(LobbyData lobbyData, GameServerData gameServerData, string gameServerToken)
-#else
-    private void HandleLobbyJoined(LobbyData lobbyData, GameServerData gameServerData)
-#endif
-    {
-        LobbyData = lobbyData;
-    }
-
-    public void SendToRoom(NetPacket packet, TransportMethod method)
+    public void SendToServer(NetPacket packet, TransportMethod method)
     {
         transport.SendToAll(packet, method);
     }
 
-    public void ReceiveData(ReceivedArgs args)
+    public void ReceiveData(NetPacket packet, TransportMethod? transportMethod)
     {
-        NetPacket packet = args.Packet;
-        TransportMethod? transportMethod = args.TransportMethod;
         ServiceType serviceType = (ServiceType)packet.ReadByte();
         CommandType commandType = (CommandType)packet.ReadByte();
 
@@ -65,13 +40,8 @@ public class ClientLobby : Lobby
         }
         else
         {
-            Debug.LogWarning($"<color=red><b>CNS</b></color>: No service found for type {serviceType}. Command {commandType} will not be processed.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for type {serviceType}. Command {commandType} will not be processed.");
         }
-    }
-
-    public override void Tick()
-    {
-
     }
 
     public void RegisterService(ServiceType serviceType, ClientService service)

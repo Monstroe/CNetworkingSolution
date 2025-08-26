@@ -3,20 +3,23 @@ using UnityEngine;
 
 public abstract class NetTransport : MonoBehaviour
 {
-    /*private static NetTransport instance;
+    public delegate void NetworkConnectedHandler(ConnectedArgs args);
+    /// <summary>
+    /// Event triggered when the user is connected. This is called when the client connects to the server or when the server has a client connect to it.
+    /// </summary>
+    public event NetworkConnectedHandler OnNetworkConnected;
 
-    protected virtual void Awake()
-    {
-        if (instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple NetTransport instances found, destroying one.");
-            Destroy(gameObject);
-        }
-    }*/
+    public delegate void NetworkDisconnectedHandler(DisconnectedArgs args);
+    /// <summary>
+    /// Event triggered when the user is disconnected. This is called when the client disconnects from the server or when the server has a client disconnect from it.
+    /// </summary>
+    public event NetworkDisconnectedHandler OnNetworkDisconnected;
+
+    public delegate void NetworkReceivedHandler(ReceivedArgs args);
+    /// <summary>
+    /// Event triggered when a packet is received. This is called when the client receives a packet from the server or when the server receives a packet from a client.
+    /// </summary>
+    public event NetworkReceivedHandler OnNetworkReceived;
 
     public NetDeviceType HostType => hostType;
     public virtual uint ServerClientId { get; }
@@ -33,6 +36,41 @@ public abstract class NetTransport : MonoBehaviour
     public abstract void Disconnect();
     public abstract void DisconnectRemote(uint remoteId);
     public abstract void Shutdown();
+
+    public void RaiseNetworkConnected(uint remoteId)
+    {
+        var args = new ConnectedArgs { RemoteId = remoteId };
+        OnNetworkConnected?.Invoke(args);
+    }
+
+    public void RaiseNetworkDisconnected(uint remoteId)
+    {
+        var args = new DisconnectedArgs { RemoteId = remoteId };
+        OnNetworkDisconnected?.Invoke(args);
+    }
+
+    public void RaiseNetworkReceived(uint remoteId, NetPacket receivedPacket, TransportMethod? method)
+    {
+        var args = new ReceivedArgs { RemoteId = remoteId, Packet = receivedPacket, TransportMethod = method };
+        OnNetworkReceived?.Invoke(args);
+    }
+}
+
+public class ConnectedArgs
+{
+    public uint RemoteId { get; set; }
+}
+
+public class DisconnectedArgs
+{
+    public uint RemoteId { get; set; }
+}
+
+public class ReceivedArgs
+{
+    public uint RemoteId { get; set; }
+    public NetPacket Packet { get; set; }
+    public TransportMethod? TransportMethod { get; set; }
 }
 
 public enum NetDeviceType
@@ -44,7 +82,6 @@ public enum NetDeviceType
 
 public enum TransportMethod
 {
-    None,
     Reliable,
     ReliableUnordered,
     UnreliableSequenced,

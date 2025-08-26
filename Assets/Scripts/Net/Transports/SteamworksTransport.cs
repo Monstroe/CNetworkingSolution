@@ -1,3 +1,4 @@
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -73,11 +74,6 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
 
     public override void Initialize()
     {
-        if (NetworkManager.Instance.AuthorizationType == AuthorizationType.ServerAuthorization)
-        {
-            throw new InvalidOperationException("<color=red><b>CNS</b></color>: Steamworks transport does not support Dedicated Server Authorization. Please use Host Authorization.");
-        }
-
         messageBuffer = new byte[messageBufferSize];
         connectedClients = new Dictionary<uint, Client>();
 
@@ -86,17 +82,15 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
             await JoinSteamLobby(lobby.Id);
         };
 
-#if !CNS_TOKEN_VERIFIER
-        LobbyManager.Instance.OnLobbyCreated += async (lobbyData, gameServerData) =>
+        ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData) =>
         {
             await CreateSteamLobby(lobbyData);
         };
 
-        LobbyManager.Instance.OnLobbyJoined += async (lobbyData, gameServerData) =>
+        ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData) =>
         {
-            await JoinSteamLobby(lobbyData.Settings.InternalCode);
+            await JoinSteamLobby(lobbyData.Settings.SteamCode);
         };
-#endif
     }
 
     private async Task CreateSteamLobby(LobbyData lobbyData)
@@ -110,17 +104,10 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         }
 
         SteamFriends.SetRichPresence("connect", lobbyId.ToString());
-        lobbyData.Settings.InternalCode = lobbyId;
-        LobbyManager.Instance.UpdateLobby(lobbyData.Settings);
+        lobbyData.Settings.SteamCode = lobbyId;
+        ClientManager.Instance.UpdateLobby(lobbyData.Settings);
 
-        if (NetworkManager.Instance.AuthorizationType == AuthorizationType.HostAuthorization)
-        {
-            StartServer();
-        }
-        else
-        {
-            throw new InvalidOperationException("<color=red><b>CNS</b></color>: Steamworks transport does not support Dedicated Server Authorization. Please use Host Authorization.");
-        }
+        NetworkManager.Instance.StartServer();
     }
 
     private async Task JoinSteamLobby(ulong lobbyCode)
@@ -133,7 +120,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
             return;
         }
 
-        StartClient();
+        NetworkManager.Instance.StartClient();
     }
 
     public override bool StartClient()
@@ -443,3 +430,4 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         Debug.Log("<color=green><b>CNS</b></color>: Fetched user Steam ID.");
     }
 }
+#endif

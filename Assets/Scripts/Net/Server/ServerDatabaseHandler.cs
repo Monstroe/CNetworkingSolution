@@ -1,4 +1,4 @@
-#if CNS_DATABASE_ACCESS
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
 using StackExchange.Redis;
 using System.Threading.Tasks;
 using System;
@@ -47,19 +47,19 @@ public class ServerDatabaseHandler
 
     /* GAME SERVER */
 
-    public async Task SaveGameServerMetadataAsync(GameServerData gameServerData)
+    public async Task SaveGameServerMetadataAsync(ServerData serverData)
     {
-        await db.HashSetAsync($"game_server:{gameServerData.GameServerId}", new HashEntry[]
+        await db.HashSetAsync($"game_server:{serverData.Settings.GameServerId}", new HashEntry[]
             {
-            new HashEntry("game_server_id", gameServerData.GameServerId.ToString()),
-            new HashEntry("game_server_key", gameServerData.GameServerKey),
-            new HashEntry("game_server_address", gameServerData.GameServerAddress),
+            new HashEntry("game_server_id", serverData.Settings.GameServerId.ToString()),
+            new HashEntry("game_server_key", serverData.Settings.GameServerKey),
+            new HashEntry("game_server_address", serverData.Settings.GameServerAddress),
             });
-        await db.SetAddAsync("game_servers", gameServerData.GameServerId.ToString());
+        await db.SetAddAsync("game_servers", serverData.Settings.GameServerId.ToString());
 
-        string usersKey = $"lobby:{gameServerData.GameServerId}:connected_users";
+        string usersKey = $"lobby:{serverData.Settings.GameServerId}:connected_users";
         await db.KeyDeleteAsync(usersKey);
-        string lobbiesKey = $"lobby:{gameServerData.GameServerId}:active_lobbies";
+        string lobbiesKey = $"lobby:{serverData.Settings.GameServerId}:active_lobbies";
         await db.KeyDeleteAsync(lobbiesKey);
     }
 

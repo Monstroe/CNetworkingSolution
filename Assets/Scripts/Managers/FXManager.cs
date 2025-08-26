@@ -82,6 +82,7 @@ public class FXManager : MonoBehaviour
 
         if (newSFX.clip == null)
         {
+            Debug.LogError("FXManager could not find AudioClip with name '" + name + "'");
             return null;
         }
 
@@ -96,7 +97,7 @@ public class FXManager : MonoBehaviour
 
         if (sync)
         {
-            ClientLobby.Instance.SendToRoom(PacketBuilder.PlaySFX(sfxInstances[name], volume, pos), TransportMethod.ReliableUnordered);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlaySFX(sfxInstances[name], volume, pos), TransportMethod.ReliableUnordered);
         }
 
         return newSFX;
@@ -110,6 +111,7 @@ public class FXManager : MonoBehaviour
 
         if (newSFX.clip == null)
         {
+            Debug.LogError("FXManager could not find AudioClip with ID '" + clip.GetInstanceID() + "'");
             return null;
         }
 
@@ -124,7 +126,7 @@ public class FXManager : MonoBehaviour
 
         if (sync)
         {
-            ClientLobby.Instance.SendToRoom(PacketBuilder.PlaySFX(sfxInstances[clip.name], volume, pos), TransportMethod.ReliableUnordered);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlaySFX(sfxInstances[clip.name], volume, pos), TransportMethod.ReliableUnordered);
         }
 
         return newSFX;
@@ -138,6 +140,7 @@ public class FXManager : MonoBehaviour
 
         if (vfx.visualEffectAsset == null)
         {
+            Debug.LogError("FXManager could not find VisualEffectAsset with name '" + name + "'");
             return null;
         }
 
@@ -152,7 +155,7 @@ public class FXManager : MonoBehaviour
 
         if (sync)
         {
-            ClientLobby.Instance.SendToRoom(PacketBuilder.PlayVFX(vfxInstances[name], position, scale), TransportMethod.ReliableUnordered);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlayVFX(vfxInstances[name], position, scale), TransportMethod.ReliableUnordered);
         }
 
         return vfx;
@@ -166,6 +169,7 @@ public class FXManager : MonoBehaviour
 
         if (vfx.visualEffectAsset == null)
         {
+            Debug.LogError("FXManager could not find VisualEffectAsset with ID '" + asset.GetInstanceID() + "'");
             return;
         }
 
@@ -180,7 +184,7 @@ public class FXManager : MonoBehaviour
 
         if (sync)
         {
-            ClientLobby.Instance.SendToRoom(PacketBuilder.PlayVFX(vfxInstances[asset.name], position, scale), TransportMethod.ReliableUnordered);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlayVFX(vfxInstances[asset.name], position, scale), TransportMethod.ReliableUnordered);
         }
     }
 

@@ -1,3 +1,4 @@
+#if CNS_TRANSPORT_LITENETLIB
 using LiteNetLib;
 using System;
 using System.Collections.Generic;
@@ -76,37 +77,27 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
             SimulationMaxLatency = simulateMaxLatency
         };
 
-#if CNS_TOKEN_VERIFIER
-
-#else
-        LobbyManager.Instance.OnLobbyCreated += (lobbyData, gameServerData) =>
+#nullable enable
+        ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, serverSettings, gameServerToken) =>
         {
-            address = gameServerData.GameServerAddress;
-
-            if (NetworkManager.Instance.AuthorizationType == AuthorizationType.HostAuthorization)
-            {
-                NetworkManager.Instance.StartServer();
-            }
-            else
-            {
-                NetworkManager.Instance.StartClient();
-            }
+            address = serverSettings?.GameServerAddress ?? address;
+            StartClient();
         };
 
-        LobbyManager.Instance.OnLobbyJoined += (lobbyData, gameServerData) =>
+        ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, serverSettings, gameServerToken) =>
         {
-            address = gameServerData.GameServerAddress;
-
-            NetworkManager.Instance.StartClient();
+            address = serverSettings?.GameServerAddress ?? address;
+            StartClient();
         };
-#endif
+#nullable disable
     }
 
     public override bool StartClient()
     {
         if (hostType != NetDeviceType.None)
         {
-            throw new InvalidOperationException("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            return false;
         }
 
         hostType = NetDeviceType.Client;
@@ -125,8 +116,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
             throw new InvalidPacketException("<color=red><b>CNS</b></color>: Server peer did not have id 0: " + peer.Id);
         }
 
-        connectedPeers[(uint)peer.Id] = peer;
-
         return true;
     }
 
@@ -134,7 +123,8 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
     {
         if (hostType != NetDeviceType.None)
         {
-            throw new InvalidOperationException("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            return false;
         }
 
         hostType = NetDeviceType.Server;
@@ -280,7 +270,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         if (!connectedPeers.ContainsKey(peerId))
         {
             connectedPeers[peerId] = peer;
-            NetworkManager.Instance.HandleNetworkConnected(peerId);
+            RaiseNetworkConnected(peerId);
         }
         else
         {
@@ -294,7 +284,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 
         if (connectedPeers.Remove(peerId))
         {
-            NetworkManager.Instance.HandleNetworkDisconnected(peerId);
+            RaiseNetworkDisconnected(peerId);
         }
         else
         {
@@ -315,7 +305,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
         NetPacket receivedPacket = new NetPacket(receivedBytes);
 
-        NetworkManager.Instance.HandleNetworkReceived(peerId, receivedPacket, ConvertProtocolBack(deliveryMethod));
+        RaiseNetworkReceived(peerId, receivedPacket, ConvertProtocolBack(deliveryMethod));
 
         reader.Recycle();
     }
@@ -340,3 +330,4 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         return (int)Mathf.Ceil(seconds * 1000);
     }
 }
+#endif

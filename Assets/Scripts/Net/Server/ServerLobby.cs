@@ -4,23 +4,40 @@ using UnityEngine;
 
 public class ServerLobby : Lobby
 {
+    public ServerLobbyGameData GameData { get; private set; } = new ServerLobbyGameData();
+    public Map Map { get; private set; }
+
     private Dictionary<ServiceType, ServerService> services = new Dictionary<ServiceType, ServerService>();
 
     public override void Init(int lobbyId, NetTransport transport)
     {
         base.Init(lobbyId, transport);
 
-        // Init Server Services
+        // Init Server Services (ADD NEW SERVICES HERE)
         services.Add(ServiceType.LOBBY, new GameObject("LobbyServerService").AddComponent<LobbyServerService>());
+        services.Add(ServiceType.GAME, new GameObject("GameServerService").AddComponent<GameServerService>());
+        services.Add(ServiceType.OBJECT, new GameObject("ObjectServerService").AddComponent<ObjectServerService>());
+        services.Add(ServiceType.PLAYER, new GameObject("PlayerServerService").AddComponent<PlayerServerService>());
+        services.Add(ServiceType.FX, new GameObject("FXServerService").AddComponent<FXServerService>());
+        services.Add(ServiceType.MAP, new GameObject("MapServerService").AddComponent<MapServerService>());
         services.Add(ServiceType.CHAT, new GameObject("ChatServerService").AddComponent<ChatServerService>());
 
         foreach (var service in services.Values)
         {
             service.transform.SetParent(transform);
         }
+
+        // Init Map
+        Map = Instantiate(Resources.Load<GameObject>("Prefabs/Map"), this.transform).GetComponent<Map>();
+        foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+            r.enabled = false;
+        foreach (Collider c in Map.GetComponentsInChildren<Collider>(true))
+            c.enabled = false;
+        foreach (ClientObject obj in Map.GetComponentsInChildren<ClientObject>(true))
+            obj.enabled = false;
     }
 
-    public void SendToRoom(NetPacket packet, TransportMethod method, UserData exception = null)
+    public void SendToLobby(NetPacket packet, TransportMethod method, UserData exception = null)
     {
         List<uint> userIds = new List<uint>();
         foreach (var user in LobbyData.LobbyUsers)
@@ -69,6 +86,14 @@ public class ServerLobby : Lobby
         }
     }
 
+    public void UserJoinedGame(UserData user)
+    {
+        foreach (var service in services.Values)
+        {
+            service.UserJoinedGame(this, user);
+        }
+    }
+
     public void UserLeft(UserData user)
     {
         foreach (var service in services.Values)
@@ -103,8 +128,18 @@ public class ServerLobby : Lobby
         byte newPlayerId;
         do
         {
-            newPlayerId = (byte)UnityEngine.Random.Range(0, 256);
+            newPlayerId = (byte)UnityEngine.Random.Range(0, LobbyData.Settings.MaxUsers);
         } while (!LobbyData.LobbyUsers.Any(u => u.PlayerId == newPlayerId));
         return newPlayerId;
+    }
+
+    public ushort GenerateObjectId()
+    {
+        ushort newObjectId;
+        do
+        {
+            newObjectId = (ushort)UnityEngine.Random.Range(LobbyData.Settings.MaxUsers, ushort.MaxValue);
+        } while (GameData.ServerObjects.ContainsKey(newObjectId));
+        return newObjectId;
     }
 }

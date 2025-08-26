@@ -6,20 +6,29 @@ using System.Collections.Generic;
 
 public enum ServiceType
 {
-    NONE, CONNECTION, LOBBY, PLAYER, CHAT, FX, GAME, NOTIFICATION, TURN, EVENT, CRITTER, ITEM
+    CONNECTION, LOBBY, GAME, OBJECT, PLAYER, FX, MAP, CHAT, NOTIFICATION
 }
 
 public enum CommandType
 {
+    /* CONNECTION */
+    CONNECTION_REQUEST, CONNECTION_RESPONSE,
     /* LOBBY */
-    LOBBY_SETTINGS, LOBBY_USERS, LOBBY_USER_JOINED, LOBBY_USER_LEFT, LOBBY_PLAYER_KICK, LOBBY_CHECK_IN, LOBBY_PLAYER_LIST, LOBBY_STATE, LOBBY_START_GAME,
-    /* PLAYER */
-    PLAYER_STATE, PLAYER_ANIM, PLAYER_HOST, DYNAMIC_PLAYER_ANIM, SERVER_OBJECT_COMMUNICATION, CLIENT_OBJECT_COMMUNICATION,
-    PLAYER_SPRINTING, PLAYER_GROUNDED, OVERRIDE_STATE, PLAYER_DIED, PLAYER_LOADOUT, PLAYER_INTERACT, PLAYER_HOTBAR, PLAYER_MONEY,
-    /* FX */
-    SFX, VFX, PARTICLE_SYSTEM,
+    LOBBY_SETTINGS, LOBBY_USER_SETTINGS, LOBBY_USERS_LIST, LOBBY_USER_JOINED, LOBBY_USER_LEFT, LOBBY_TICK,
     /* GAME */
-    CHECK_IN_STATES, START_GAME, TICK, CREATE_CAMERA, CHAT_MESSAGE,
+    GAME_USER_JOINED,
+    /* OBJECT */
+    OBJECT_COMMUNICATION,
+    /* PLAYER */
+    PLAYERS_LIST, PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_STATE, PLAYER_ANIM, PLAYER_GRAB, PLAYER_DROP, PLAYER_INTERACT,
+    /* FX */
+    /* MAP */
+    MAP_OBJECTS_INIT,
+    SFX, VFX,
+    /* CHAT */
+    CHAT_MESSAGE, CHAT_USER_JOINED, CHAT_USER_LEFT,
+    /* GAME */
+    CHECK_IN_STATES, START_GAME, TICK, CREATE_CAMERA,
     /* NOTIFICATION */
     MID_SCREEN_NOTIF,
     /* EVENT */
@@ -31,6 +40,48 @@ public enum CommandType
 
 public static class PacketBuilder
 {
+    /* CONNECTION */
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+    public static NetPacket ConnectionRequest(string token)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.CONNECTION);
+        packet.Write((byte)CommandType.CONNECTION_REQUEST);
+        packet.Write(token);
+        return packet;
+    }
+#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH || CNS_HOST_AUTH
+    public static NetPacket ConnectionRequest(ConnectionData connectionData)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.CONNECTION);
+        packet.Write((byte)CommandType.CONNECTION_REQUEST);
+#if CNS_HOST_AUTH
+        packet.Write(connectionData.LobbyId);
+#endif
+        packet.Write(connectionData.UserGuid.ToString());
+        packet.Write(connectionData.UserSettings.UserName);
+#if CNS_TRANSPORT_STEAMWORKS
+        packet.Write(connectionData.LobbySettings.SteamCode);
+#endif
+#if CNS_HOST_AUTH
+        packet.Write((byte)connectionData.LobbySettings.MaxUsers);
+        packet.Write(connectionData.LobbySettings.LobbyVisibility.ToString());
+        packet.Write(connectionData.LobbySettings.LobbyName);
+#endif
+        return packet;
+    }
+#endif
+
+    public static NetPacket ConnectionResponse(bool accepted)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.CONNECTION);
+        packet.Write((byte)CommandType.CONNECTION_RESPONSE);
+        packet.Write(accepted);
+        return packet;
+    }
+
     /* LOBBY */
     public static NetPacket LobbySettings(LobbySettings settings)
     {
@@ -43,11 +94,21 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket LobbyUsers(List<UserData> users)
+    public static NetPacket LobbyUserSettings(UserData user, UserSettings settings)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
-        packet.Write((byte)CommandType.LOBBY_USERS);
+        packet.Write((byte)CommandType.LOBBY_USER_SETTINGS);
+        packet.Write(user.UserId);
+        packet.Write(settings.UserName);
+        return packet;
+    }
+
+    public static NetPacket LobbyUsersList(List<UserData> users)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.LOBBY);
+        packet.Write((byte)CommandType.LOBBY_USERS_LIST);
         packet.Write((byte)users.Count);
         foreach (var user in users)
         {
@@ -80,6 +141,119 @@ public static class PacketBuilder
         return packet;
     }
 
+    public static NetPacket LobbyTick(int tick)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.LOBBY);
+        packet.Write((byte)CommandType.LOBBY_TICK);
+        packet.Write(tick);
+        return packet;
+    }
+
+    /* GAME */
+    public static NetPacket GameUserJoined()
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.GAME);
+        packet.Write((byte)CommandType.GAME_USER_JOINED);
+        return packet;
+    }
+
+    /* OBJECT */
+    public static NetPacket ObjectCommunication(NetObject netObject, NetPacket packet)
+    {
+        packet.Insert(0, (byte)ServiceType.OBJECT);
+        packet.Insert(1, (byte)CommandType.OBJECT_COMMUNICATION);
+        packet.Insert(2, netObject.Id);
+        return packet;
+    }
+
+    /* PLAYER */
+    public static NetPacket PlayersList(List<ServerPlayer> players)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYERS_LIST);
+        packet.Write((byte)players.Count);
+        foreach (var player in players)
+        {
+            packet.Write((byte)player.Id);
+        }
+        return packet;
+    }
+
+    public static NetPacket PlayerSpawn(UserData user, Vector3 position, Quaternion rotation, Vector3 forward)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYER_SPAWN);
+        packet.Write(user.PlayerId);
+        packet.Write(position);
+        packet.Write(rotation);
+        packet.Write(forward);
+        return packet;
+    }
+
+    public static NetPacket PlayerDestroy()
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYER_DESTROY);
+        return packet;
+    }
+
+    public static NetPacket PlayerState(Vector3 position, Quaternion rotation, Vector3 forward)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYER_STATE);
+        packet.Write(position);
+        packet.Write(rotation);
+        packet.Write(forward);
+        return packet;
+    }
+
+    public static NetPacket PlayerAnim(bool walking, bool sprinting, bool crouching, bool grounded, bool jumped, bool grabbed)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYER_ANIM);
+        packet.Write(walking);
+        packet.Write(sprinting);
+        packet.Write(crouching);
+        packet.Write(grounded);
+        packet.Write(jumped);
+        packet.Write(grabbed);
+        return packet;
+    }
+
+    public static NetPacket PlayerGrab(byte playerId)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYER_GRAB);
+        packet.Write(playerId);
+        return packet;
+    }
+
+    public static NetPacket PlayerInteract(ushort objectId)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYER_INTERACT);
+        packet.Write(objectId);
+        return packet;
+    }
+
+    public static NetPacket PlayerDrop(ushort objectId)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.PLAYER);
+        packet.Write((byte)CommandType.PLAYER_DROP);
+        packet.Write(objectId);
+        return packet;
+    }
+
     /* FX */
     public static NetPacket PlaySFX(int sfxId, float volume, Vector3? pos)
     {
@@ -101,6 +275,45 @@ public static class PacketBuilder
         packet.Write(vfxId);
         packet.Write(pos);
         packet.Write(scale);
+        return packet;
+    }
+
+    /* MAP */
+    public static NetPacket MapObjectsInit(ushort[] startingObjectIds)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.MAP);
+        packet.Write((byte)CommandType.MAP_OBJECTS_INIT);
+        packet.Write(startingObjectIds);
+        return packet;
+    }
+
+    /* CHAT */
+    public static NetPacket ChatMessage(UserData user, string message)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.CHAT);
+        packet.Write((byte)CommandType.CHAT_MESSAGE);
+        packet.Write(user.PlayerId);
+        packet.Write(message);
+        return packet;
+    }
+
+    public static NetPacket ChatUserJoined(UserData user)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.CHAT);
+        packet.Write((byte)CommandType.CHAT_USER_JOINED);
+        packet.Write(user.PlayerId);
+        return packet;
+    }
+
+    public static NetPacket ChatUserLeft(UserData user)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.CHAT);
+        packet.Write((byte)CommandType.CHAT_USER_LEFT);
+        packet.Write(user.PlayerId);
         return packet;
     }
 }

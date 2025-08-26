@@ -1,4 +1,4 @@
-#if CNS_TOKEN_VERIFIER
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
 using JWT;
 using JWT.Algorithms;
 using JWT.Serializers;
@@ -35,7 +35,7 @@ public class ServerTokenVerifier
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Removing unverified user {user.UserId} after timeout.");
                         unverifiedUsers.Remove(user);
-                        NetworkManager.Instance.DisconnectUser(user);
+                        ServerManager.Instance.KickUser(user);
                     }
                 }
             }
@@ -75,7 +75,7 @@ public class ServerTokenVerifier
         }
     }
 
-    public ServerConnectionData VerifyToken(string token)
+    public ConnectionData VerifyToken(string token)
     {
         try
         {
@@ -87,12 +87,13 @@ public class ServerTokenVerifier
             var decoder = new JwtDecoder(serializer, validator, urlEncoder, algorithm);
             var payload = decoder.DecodeToObject<Dictionary<string, object>>(token, secretKey, verify: true);
 
-            ServerConnectionData connectionData = new ServerConnectionData
+            ConnectionData connectionData = new ConnectionData
             {
                 TokenId = GetTokenIdFromToken(payload),
+                LobbyId = GetLobbyIdFromToken(payload),
                 UserGuid = GetUserGuidFromToken(payload),
-                UserName = GetUserNameFromToken(payload),
-                LobbyId = GetLobbyIdFromToken(payload)
+                UserSettings = GetUserSettingsFromToken(payload),
+                LobbySettings = GetLobbySettingsFromToken(payload)
             };
 
             if (verifiedUserWithNonExpiredTokens.ContainsKey(connectionData.TokenId))
@@ -130,9 +131,25 @@ public class ServerTokenVerifier
         return Guid.Parse(payload["user_guid"].ToString());
     }
 
-    private string GetUserNameFromToken(Dictionary<string, object> payload)
+    private UserSettings GetUserSettingsFromToken(Dictionary<string, object> payload)
     {
-        return payload["user_name"].ToString();
+        return new UserSettings
+        {
+            UserName = payload["user_name"].ToString()
+        };
+    }
+
+    private LobbySettings GetLobbySettingsFromToken(Dictionary<string, object> payload)
+    {
+        return new LobbySettings
+        {
+#if CNS_TRANSPORT_STEAMWORKS
+            SteamCode = Convert.ToUInt64(payload["steam_code"]),
+#endif
+            MaxUsers = Convert.ToInt32(payload["max_users"]),
+            LobbyVisibility = Enum.Parse<LobbyVisibility>(payload["lobby_visibility"].ToString()),
+            LobbyName = payload["lobby_name"].ToString()
+        };
     }
 }
 #endif

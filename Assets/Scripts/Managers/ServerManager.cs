@@ -1,0 +1,395 @@
+using System;
+using System.Collections;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class ServerManager : MonoBehaviour
+{
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+    public delegate void PublicIpAddressFetchedHandler(string ipAddress);
+    public event PublicIpAddressFetchedHandler OnPublicIpAddressFetched;
+
+    class PublicIpAddress
+    {
+        public string Ip { get; set; }
+    }
+#endif
+
+    public static ServerManager Instance { get; private set; }
+
+    public int ServerTick { get; private set; }
+    public ServerData ServerData { get; private set; } = new ServerData();
+
+    [SerializeField] private NetTransport transport;
+
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+    [Header("Multi-Lobby Settings")]
+    [SerializeField] private string publicIpApiUrl = "https://api.ipify.org/?format=json";
+    [SerializeField] private string dbConnectionString = "localhost:6379";
+    [SerializeField] private int secondsBetweenHeartbeats = 30;
+    [Space]
+    [SerializeField] private int maxSecondsBeforeUnverifiedUserRemoval = 15;
+    [SerializeField] private int tokenValidityDurationMinutes = 2;
+    private ServerDatabaseHandler db;
+    private ServerTokenVerifier tokenVerifier;
+#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
+    [Header("Single-Lobby Settings")]
+    [SerializeField] private int lobbyId = 0;
+    [SerializeField] private int maxUsers = 256;
+    [SerializeField] private string lobbyName = "Default Lobby";
+#endif
+
+    void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple instances of ServerManager detected. Destroying duplicate instance.");
+            Destroy(gameObject);
+        }
+
+        Debug.Log("<color=green><b>CNS</b></color>: Initializing ServerManager.");
+        transport.Initialize();
+    }
+
+    void Start()
+    {
+        transport.OnNetworkConnected += HandleNetworkConnected;
+        transport.OnNetworkDisconnected += HandleNetworkDisconnected;
+        transport.OnNetworkReceived += HandleNetworkReceived;
+
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        OnPublicIpAddressFetched += async (ip) =>
+        {
+            ServerData.Settings.GameServerId = Guid.NewGuid();
+            ServerData.Settings.GameServerKey = GenerateSecretKey();
+            ServerData.Settings.GameServerAddress = ip;
+
+            db = new ServerDatabaseHandler();
+            await db.Connect(dbConnectionString, ServerData.Settings.GameServerId);
+            db.StartHeartbeat(secondsBetweenHeartbeats);
+
+            tokenVerifier = new ServerTokenVerifier(ServerData.Settings.GameServerKey);
+            tokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
+            tokenVerifier.StartTokenCleanup(tokenValidityDurationMinutes);
+        };
+
+        StartCoroutine(GetPublicIpAddress());
+#endif
+
+        transport.StartServer();
+    }
+
+    public void BroadcastMessage(NetPacket packet, TransportMethod method)
+    {
+        transport.SendToAll(packet, method);
+    }
+
+    public void KickUser(UserData user)
+    {
+        transport.DisconnectRemote(user.UserId);
+    }
+
+    public void Shutdown()
+    {
+        transport.Shutdown();
+    }
+
+    private async void HandleNetworkConnected(ConnectedArgs args)
+    {
+        try
+        {
+            if (!ServerData.ConnectedUsers.ContainsKey(args.RemoteId))
+            {
+                await RegisterUser(args.RemoteId);
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {args.RemoteId} attempted to connect again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {args.RemoteId}: {ex.Message}");
+        }
+    }
+
+    private async void HandleNetworkDisconnected(DisconnectedArgs args)
+    {
+        try
+        {
+            if (ServerData.ConnectedUsers.ContainsKey(args.RemoteId))
+            {
+                UserData userData = ServerData.ConnectedUsers[args.RemoteId];
+                await RemoveUser(userData);
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {args.RemoteId} was not connected.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {args.RemoteId}: {ex.Message}");
+        }
+    }
+
+    private async void HandleNetworkReceived(ReceivedArgs args)
+    {
+#if !UNITY_EDITOR
+        try
+        {
+#endif
+        if (ServerData.ConnectedUsers.ContainsKey(args.RemoteId))
+        {
+            UserData remoteUser = ServerData.ConnectedUsers[args.RemoteId];
+            if (remoteUser.InLobby && ServerData.ActiveLobbies.ContainsKey(remoteUser.LobbyId))
+            {
+                ServerLobby lobby = ServerData.ActiveLobbies[remoteUser.LobbyId];
+                lobby.ReceiveData(remoteUser, args.Packet, args.TransportMethod);
+            }
+            else
+            {
+                NetPacket packet = args.Packet;
+                ServiceType serviceType = (ServiceType)packet.ReadByte();
+                CommandType commandType = (CommandType)packet.ReadByte();
+                if (serviceType == ServiceType.CONNECTION && commandType == CommandType.CONNECTION_REQUEST)
+                {
+                    ConnectionData connectionData;
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+                        connectionData = tokenVerifier.VerifyToken(packet.ReadString());
+#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
+                    connectionData = new ConnectionData
+                    {
+                        LobbyId = lobbyId,
+                        UserGuid = Guid.Parse(packet.ReadString()),
+                        UserSettings = new UserSettings
+                        {
+                            UserName = packet.ReadString()
+                        },
+                        LobbySettings = new LobbySettings
+                        {
+                            MaxUsers = maxUsers,
+                            LobbyVisibility = LobbyVisibility.PUBLIC,
+                            LobbyName = lobbyName
+                        }
+                    };
+#elif CNS_HOST_AUTH
+                        connectionData = new ConnectionData
+                        {
+                            LobbyId = packet.ReadInt(),
+                            UserGuid = Guid.Parse(packet.ReadString()),
+                            UserSettings = new UserSettings
+                            {
+                                UserName = packet.ReadString()
+                            },
+                            LobbySettings = new LobbySettings
+                            {
+#if CNS_TRANSPORT_STEAMWORKS
+                                SteamCode = packet.ReadULong(),
+#endif
+                                MaxUsers = packet.ReadByte(),
+                                LobbyVisibility = Enum.Parse<LobbyVisibility>(packet.ReadString()),
+                                LobbyName = packet.ReadString()
+                            }
+                        };
+#else
+                        connectionData = null;
+#endif
+                    if (connectionData != null)
+                    {
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+                            tokenVerifier.RemoveUnverifiedUser(remoteUser);
+#endif
+                        ServerLobby lobby = null;
+                        if (ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
+                        {
+                            lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
+                        }
+                        else
+                        {
+                            lobby = await RegisterLobby(connectionData);
+                        }
+                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true), TransportMethod.Reliable);
+
+                        if (lobby != null && lobby.LobbyData.UserCount < lobby.LobbyData.Settings.MaxUsers)
+                        {
+                            await AddUserToLobby(remoteUser, lobby, connectionData);
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
+                            KickUser(remoteUser);
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {args.RemoteId}.");
+                        KickUser(remoteUser);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {args.RemoteId} is not in any active lobby.");
+                    KickUser(remoteUser);
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received data from unknown user ID {args.RemoteId}.");
+            KickUser(new UserData { UserId = args.RemoteId });
+        }
+#if !UNITY_EDITOR
+        }
+
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {args.RemoteId}: {ex.Message}");
+        }
+#endif
+    }
+
+    void FixedUpdate()
+    {
+        foreach (ServerLobby serverLobby in ServerData.ActiveLobbies.Values)
+        {
+            serverLobby.Tick();
+        }
+
+        ServerTick++;
+    }
+
+    async void OnDestroy()
+    {
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        await db.Close();
+#endif
+    }
+
+    private async Task<UserData> RegisterUser(uint remoteId)
+    {
+        UserData user = new UserData
+        {
+            UserId = remoteId
+        };
+        ServerData.ConnectedUsers[user.UserId] = user;
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        await db.SaveUserMetadataAsync(user);
+        tokenVerifier.AddUnverifiedUser(user);
+#endif
+        return user;
+    }
+
+    private async Task RemoveUser(UserData user)
+    {
+        ServerData.ConnectedUsers.Remove(user.UserId);
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        await db.DeleteUserAsync(user.GlobalGuid);
+        await db.RemoveUserFromGameServerAsync(user.GlobalGuid);
+#endif
+        if (ServerData.ActiveLobbies.ContainsKey(user.LobbyId))
+        {
+            ServerLobby lobby = ServerData.ActiveLobbies[user.LobbyId];
+            await RemoveUserFromLobby(user, lobby);
+
+            if (lobby.LobbyData.LobbyUsers.Count == 0)
+            {
+                await RemoveLobby(lobby);
+            }
+            else
+            {
+                lobby.UserLeft(user);
+            }
+        }
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        tokenVerifier.RemoveUnverifiedUser(user);
+#endif
+    }
+
+    private async Task<ServerLobby> RegisterLobby(ConnectionData data)
+    {
+        ServerLobby lobby = new GameObject($"Lobby_{data.LobbyId}").AddComponent<ServerLobby>();
+        lobby.Init(data.LobbyId, transport);
+        lobby.LobbyData.Settings = data.LobbySettings;
+        lobby.transform.SetParent(gameObject.transform);
+        ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        await db.SaveLobbyMetadataAsync(lobby.LobbyData);
+        await db.RemoveLobbyFromLimbo(lobby.LobbyData.LobbyId);
+        await db.AddLobbyToGameServerAsync(lobby.LobbyData.LobbyId);
+#endif
+        return lobby;
+    }
+
+    private async Task RemoveLobby(ServerLobby lobby)
+    {
+        ServerData.ActiveLobbies.Remove(lobby.LobbyData.LobbyId);
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        await db.RemoveLobbyFromGameServerAsync(lobby.LobbyData.LobbyId);
+        await db.DeleteLobbyAsync(lobby.LobbyData.LobbyId);
+#endif
+        Destroy(lobby.gameObject);
+    }
+
+    private async Task AddUserToLobby(UserData user, ServerLobby lobby, ConnectionData data)
+    {
+        user.LobbyId = data.LobbyId;
+        user.GlobalGuid = data.UserGuid;
+        user.Settings = data.UserSettings;
+        lobby.LobbyData.LobbyUsers.Add(user);
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        await db.SaveUserMetadataAsync(user);
+        await db.AddUserToGameServerAsync(user.GlobalGuid);
+        await db.AddUserToLobbyAsync(data.LobbyId, user.GlobalGuid);
+#endif
+        lobby.UserJoined(user);
+    }
+
+    private async Task RemoveUserFromLobby(UserData user, ServerLobby lobby)
+    {
+        lobby.LobbyData.LobbyUsers.Remove(user);
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+        await db.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
+#endif
+    }
+
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+    private IEnumerator GetPublicIpAddress()
+    {
+        using (var www = UnityWebRequest.Get(publicIpApiUrl))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                var json = www.downloadHandler.text;
+                var address = JsonConvert.DeserializeObject<PublicIpAddress>(json).Ip;
+                Debug.Log($"<color=green><b>CNS</b></color>: Server's public IP Address: {address}");
+                OnPublicIpAddressFetched?.Invoke(address);
+            }
+            else
+            {
+                Debug.LogError($"<color=red><b>CNS</b></color>: Failed to fetch lobby data: {www.error}");
+            }
+        }
+    }
+
+    private string GenerateSecretKey(int byteLength = 32)
+    {
+        var keyBytes = new byte[byteLength];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(keyBytes);
+        }
+
+        return Convert.ToBase64String(keyBytes);
+    }
+#endif
+}

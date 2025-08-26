@@ -817,7 +817,7 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
-    Standalone: CNS_DATABASE_ACCESS;CNS_TOKEN_VERIFIER;CNS_MULTI_LOBBY
+    Standalone: CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH;CNS_TRANSPORT_LITENETLIB
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
