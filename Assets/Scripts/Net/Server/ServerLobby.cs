@@ -129,7 +129,7 @@ public class ServerLobby : Lobby
         do
         {
             newPlayerId = (byte)UnityEngine.Random.Range(0, LobbyData.Settings.MaxUsers);
-        } while (!LobbyData.LobbyUsers.Any(u => u.PlayerId == newPlayerId));
+        } while (LobbyData.LobbyUsers.Any(u => u.PlayerId == newPlayerId));
         return newPlayerId;
     }
 
