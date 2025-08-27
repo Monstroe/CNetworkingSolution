@@ -8,6 +8,7 @@ public class GameResources : MonoBehaviour
     public LayerMask InteractionMask => interactionMask;
     public string GameSceneName => gameSceneName;
     public string MenuSceneName => menuSceneName;
+    public string ServerSceneName => serverSceneName;
 
     [Header("Layer Masks")]
     [SerializeField] private LayerMask groundMask;
@@ -15,6 +16,7 @@ public class GameResources : MonoBehaviour
     [Header("Scene Names")]
     [SerializeField] private string gameSceneName = "Game";
     [SerializeField] private string menuSceneName = "Menu";
+    [SerializeField] private string serverSceneName = "Server";
 
     void Awake()
     {

@@ -20,7 +20,7 @@ public class Menu : MonoBehaviour
 
     public void StartSinglePlayer()
     {
-        SceneManager.LoadScene("Server", LoadSceneMode.Additive);
+        SceneManager.LoadScene(GameResources.Instance.ServerSceneName, LoadSceneMode.Additive);
         ClientManager.Instance.OnUserCreated += (user) =>
         {
             ClientManager.Instance.JoinLobby(0);
@@ -28,6 +28,7 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
             Debug.Log($"Successfully connected to lobby {lobbyId}.");
+
             FadeScreen.Instance.Display(true, fadeDuration, () =>
             {
                 SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
@@ -46,7 +47,19 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
             Debug.Log($"Successfully connected to lobby {lobbyId}.");
-            SceneManager.LoadScene(GameResources.Instance.GameSceneName);
+
+            FadeScreen.Instance.Display(true, fadeDuration, () =>
+            {
+                if (SceneManager.GetSceneByName(GameResources.Instance.ServerSceneName).isLoaded)
+                {
+                    SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
+                    SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
+                }
+                else
+                {
+                    SceneManager.LoadScene(GameResources.Instance.GameSceneName);
+                }
+            });
         };
         ClientManager.Instance.CreateNewUser();
     }
