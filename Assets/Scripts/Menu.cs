@@ -28,7 +28,11 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
             Debug.Log($"Successfully connected to lobby {lobbyId}.");
-            SwitchToGameScene();
+            FadeScreen.Instance.Display(true, fadeDuration, () =>
+            {
+                SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
+                SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
+            });
         };
         ClientManager.Instance.CreateNewUser();
     }
@@ -42,17 +46,8 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
             Debug.Log($"Successfully connected to lobby {lobbyId}.");
-            SwitchToGameScene();
+            SceneManager.LoadScene(GameResources.Instance.GameSceneName);
         };
         ClientManager.Instance.CreateNewUser();
-    }
-
-    private void SwitchToGameScene()
-    {
-        FadeScreen.Instance.Display(true, fadeDuration, () =>
-        {
-            SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
-            SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
-        });
     }
 }

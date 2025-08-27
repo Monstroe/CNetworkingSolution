@@ -226,6 +226,8 @@ MonoBehaviour:
   interactionMask:
     serializedVersion: 2
     m_Bits: 64
+  gameSceneName: Game
+  menuSceneName: Menu
 --- !u!4 &1420946861
 Transform:
   m_ObjectHideFlags: 0
