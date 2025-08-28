@@ -10,7 +10,7 @@ public class LobbyServerService : ServerService
                 {
                     LobbySettings lobbySettings = new LobbySettings()
                     {
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
                         SteamCode = packet.ReadULong(),
 #endif
                         MaxUsers = packet.ReadInt(),
@@ -23,7 +23,7 @@ public class LobbyServerService : ServerService
                 }
             case CommandType.LOBBY_USER_SETTINGS:
                 {
-                    uint userId = packet.ReadUInt();
+                    ulong userId = packet.ReadULong();
                     UserData thisUser = lobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
                     if (thisUser != user)
                     {

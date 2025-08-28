@@ -1,4 +1,4 @@
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
 using System;
 using System.Collections;
 using System.Collections.Generic;

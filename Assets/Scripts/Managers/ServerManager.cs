@@ -209,7 +209,7 @@ public class ServerManager : MonoBehaviour
                             },
                             LobbySettings = new LobbySettings
                             {
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
                                 SteamCode = packet.ReadULong(),
 #endif
                                 MaxUsers = packet.ReadByte(),

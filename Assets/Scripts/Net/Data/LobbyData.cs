@@ -12,7 +12,7 @@ public class LobbyData
 
 public class LobbySettings
 {
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
     public ulong SteamCode { get; set; }
 #endif
     public int MaxUsers { get; set; }

@@ -143,7 +143,7 @@ public class ServerTokenVerifier
     {
         return new LobbySettings
         {
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
             SteamCode = Convert.ToUInt64(payload["steam_code"]),
 #endif
             MaxUsers = Convert.ToInt32(payload["max_users"]),

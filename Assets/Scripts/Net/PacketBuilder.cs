@@ -61,7 +61,7 @@ public static class PacketBuilder
 #endif
         packet.Write(connectionData.UserGuid.ToString());
         packet.Write(connectionData.UserSettings.UserName);
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
         packet.Write(connectionData.LobbySettings.SteamCode);
 #endif
 #if CNS_HOST_AUTH

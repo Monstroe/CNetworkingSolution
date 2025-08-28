@@ -24,7 +24,7 @@ public class LobbyClientService : ClientService
                 {
                     LobbySettings settings = new LobbySettings()
                     {
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
                         SteamCode = packet.ReadULong(),
 #endif
                         MaxUsers = packet.ReadInt(),
@@ -37,7 +37,7 @@ public class LobbyClientService : ClientService
                 }
             case CommandType.LOBBY_USER_SETTINGS:
                 {
-                    uint userId = packet.ReadUInt();
+                    ulong userId = packet.ReadULong();
                     UserData thisUser = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
                     UserSettings userSettings = new UserSettings()
                     {
@@ -52,14 +52,19 @@ public class LobbyClientService : ClientService
                     List<UserData> updatedUsers = new List<UserData>(userCount);
                     for (int i = 0; i < userCount; i++)
                     {
+                        Guid globalGuid = Guid.Parse(packet.ReadString());
+                        ulong userId = packet.ReadULong();
+                        byte playerId = packet.ReadByte();
+                        string userName = packet.ReadString();
+
                         UserData user = new UserData()
                         {
-                            GlobalGuid = Guid.Parse(packet.ReadString()),
-                            UserId = packet.ReadUInt(),
-                            PlayerId = packet.ReadByte(),
+                            GlobalGuid = globalGuid,
+                            UserId = userId,
+                            PlayerId = playerId,
                             Settings = new UserSettings()
                             {
-                                UserName = packet.ReadString()
+                                UserName = userName
                             }
                         };
                         updatedUsers.Add(user);
@@ -78,7 +83,7 @@ public class LobbyClientService : ClientService
                     UserData user = new UserData()
                     {
                         GlobalGuid = Guid.Parse(packet.ReadString()),
-                        UserId = packet.ReadUInt(),
+                        UserId = packet.ReadULong(),
                         PlayerId = packet.ReadByte(),
                         Settings = new UserSettings()
                         {
@@ -90,7 +95,7 @@ public class LobbyClientService : ClientService
                 }
             case CommandType.LOBBY_USER_LEFT:
                 {
-                    uint userId = packet.ReadUInt();
+                    ulong userId = packet.ReadULong();
                     ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.RemoveAll(u => u.UserId == userId);
                     break;
                 }

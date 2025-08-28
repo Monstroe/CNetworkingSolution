@@ -81,7 +81,7 @@ public enum NetTransportType
 #if CNS_TRANSPORT_LITENETLIB
     LiteNetLib,
 #endif
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
     SteamWorks,
 #endif
 }

@@ -56,14 +56,14 @@ public class ClientManager : MonoBehaviour
     public ClientLobby CurrentLobby { get; private set; }
     public bool IsConnected { get; private set; } = false;
 
-    public UserSettings DefaultUserSettings => new UserSettings
+    public UserSettings DefaultUserSettings => new UserSettings()
     {
         UserName = "DefaultPlayer"
     };
 
-    public LobbySettings DefaultLobbySettings => new LobbySettings
+    public LobbySettings DefaultLobbySettings => new LobbySettings()
     {
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
         SteamCode = 0,
 #endif
         LobbyName = "Default Lobby",
@@ -198,7 +198,7 @@ public class ClientManager : MonoBehaviour
         UserData userData = new UserData
         {
             GlobalGuid = Guid.NewGuid(),
-            Settings = userSettings ?? new UserSettings()
+            Settings = userSettings ?? DefaultUserSettings
         };
         CurrentUser = userData;
         OnUserCreated?.Invoke(userData.GlobalGuid);
