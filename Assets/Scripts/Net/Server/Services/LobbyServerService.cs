@@ -53,6 +53,7 @@ public class LobbyServerService : ServerService
         lobby.SendToUser(user, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
         lobby.SendToUser(user, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
         lobby.SendToLobby(PacketBuilder.LobbyUserJoined(user), TransportMethod.Reliable, user);
+        Debug.Log($"User {user.UserId} ({user.PlayerId}) joined lobby {lobby.LobbyData.LobbyId}");
     }
 
     public override void UserJoinedGame(ServerLobby lobby, UserData user)
