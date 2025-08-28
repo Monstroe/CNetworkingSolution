@@ -52,19 +52,14 @@ public class LobbyClientService : ClientService
                     List<UserData> updatedUsers = new List<UserData>(userCount);
                     for (int i = 0; i < userCount; i++)
                     {
-                        Guid globalGuid = Guid.Parse(packet.ReadString());
-                        ulong userId = packet.ReadULong();
-                        byte playerId = packet.ReadByte();
-                        string userName = packet.ReadString();
-
                         UserData user = new UserData()
                         {
-                            GlobalGuid = globalGuid,
-                            UserId = userId,
-                            PlayerId = playerId,
+                            GlobalGuid = Guid.Parse(packet.ReadString()),
+                            UserId = packet.ReadULong(),
+                            PlayerId = packet.ReadByte(),
                             Settings = new UserSettings()
                             {
-                                UserName = userName
+                                UserName = packet.ReadString()
                             }
                         };
                         updatedUsers.Add(user);

@@ -184,7 +184,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transport: {fileID: 161184808}
-  lobbyId: 0
+  defaultLobbyId: 0
 --- !u!114 &161184808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1279,7 +1279,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f1a84c75725c5a449e584d4758a9a80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pregameDuration: 3
+  pregameLoadDuration: 3
+  gameLoadDuration: 1
   fadeDuration: 1
 --- !u!1 &1411118017
 GameObject:

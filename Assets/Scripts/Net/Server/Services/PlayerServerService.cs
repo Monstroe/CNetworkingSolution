@@ -5,38 +5,17 @@ public class PlayerServerService : ServerService
 {
     public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
-        switch (commandType)
-        {
-            case CommandType.PLAYER_SPAWN:
-                {
-                    if (!lobby.GameData.ServerPlayers.ContainsKey(user))
-                    {
-                        Transform spawnPoint = lobby.Map.GetRandomSpawnPoint(lobby.GameData.ServerPlayers.Values.Select(p => p.Position).ToList());
-                        Vector3 position = lobby.Map.GetGroundPosition(spawnPoint.position);
-                        Quaternion rotation = spawnPoint.rotation;
-                        Vector3 forward = spawnPoint.forward;
-
-                        ServerPlayer player = new ServerPlayer(user.PlayerId, user);
-                        player.Position = position;
-                        player.Rotation = rotation;
-                        player.Forward = forward;
-                        lobby.GameData.ServerPlayers.Add(user, player);
-                        lobby.GameData.ServerObjects.Add(player.Id, player);
-                        lobby.SendToLobby(PacketBuilder.PlayerSpawn(user, position, rotation, forward), transportMethod ?? TransportMethod.Reliable);
-                    }
-                    break;
-                }
-        }
+        // Nothing
     }
 
     public override void Tick(ServerLobby lobby)
     {
-
+        // Nothing
     }
 
     public override void UserJoined(ServerLobby lobby, UserData user)
     {
-
+        // Nothing
     }
 
     public override void UserJoinedGame(ServerLobby lobby, UserData user)
