@@ -4,11 +4,11 @@ public class ClientInteractable : ClientObject
 {
     public ClientObject InteractingObject { get; protected set; }
 
-    public virtual void Grab(NetPacket packet, TransportMethod? transportMethod) { Debug.Log(InteractingObject.Id + " Grabbed object"); }
+    public virtual void Grab(NetPacket packet, TransportMethod? transportMethod) { Debug.Log("Object with Id " + InteractingObject.Id + " Grabbed object"); }
 
-    public virtual void Interact(NetPacket packet, TransportMethod? transportMethod) { Debug.Log(InteractingObject.Id + " Interacted with object"); }
+    public virtual void Interact(NetPacket packet, TransportMethod? transportMethod) { Debug.Log("Object with Id " + InteractingObject.Id + " Interacted with object"); }
 
-    public virtual void Drop(NetPacket packet, TransportMethod? transportMethod) { Debug.Log(InteractingObject.Id + " Dropped object"); }
+    public virtual void Drop(NetPacket packet, TransportMethod? transportMethod) { Debug.Log("Object with Id " + InteractingObject.Id + " Dropped object"); }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
