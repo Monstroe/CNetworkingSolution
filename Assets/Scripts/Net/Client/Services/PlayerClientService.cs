@@ -53,5 +53,9 @@ public class PlayerClientService : ClientService
             ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.Add(user, op);
             ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Add(op.Id, op);
         }
+        else
+        {
+            Debug.LogWarning($"Player with Id {playerId} already exists. Spawn request ignored.");
+        }
     }
 }
