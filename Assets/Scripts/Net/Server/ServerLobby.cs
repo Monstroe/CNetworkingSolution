@@ -2,16 +2,19 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class ServerLobby : Lobby
+public class ServerLobby : MonoBehaviour
 {
+    public LobbyData LobbyData { get; protected set; } = new LobbyData();
     public ServerLobbyGameData GameData { get; private set; } = new ServerLobbyGameData();
     public Map Map { get; private set; }
 
+    protected List<NetTransport> transports;
     private Dictionary<ServiceType, ServerService> services = new Dictionary<ServiceType, ServerService>();
 
-    public override void Init(int lobbyId, NetTransport transport)
+    public void Init(int lobbyId, List<NetTransport> transports)
     {
-        base.Init(lobbyId, transport);
+        LobbyData.LobbyId = lobbyId;
+        this.transports = transports;
 
         // Init Server Services (ADD NEW SERVICES HERE)
         services.Add(ServiceType.LOBBY, new GameObject("LobbyServerService").AddComponent<LobbyServerService>());
@@ -39,26 +42,49 @@ public class ServerLobby : Lobby
 
     public void SendToLobby(NetPacket packet, TransportMethod method, UserData exception = null)
     {
-        List<uint> userIds = new List<uint>();
+        Dictionary<NetTransport, List<uint>> userDict = new Dictionary<NetTransport, List<uint>>();
         foreach (var user in LobbyData.LobbyUsers)
         {
             if (user != exception)
             {
-                userIds.Add(user.UserId);
+                var (userId, transportIndex) = ServerManager.Instance.GetUserIdAndTransportIndex(user);
+                if (!userDict.ContainsKey(transports[transportIndex]))
+                {
+                    userDict[transports[transportIndex]] = new List<uint>();
+                }
+                userDict[transports[transportIndex]].Add(userId);
             }
         }
 
-        transport.SendToList(userIds, packet, method);
+        foreach (var (transport, userIds) in userDict)
+        {
+            transport.SendToList(userIds, packet, method);
+        }
     }
 
     public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
     {
-        transport.Send(user.UserId, packet, method);
+        var (userId, transportIndex) = ServerManager.Instance.GetUserIdAndTransportIndex(user);
+        transports[transportIndex].Send(userId, packet, method);
     }
 
     public void SendToUsers(List<UserData> users, NetPacket packet, TransportMethod method)
     {
-        transport.SendToList(users.Select(u => u.UserId).ToList(), packet, method);
+        Dictionary<NetTransport, List<uint>> userDict = new Dictionary<NetTransport, List<uint>>();
+        foreach (var user in users)
+        {
+            var (userId, transportIndex) = ServerManager.Instance.GetUserIdAndTransportIndex(user);
+            if (!userDict.ContainsKey(transports[transportIndex]))
+            {
+                userDict[transports[transportIndex]] = new List<uint>();
+            }
+            userDict[transports[transportIndex]].Add(userId);
+        }
+
+        foreach (var (transport, userIds) in userDict)
+        {
+            transport.SendToList(userIds, packet, method);
+        }
     }
 
     public void ReceiveData(UserData user, NetPacket packet, TransportMethod? transportMethod)
@@ -102,7 +128,7 @@ public class ServerLobby : Lobby
         }
     }
 
-    public override void Tick()
+    public void Tick()
     {
         foreach (var service in services.Values)
         {

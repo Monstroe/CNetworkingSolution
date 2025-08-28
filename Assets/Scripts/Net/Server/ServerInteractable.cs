@@ -20,7 +20,7 @@ public class ServerInteractable : ServerObject
         {
             case CommandType.PLAYER_GRAB:
                 {
-                    var player = CheckPlayerValidity(lobby, user);
+                    ServerPlayer player = CheckPlayerValidity(lobby, user);
                     if (player != null && player.CurrentInteractable == null && InteractingObject == null)
                     {
                         player.CurrentInteractable = this;

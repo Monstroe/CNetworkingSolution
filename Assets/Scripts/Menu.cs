@@ -23,7 +23,7 @@ public class Menu : MonoBehaviour
         SceneManager.LoadScene(GameResources.Instance.ServerSceneName, LoadSceneMode.Additive);
         ClientManager.Instance.OnUserCreated += (user) =>
         {
-            ClientManager.Instance.JoinLobby(0);
+            ClientManager.Instance.JoinLobby(ClientManager.Instance.DefaultLobbyId);
         };
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
@@ -42,7 +42,7 @@ public class Menu : MonoBehaviour
     {
         ClientManager.Instance.OnUserCreated += (user) =>
         {
-            ClientManager.Instance.JoinLobby(0);
+            ClientManager.Instance.JoinLobby(ClientManager.Instance.DefaultLobbyId);
         };
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {

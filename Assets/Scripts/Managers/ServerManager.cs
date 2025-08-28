@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -23,7 +24,7 @@ public class ServerManager : MonoBehaviour
     public int ServerTick { get; private set; }
     public ServerData ServerData { get; private set; } = new ServerData();
 
-    [SerializeField] private NetTransport transport;
+    [SerializeField] private List<NetTransport> transports;
 
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
     [Header("Multi-Lobby Settings")]
@@ -55,14 +56,21 @@ public class ServerManager : MonoBehaviour
         }
 
         Debug.Log("<color=green><b>CNS</b></color>: Initializing ServerManager.");
-        transport.Initialize();
+
+        foreach (NetTransport transport in transports)
+        {
+            transport.Initialize();
+        }
     }
 
     void Start()
     {
-        transport.OnNetworkConnected += HandleNetworkConnected;
-        transport.OnNetworkDisconnected += HandleNetworkDisconnected;
-        transport.OnNetworkReceived += HandleNetworkReceived;
+        foreach (NetTransport transport in transports)
+        {
+            transport.OnNetworkConnected += HandleNetworkConnected;
+            transport.OnNetworkDisconnected += HandleNetworkDisconnected;
+            transport.OnNetworkReceived += HandleNetworkReceived;
+        }
 
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
         OnPublicIpAddressFetched += async (ip) =>
@@ -83,31 +91,41 @@ public class ServerManager : MonoBehaviour
         StartCoroutine(GetPublicIpAddress());
 #endif
 
-        transport.StartServer();
+        foreach (NetTransport transport in transports)
+        {
+            transport.StartServer();
+        }
     }
 
     public void BroadcastMessage(NetPacket packet, TransportMethod method)
     {
-        transport.SendToAll(packet, method);
+        foreach (NetTransport transport in transports)
+        {
+            transport.SendToAll(packet, method);
+        }
     }
 
     public void KickUser(UserData user)
     {
-        transport.DisconnectRemote(user.UserId);
+        var (userId, transportIndex) = GetUserIdAndTransportIndex(user);
+        transports[transportIndex].DisconnectRemote(userId);
     }
 
     public void Shutdown()
     {
-        transport.Shutdown();
+        foreach (NetTransport transport in transports)
+        {
+            transport.Shutdown();
+        }
     }
 
-    private async void HandleNetworkConnected(ConnectedArgs args)
+    private async void HandleNetworkConnected(NetTransport transport, ConnectedArgs args)
     {
         try
         {
             if (!ServerData.ConnectedUsers.ContainsKey(args.RemoteId))
             {
-                await RegisterUser(args.RemoteId);
+                await RegisterUser(transport, args.RemoteId);
             }
             else
             {
@@ -120,7 +138,7 @@ public class ServerManager : MonoBehaviour
         }
     }
 
-    private async void HandleNetworkDisconnected(DisconnectedArgs args)
+    private async void HandleNetworkDisconnected(NetTransport transport, DisconnectedArgs args)
     {
         try
         {
@@ -140,7 +158,7 @@ public class ServerManager : MonoBehaviour
         }
     }
 
-    private async void HandleNetworkReceived(ReceivedArgs args)
+    private async void HandleNetworkReceived(NetTransport transport, ReceivedArgs args)
     {
 #if !UNITY_EDITOR
         try
@@ -205,7 +223,7 @@ public class ServerManager : MonoBehaviour
                     if (connectionData != null)
                     {
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-                            tokenVerifier.RemoveUnverifiedUser(remoteUser);
+                        tokenVerifier.RemoveUnverifiedUser(remoteUser);
 #endif
                         ServerLobby lobby = null;
                         if (ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
@@ -266,18 +284,33 @@ public class ServerManager : MonoBehaviour
         ServerTick++;
     }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     async void OnDestroy()
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
         await db.Close();
 #endif
     }
 
-    private async Task<UserData> RegisterUser(uint remoteId)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+    private async Task<UserData> RegisterUser(NetTransport transport, uint remoteId)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
+        int transportIndex = -1;
+        for (int i = 0; i < transports.Count; i++)
+        {
+            if (transports[i] == transport)
+            {
+                transportIndex = i;
+                break;
+            }
+        }
+        ulong userId = (ulong)transportIndex << 32 | remoteId;
+
         UserData user = new UserData
         {
-            UserId = remoteId
+            UserId = userId
         };
         ServerData.ConnectedUsers[user.UserId] = user;
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
@@ -313,10 +346,12 @@ public class ServerManager : MonoBehaviour
 #endif
     }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     private async Task<ServerLobby> RegisterLobby(ConnectionData data)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         ServerLobby lobby = new GameObject($"Lobby_{data.LobbyId}").AddComponent<ServerLobby>();
-        lobby.Init(data.LobbyId, transport);
+        lobby.Init(data.LobbyId, transports);
         lobby.LobbyData.Settings = data.LobbySettings;
         lobby.transform.SetParent(gameObject.transform);
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
@@ -328,7 +363,9 @@ public class ServerManager : MonoBehaviour
         return lobby;
     }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     private async Task RemoveLobby(ServerLobby lobby)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         ServerData.ActiveLobbies.Remove(lobby.LobbyData.LobbyId);
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
@@ -338,7 +375,9 @@ public class ServerManager : MonoBehaviour
         Destroy(lobby.gameObject);
     }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     private async Task AddUserToLobby(UserData user, ServerLobby lobby, ConnectionData data)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         user.LobbyId = data.LobbyId;
         user.GlobalGuid = data.UserGuid;
@@ -352,12 +391,27 @@ public class ServerManager : MonoBehaviour
         lobby.UserJoined(user);
     }
 
+    public void RegisterTransport(NetTransport transport)
+    {
+        transports.Add(transport);
+        transport.OnNetworkConnected += HandleNetworkConnected;
+        transport.OnNetworkDisconnected += HandleNetworkDisconnected;
+        transport.OnNetworkReceived += HandleNetworkReceived;
+    }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     private async Task RemoveUserFromLobby(UserData user, ServerLobby lobby)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         lobby.LobbyData.LobbyUsers.Remove(user);
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
         await db.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
 #endif
+    }
+
+    public (uint, int) GetUserIdAndTransportIndex(UserData user)
+    {
+        return ((uint)user.UserId, (int)(user.UserId >> 32));
     }
 
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH

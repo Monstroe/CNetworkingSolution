@@ -184,6 +184,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transport: {fileID: 161184808}
+  lobbyId: 0
 --- !u!114 &161184808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -197,7 +198,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   port: 7777
-  address: 192.168.1.129
+  address: 127.0.0.1
   connectionKey: Bruh-Wizz-Arcgis
   pingInterval: 1
   disconnectTimeout: 5
@@ -1865,6 +1866,7 @@ MonoBehaviour:
     m_Bits: 64
   gameSceneName: Game
   menuSceneName: Menu
+  serverSceneName: Server
 --- !u!1001 &6063457523757246688
 PrefabInstance:
   m_ObjectHideFlags: 0

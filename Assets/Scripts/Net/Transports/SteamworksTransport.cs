@@ -1,4 +1,4 @@
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+#if CNS_TRANSPORT_STEAMWORKS
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -82,20 +82,34 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
             await JoinSteamLobby(lobby.Id);
         };
 
-        ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData) =>
+#nullable enable
+        ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
         {
-            await CreateSteamLobby(lobbyData);
+            if (lobbySettings == null)
+            {
+                Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
+                return;
+            }
+
+            await CreateSteamLobby(lobbySettings);
         };
 
-        ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData) =>
+        ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
         {
-            await JoinSteamLobby(lobbyData.Settings.SteamCode);
+            if (lobbySettings == null)
+            {
+                Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
+                return;
+            }
+
+            await JoinSteamLobby(lobbySettings.SteamCode);
         };
+#nullable disable
     }
 
-    private async Task CreateSteamLobby(LobbyData lobbyData)
+    private async Task CreateSteamLobby(LobbySettings lobbySettings)
     {
-        Steamworks.Data.Lobby? lobby = await SteamMatchmaking.CreateLobbyAsync(lobbyData.Settings.MaxUsers);
+        Lobby? lobby = await SteamMatchmaking.CreateLobbyAsync(lobbySettings.MaxUsers);
         SteamId lobbyId = lobby?.Id ?? 0;
         if (lobbyId == 0)
         {
@@ -104,15 +118,15 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         }
 
         SteamFriends.SetRichPresence("connect", lobbyId.ToString());
-        lobbyData.Settings.SteamCode = lobbyId;
-        ClientManager.Instance.UpdateLobby(lobbyData.Settings);
+        lobbySettings.SteamCode = lobbyId;
+        ClientManager.Instance.UpdateLobby(lobbySettings);
 
-        NetworkManager.Instance.StartServer();
+        StartServer();
     }
 
     private async Task JoinSteamLobby(ulong lobbyCode)
     {
-        Steamworks.Data.Lobby? lobby = await SteamMatchmaking.JoinLobbyAsync(lobbyCode);
+        Lobby? lobby = await SteamMatchmaking.JoinLobbyAsync(lobbyCode);
         targetSteamId = lobby?.Owner.Id ?? 0;
         if (targetSteamId == 0)
         {
@@ -120,7 +134,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
             return;
         }
 
-        NetworkManager.Instance.StartClient();
+        StartClient();
     }
 
     public override bool StartClient()
@@ -343,12 +357,12 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
 
     void IConnectionManager.OnConnected(ConnectionInfo info)
     {
-        NetworkManager.Instance.HandleNetworkConnected(ServerClientId);
+        RaiseNetworkConnected(ServerClientId);
     }
 
     void IConnectionManager.OnDisconnected(ConnectionInfo info)
     {
-        NetworkManager.Instance.HandleNetworkDisconnected(ServerClientId);
+        RaiseNetworkDisconnected(ServerClientId);
     }
 
     unsafe void IConnectionManager.OnMessage(IntPtr data, int size, long messageNum, long recvTime, int channel)
@@ -360,7 +374,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
             UnsafeUtility.MemCpy(payload, (byte*)data, size);
         }
 
-        NetworkManager.Instance.HandleNetworkReceived(ServerClientId, new NetPacket(new ArraySegment<byte>(messageBuffer, 0, size)), null);
+        RaiseNetworkReceived(ServerClientId, new NetPacket(new ArraySegment<byte>(messageBuffer, 0, size)), null);
     }
 
     /* SERVER EVENTS */
@@ -374,7 +388,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         if (!connectedClients.ContainsKey(connection.Id))
         {
             connectedClients.Add(connection.Id, new Client { steamId = info.Identity.SteamId, connection = connection });
-            NetworkManager.Instance.HandleNetworkConnected(connection.Id);
+            RaiseNetworkConnected(connection.Id);
         }
         else
         {
@@ -386,7 +400,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
     {
         if (connectedClients.Remove(connection.Id))
         {
-            NetworkManager.Instance.HandleNetworkDisconnected(connection.Id);
+            RaiseNetworkDisconnected(connection.Id);
         }
         else
         {
@@ -403,7 +417,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
             UnsafeUtility.MemCpy(payload, (byte*)data, size);
         }
 
-        NetworkManager.Instance.HandleNetworkReceived(connection.Id, new NetPacket(new ArraySegment<byte>(messageBuffer, 0, size)), null);
+        RaiseNetworkReceived(connection.Id, new NetPacket(new ArraySegment<byte>(messageBuffer, 0, size)), null);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

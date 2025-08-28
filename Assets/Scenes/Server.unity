@@ -164,7 +164,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b62abc7291d2d79448e7a6914dc2d457, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transport: {fileID: 458500227}
+  transports:
+  - {fileID: 458500227}
   lobbyId: 0
   maxUsers: 256
   lobbyName: Default Lobby
@@ -228,6 +229,7 @@ MonoBehaviour:
     m_Bits: 64
   gameSceneName: Game
   menuSceneName: Menu
+  serverSceneName: Server
 --- !u!4 &1420946861
 Transform:
   m_ObjectHideFlags: 0

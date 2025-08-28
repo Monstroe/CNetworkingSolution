@@ -20,8 +20,8 @@ public class Player : ClientObject
         }
     }
 
-    public bool MovementEnabled { get; private set; } = true;
-    public bool InteractEnabled { get; private set; } = true;
+    public bool MovementEnabled { get; private set; } = false;
+    public bool InteractEnabled { get; private set; } = false;
 
     public PlayerMovement PlayerMovement { get { return playerMovement; } }
     public PlayerInteract PlayerInteract { get { return playerInteract; } }
@@ -41,6 +41,11 @@ public class Player : ClientObject
     void Start()
     {
         GetComponent<PlayerInput>().actions.Enable();
+        GameManager.Instance.OnGameInitialized += () =>
+        {
+            SetMovementActive(true);
+            SetInteractActive(true);
+        };
     }
 
     public void SetMovementActive(bool value)

@@ -4,6 +4,9 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
+    public delegate void GameInitializedEventHandler();
+    public event GameInitializedEventHandler OnGameInitialized;
+
     public static GameManager Instance { get; private set; }
 
     public bool Initialized { get; private set; } = false;
@@ -12,8 +15,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float pregameDuration = 3f;
     [SerializeField] private float fadeDuration = 1f;
 
-    private bool loopCanStart = false;
-    private bool loopCanEnd = false;
+    private bool initLoopCanStart = false;
+    private bool initLoopCanEnd = false;
 
     void Awake()
     {
@@ -37,21 +40,26 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (loopCanStart)
+        if (initLoopCanStart)
         {
-            loopCanStart = false;
-            FadeScreen.Instance.Display(false, fadeDuration / 2, () =>
+            initLoopCanStart = false;
+            FadeScreen.Instance.Display(false, fadeDuration, () =>
             {
                 Debug.Log("Scene loaded, initializing game...");
                 StartCoroutine(InitGame());
             });
         }
 
-        if (loopCanEnd)
+        if (initLoopCanEnd)
         {
-            loopCanEnd = false;
-            Initialized = true;
+            initLoopCanEnd = false;
             ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.GameUserJoined(), TransportMethod.Reliable);
+            FadeScreen.Instance.Display(false, fadeDuration, () =>
+            {
+                Debug.Log("Game initialized successfully.");
+                Initialized = true;
+                OnGameInitialized?.Invoke();
+            });
         }
     }
 
@@ -60,21 +68,17 @@ public class GameManager : MonoBehaviour
         if (scene.name.Equals(GameResources.Instance.GameSceneName))
         {
             StartPreGame();
-            loopCanStart = true;
+            initLoopCanStart = true;
         }
     }
 
     private IEnumerator InitGame()
     {
         yield return new WaitForSeconds(pregameDuration);
-        FadeScreen.Instance.Display(true, fadeDuration / 2, () =>
+        FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
             StartGame();
-            loopCanEnd = true;
-            FadeScreen.Instance.Display(false, fadeDuration / 2, () =>
-            {
-                Debug.Log("Game started successfully.");
-            });
+            initLoopCanEnd = true;
         });
     }
 

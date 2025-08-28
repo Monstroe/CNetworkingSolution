@@ -175,14 +175,12 @@ public class PlayerMovement : MonoBehaviour
         if (IsGrounded)
         {
             yVelocity = 0f;
+            Jumped = false;
+
             if (playerJumpValue > 0)
             {
                 Jumped = true;
                 Jump(jumpHeight);
-            }
-            else
-            {
-                Jumped = false;
             }
         }
         else

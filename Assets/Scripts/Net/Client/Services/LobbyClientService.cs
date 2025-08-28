@@ -65,12 +65,16 @@ public class LobbyClientService : ClientService
                         updatedUsers.Add(user);
                     }
 
-                    ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers = updatedUsers;
+                    UserData localUser = updatedUsers[updatedUsers.Count - 1];
+                    ClientManager.Instance.CurrentUser.GlobalGuid = localUser.GlobalGuid;
+                    ClientManager.Instance.CurrentUser.UserId = localUser.UserId;
+                    ClientManager.Instance.CurrentUser.PlayerId = localUser.PlayerId;
+
+                    ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.AddRange(updatedUsers);
                     break;
                 }
             case CommandType.LOBBY_USER_JOINED:
                 {
-                    Debug.Log("User Joined Lobby");
                     UserData user = new UserData()
                     {
                         GlobalGuid = Guid.Parse(packet.ReadString()),

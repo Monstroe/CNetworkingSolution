@@ -2,25 +2,19 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ClientLobby : Lobby
+public class ClientLobby : MonoBehaviour
 {
+    public LobbyData LobbyData { get; protected set; } = new LobbyData();
     public ClientLobbyGameData GameData { get; private set; } = new ClientLobbyGameData();
     public Map Map { get; private set; }
 
+    private NetTransport transport;
     private Dictionary<ServiceType, ClientService> services = new Dictionary<ServiceType, ClientService>();
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-    private string gameServerToken;
-#endif
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void Init(int lobbyId, NetTransport transport)
     {
-
-    }
-
-    public override void Init(int lobbyId, NetTransport transport)
-    {
-        base.Init(lobbyId, transport);
+        LobbyData.LobbyId = lobbyId;
+        this.transport = transport;
         transport.Initialize();
     }
 

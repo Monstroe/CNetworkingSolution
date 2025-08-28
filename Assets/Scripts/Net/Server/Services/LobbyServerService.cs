@@ -49,8 +49,9 @@ public class LobbyServerService : ServerService
 
     public override void UserJoined(ServerLobby lobby, UserData user)
     {
-        lobby.SendToUser(user, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
+        lobby.SendToUser(user, PacketBuilder.LobbySettings(lobby.LobbyData.Settings), TransportMethod.Reliable);
         lobby.SendToUser(user, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
+        lobby.SendToUser(user, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
         lobby.SendToLobby(PacketBuilder.LobbyUserJoined(user), TransportMethod.Reliable, user);
     }
 

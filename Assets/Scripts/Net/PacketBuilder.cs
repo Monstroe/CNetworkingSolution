@@ -236,7 +236,7 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket PlayerInteract(ushort objectId)
+    public static NetPacket PlayerInteract(byte objectId)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
@@ -245,7 +245,7 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket PlayerDrop(ushort objectId)
+    public static NetPacket PlayerDrop(byte objectId)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);

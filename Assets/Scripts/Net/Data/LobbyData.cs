@@ -15,7 +15,13 @@ public class LobbySettings
 #if CNS_TRANSPORT_STEAMWORKS
     public ulong SteamCode { get; set; }
 #endif
-    public int MaxUsers { get; set; } = 256;
-    public LobbyVisibility LobbyVisibility { get; set; } = LobbyVisibility.PRIVATE;
-    public string LobbyName { get; set; } = "Default Lobby";
+    public int MaxUsers { get; set; }
+    public LobbyVisibility LobbyVisibility { get; set; }
+    public string LobbyName { get; set; }
+}
+
+public enum LobbyVisibility
+{
+    PUBLIC,
+    PRIVATE
 }
