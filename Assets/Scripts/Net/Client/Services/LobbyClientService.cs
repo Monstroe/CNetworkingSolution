@@ -63,12 +63,15 @@ public class LobbyClientService : ClientService
                             }
                         };
                         updatedUsers.Add(user);
+                        Debug.Log($"User {user.PlayerId} added.");
                     }
 
                     UserData localUser = updatedUsers[updatedUsers.Count - 1];
                     ClientManager.Instance.CurrentUser.GlobalGuid = localUser.GlobalGuid;
                     ClientManager.Instance.CurrentUser.UserId = localUser.UserId;
                     ClientManager.Instance.CurrentUser.PlayerId = localUser.PlayerId;
+
+                    Debug.Log($"Local user {localUser.PlayerId} added.");
 
                     ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.AddRange(updatedUsers);
                     break;
