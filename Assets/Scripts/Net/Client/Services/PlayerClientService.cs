@@ -35,6 +35,7 @@ public class PlayerClientService : ClientService
                     for (int i = 0; i < playerCount; i++)
                     {
                         byte playerId = packet.ReadByte();
+                        Debug.Log($"Spawning player with Id {playerId} from players list");
                         SpawnPlayer(playerId);
                     }
 
