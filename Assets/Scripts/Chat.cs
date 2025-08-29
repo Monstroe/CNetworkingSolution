@@ -80,6 +80,7 @@ public class Chat : MonoBehaviour
 
     public void AddUserLeftMessage(UserData user)
     {
+        Debug.Log($"User {user.UserId} ({user.PlayerId}) left the lobby.");
         string message = $"{user.Settings.UserName} has left the game.";
         AddChatMessage(message, Color.red);
     }

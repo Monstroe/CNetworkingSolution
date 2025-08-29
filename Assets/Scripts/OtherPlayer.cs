@@ -21,6 +21,7 @@ public class OtherPlayer : ClientObject
             if (walkingState == value) return;
             walkingState = value;
             anim.SetBool("IsWalking", value);
+            Debug.Log($"OtherPlayer {OtherUser.PlayerId} IsWalking set to {value}");
         }
     }
     public bool IsSprinting
