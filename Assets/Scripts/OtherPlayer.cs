@@ -97,7 +97,7 @@ public class OtherPlayer : ClientObject
         transform.forward = Vector3.Lerp(transform.forward, forward, lerpSpeed * Time.deltaTime);
     }
 
-    public void Init(UserData otherUser, Vector3? initialPosition, Quaternion? initialRotation, Vector3? initialForward)
+    public void Register(UserData otherUser, Vector3? initialPosition, Quaternion? initialRotation, Vector3? initialForward)
     {
         OtherUser = otherUser;
         position = initialPosition ?? transform.position;

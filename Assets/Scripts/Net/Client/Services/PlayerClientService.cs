@@ -50,7 +50,8 @@ public class PlayerClientService : ClientService
         if (!ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.ContainsKey(user) || !ClientManager.Instance.CurrentLobby.GameData.ClientObjects.ContainsKey(user.PlayerId))
         {
             OtherPlayer op = Instantiate(Resources.Load<GameObject>("Prefabs/OtherPlayer")).GetComponent<OtherPlayer>();
-            op.Init(user, position, rotation, forward);
+            op.Init(user.PlayerId);
+            op.Register(user, position, rotation, forward);
             ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.Add(user, op);
             ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Add(op.Id, op);
         }
