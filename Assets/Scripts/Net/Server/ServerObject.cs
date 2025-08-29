@@ -1,4 +1,4 @@
-public abstract class ServerObject : NetObject
+public abstract class ServerObject : INetObject
 {
     public ushort Id { get; protected set; }
 

@@ -56,19 +56,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.CONNECTION);
         packet.Write((byte)CommandType.CONNECTION_REQUEST);
-#if CNS_HOST_AUTH
-        packet.Write(connectionData.LobbyId);
-#endif
-        packet.Write(connectionData.UserGuid.ToString());
-        packet.Write(connectionData.UserSettings.UserName);
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-        packet.Write(connectionData.LobbySettings.SteamCode);
-#endif
-#if CNS_HOST_AUTH
-        packet.Write((byte)connectionData.LobbySettings.MaxUsers);
-        packet.Write(connectionData.LobbySettings.LobbyVisibility.ToString());
-        packet.Write(connectionData.LobbySettings.LobbyName);
-#endif
+        connectionData.Serialize(ref packet);
         return packet;
     }
 #endif
@@ -88,9 +76,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_SETTINGS);
-        packet.Write(settings.MaxUsers);
-        packet.Write((byte)settings.LobbyVisibility);
-        packet.Write(settings.LobbyName);
+        settings.Serialize(ref packet);
         return packet;
     }
 
@@ -100,7 +86,7 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_USER_SETTINGS);
         packet.Write(user.UserId);
-        packet.Write(settings.UserName);
+        settings.Serialize(ref packet);
         return packet;
     }
 
@@ -110,12 +96,9 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_USERS_LIST);
         packet.Write((byte)users.Count);
-        foreach (var user in users)
+        foreach (UserData user in users)
         {
-            packet.Write(user.GlobalGuid.ToString());
-            packet.Write(user.UserId);
-            packet.Write(user.PlayerId);
-            packet.Write(user.Settings.UserName);
+            user.Serialize(ref packet);
         }
         return packet;
     }
@@ -125,10 +108,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_USER_JOINED);
-        packet.Write(user.GlobalGuid.ToString());
-        packet.Write(user.UserId);
-        packet.Write(user.PlayerId);
-        packet.Write(user.Settings.UserName);
+        user.Serialize(ref packet);
         return packet;
     }
 
@@ -141,7 +121,7 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket LobbyTick(int tick)
+    public static NetPacket LobbyTick(ulong tick)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
@@ -151,16 +131,17 @@ public static class PacketBuilder
     }
 
     /* GAME */
-    public static NetPacket GameUserJoined()
+    public static NetPacket GameUserJoined(UserData user)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.GAME);
         packet.Write((byte)CommandType.GAME_USER_JOINED);
+        packet.Write(user.PlayerId);
         return packet;
     }
 
     /* OBJECT */
-    public static NetPacket ObjectCommunication(NetObject netObject, NetPacket packet)
+    public static NetPacket ObjectCommunication(INetObject netObject, NetPacket packet)
     {
         packet.Insert(0, (byte)ServiceType.OBJECT);
         packet.Insert(1, (byte)CommandType.OBJECT_COMMUNICATION);
@@ -175,9 +156,18 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYERS_LIST);
         packet.Write((byte)players.Count);
-        foreach (var player in players)
+        foreach (ServerPlayer player in players)
         {
             packet.Write((byte)player.Id);
+            packet.Write(player.Position);
+            packet.Write(player.Rotation);
+            packet.Write(player.Forward);
+            packet.Write(player.IsWalking);
+            packet.Write(player.IsSprinting);
+            packet.Write(player.IsCrouching);
+            packet.Write(player.IsGrounded);
+            packet.Write(player.Jumped);
+            packet.Write(player.Grabbed);
         }
         return packet;
     }

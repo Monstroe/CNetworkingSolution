@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using UnityEditor.PackageManager;
-using UnityEngine;
 
 public class LobbyClientService : ClientService
 {
@@ -16,34 +13,31 @@ public class LobbyClientService : ClientService
         {
             case CommandType.LOBBY_TICK:
                 {
-                    int tick = packet.ReadInt();
-                    ClientManager.Instance.InitClientTick(tick);
+                    ulong tick = packet.ReadULong();
+                    ClientManager.Instance.SetClientTick(tick);
                     break;
                 }
             case CommandType.LOBBY_SETTINGS:
                 {
-                    LobbySettings settings = new LobbySettings()
-                    {
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-                        SteamCode = packet.ReadULong(),
-#endif
-                        MaxUsers = packet.ReadInt(),
-                        LobbyVisibility = (LobbyVisibility)packet.ReadByte(),
-                        LobbyName = packet.ReadString(),
-                    };
-
+                    LobbySettings settings = new LobbySettings().Deserialize(ref packet);
+                    ClientManager.Instance.UpdateCurrentLobby(settings, ClientManager.Instance.CurrentUser.IsHost, false);
                     ClientManager.Instance.CurrentLobby.LobbyData.Settings = settings;
                     break;
                 }
             case CommandType.LOBBY_USER_SETTINGS:
                 {
                     ulong userId = packet.ReadULong();
-                    UserData thisUser = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
-                    UserSettings userSettings = new UserSettings()
+                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
+                    UserSettings userSettings = new UserSettings().Deserialize(ref packet);
+
+                    if (userId == ClientManager.Instance.CurrentUser.UserId)
                     {
-                        UserName = packet.ReadString()
-                    };
-                    thisUser.Settings = userSettings;
+                        ClientManager.Instance.UpdateCurrentUser(userSettings, true, false);
+                    }
+                    else
+                    {
+                        user.Settings = userSettings;
+                    }
                     break;
                 }
             case CommandType.LOBBY_USERS_LIST:
@@ -52,42 +46,17 @@ public class LobbyClientService : ClientService
                     List<UserData> updatedUsers = new List<UserData>(userCount);
                     for (int i = 0; i < userCount; i++)
                     {
-                        UserData user = new UserData()
-                        {
-                            GlobalGuid = Guid.Parse(packet.ReadString()),
-                            UserId = packet.ReadULong(),
-                            PlayerId = packet.ReadByte(),
-                            Settings = new UserSettings()
-                            {
-                                UserName = packet.ReadString()
-                            }
-                        };
+                        UserData user = new UserData().Deserialize(ref packet);
                         updatedUsers.Add(user);
-                        Debug.Log($"User {user.PlayerId} added.");
                     }
 
-                    UserData localUser = updatedUsers[updatedUsers.Count - 1];
-                    ClientManager.Instance.CurrentUser.GlobalGuid = localUser.GlobalGuid;
-                    ClientManager.Instance.CurrentUser.UserId = localUser.UserId;
-                    ClientManager.Instance.CurrentUser.PlayerId = localUser.PlayerId;
-
-                    Debug.Log($"Local user {localUser.PlayerId} added.");
-
+                    ClientManager.Instance.SetCurrentUserData(updatedUsers[updatedUsers.Count - 1]); // Set the local user data
                     ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.AddRange(updatedUsers);
                     break;
                 }
             case CommandType.LOBBY_USER_JOINED:
                 {
-                    UserData user = new UserData()
-                    {
-                        GlobalGuid = Guid.Parse(packet.ReadString()),
-                        UserId = packet.ReadULong(),
-                        PlayerId = packet.ReadByte(),
-                        Settings = new UserSettings()
-                        {
-                            UserName = packet.ReadString()
-                        }
-                    };
+                    UserData user = new UserData().Deserialize(ref packet);
                     ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Add(user);
                     break;
                 }

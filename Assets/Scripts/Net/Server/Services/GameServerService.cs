@@ -8,6 +8,13 @@ public class GameServerService : ServerService
         {
             case CommandType.GAME_USER_JOINED:
                 {
+                    byte playerId = packet.ReadByte();
+                    if (playerId != user.PlayerId)
+                    {
+                        Debug.LogWarning($"Player {user.PlayerId} tried to set join game for player {playerId}, but each individual player is responsible for joining the game.");
+                        return;
+                    }
+
                     lobby.UserJoinedGame(user);
                     break;
                 }

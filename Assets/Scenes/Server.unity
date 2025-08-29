@@ -230,6 +230,13 @@ MonoBehaviour:
   gameSceneName: Game
   menuSceneName: Menu
   serverSceneName: Server
+  defaultLobbyId: 0
+  defaultLobbySettings:
+    maxUsers: 256
+    lobbyVisibility: 0
+    lobbyName: Default Lobby
+  defaultUserSettings:
+    userName: Default User
 --- !u!4 &1420946861
 Transform:
   m_ObjectHideFlags: 0

@@ -54,7 +54,7 @@ public class GameManager : MonoBehaviour
         if (initLoopCanEnd)
         {
             initLoopCanEnd = false;
-            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.GameUserJoined(), TransportMethod.Reliable);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.GameUserJoined(ClientManager.Instance.CurrentUser), TransportMethod.Reliable);
             StartCoroutine(StartGame());
         }
     }

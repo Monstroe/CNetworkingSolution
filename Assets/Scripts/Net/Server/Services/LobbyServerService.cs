@@ -6,37 +6,47 @@ public class LobbyServerService : ServerService
     {
         switch (commandType)
         {
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
             case CommandType.LOBBY_SETTINGS:
                 {
-                    LobbySettings lobbySettings = new LobbySettings()
+                    if (!user.IsHost)
                     {
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-                        SteamCode = packet.ReadULong(),
-#endif
-                        MaxUsers = packet.ReadInt(),
-                        LobbyVisibility = (LobbyVisibility)packet.ReadByte(),
-                        LobbyName = packet.ReadString()
-                    };
+                        Debug.LogWarning($"User {user.UserId} tried to set lobby settings, but only the host can change lobby settings.");
+                        return;
+                    }
+
+                    LobbySettings lobbySettings = new LobbySettings().Deserialize(ref packet);
                     lobby.LobbyData.Settings = lobbySettings;
-                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable, user);
+                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
+                    break;
+                }
+#endif
+            // TEMP: REMOVE THIS LATER
+            case CommandType.LOBBY_SETTINGS:
+                {
+                    if (!user.IsHost)
+                    {
+                        Debug.LogWarning($"User {user.UserId} tried to set lobby settings, but only the host can change lobby settings.");
+                        return;
+                    }
+
+                    LobbySettings lobbySettings = new LobbySettings().Deserialize(ref packet);
+                    lobby.LobbyData.Settings = lobbySettings;
+                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
                     break;
                 }
             case CommandType.LOBBY_USER_SETTINGS:
                 {
                     ulong userId = packet.ReadULong();
-                    UserData thisUser = lobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
-                    if (thisUser != user)
+                    if (userId != user.UserId)
                     {
-                        Debug.LogWarning($"User {user.UserId} tried to set settings for user {thisUser.UserId}, but only the user themselves can set their own settings.");
+                        Debug.LogWarning($"User {user.UserId} tried to set settings for user {userId}, but only the user themselves can set their own settings.");
                         return;
                     }
 
-                    UserSettings userSettings = new UserSettings()
-                    {
-                        UserName = packet.ReadString()
-                    };
+                    UserSettings userSettings = new UserSettings().Deserialize(ref packet);
                     user.Settings = userSettings;
-                    lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable, user);
+                    lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable);
                     break;
                 }
         }
@@ -53,7 +63,6 @@ public class LobbyServerService : ServerService
         lobby.SendToUser(user, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
         lobby.SendToUser(user, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
         lobby.SendToLobby(PacketBuilder.LobbyUserJoined(user), TransportMethod.Reliable, user);
-        Debug.Log($"User {user.UserId} ({user.PlayerId}) joined lobby {lobby.LobbyData.LobbyId}");
     }
 
     public override void UserJoinedGame(ServerLobby lobby, UserData user)

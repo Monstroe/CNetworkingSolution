@@ -119,7 +119,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
 
         SteamFriends.SetRichPresence("connect", lobbyId.ToString());
         lobbySettings.SteamCode = lobbyId;
-        ClientManager.Instance.UpdateLobby(lobbySettings);
+        ClientManager.Instance.UpdateCurrentLobby(lobbySettings);
 
         StartServer();
     }

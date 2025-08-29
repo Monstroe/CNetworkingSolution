@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class LobbyData
 {
@@ -10,14 +11,45 @@ public class LobbyData
     public LobbySettings Settings { get; set; } = new LobbySettings();
 }
 
-public class LobbySettings
+[Serializable]
+public class LobbySettings : INetSerializable<LobbySettings>
 {
 #if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-    public ulong SteamCode { get; set; }
+    public ulong SteamCode { get => steamCode; set => steamCode = value; }
 #endif
-    public int MaxUsers { get; set; }
-    public LobbyVisibility LobbyVisibility { get; set; }
-    public string LobbyName { get; set; }
+    public int MaxUsers { get => maxUsers; set => maxUsers = value; }
+    public LobbyVisibility LobbyVisibility { get => lobbyVisibility; set => lobbyVisibility = value; }
+    public string LobbyName { get => lobbyName; set => lobbyName = value; }
+
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+    [SerializeField] private ulong steamCode;
+#endif
+    [SerializeField] private int maxUsers;
+    [SerializeField] private LobbyVisibility lobbyVisibility;
+    [SerializeField] private string lobbyName;
+
+    public LobbySettings Deserialize(ref NetPacket packet)
+    {
+        return new LobbySettings()
+        {
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+            SteamCode = packet.ReadULong(),
+#endif
+            MaxUsers = packet.ReadInt(),
+            LobbyVisibility = (LobbyVisibility)packet.ReadByte(),
+            LobbyName = packet.ReadString(),
+        };
+    }
+
+    public void Serialize(ref NetPacket packet)
+    {
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+        packet.Write(SteamCode);
+#endif
+        packet.Write(MaxUsers);
+        packet.Write((byte)LobbyVisibility);
+        packet.Write(LobbyName);
+    }
 }
 
 public enum LobbyVisibility

@@ -98,15 +98,23 @@ public class OtherPlayer : ClientObject
         transform.forward = Vector3.Lerp(transform.forward, Vector3.ProjectOnPlane(forward, Vector3.up), lerpSpeed * Time.deltaTime);
     }
 
-    public void Register(UserData otherUser, Vector3? initialPosition, Quaternion? initialRotation, Vector3? initialForward)
+    public void Register(UserData otherUser, Vector3? initialPosition, Quaternion? initialRotation, Vector3? initialForward, bool? walking, bool? sprinting, bool? crouching, bool? grounded, bool? jumped, bool? grabbed)
     {
         OtherUser = otherUser;
         position = initialPosition ?? transform.position;
         rotation = initialRotation ?? transform.rotation;
         forward = initialForward ?? transform.forward;
+
+        IsWalking = walking ?? false;
+        IsSprinting = sprinting ?? false;
+        IsCrouching = crouching ?? false;
+        IsGrounded = grounded ?? false;
+        Jumped = jumped ?? false;
+        Grabbed = grabbed ?? false;
+
         transform.position = position;
-        transform.rotation = rotation;
-        transform.forward = forward;
+        //transform.rotation = rotation;
+        transform.forward = Vector3.ProjectOnPlane(forward, Vector3.up);
     }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)

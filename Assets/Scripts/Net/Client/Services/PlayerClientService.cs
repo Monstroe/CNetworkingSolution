@@ -35,8 +35,16 @@ public class PlayerClientService : ClientService
                     for (int i = 0; i < playerCount; i++)
                     {
                         byte playerId = packet.ReadByte();
-                        Debug.Log($"Spawning player with Id {playerId} from players list");
-                        SpawnPlayer(playerId);
+                        Vector3 position = packet.ReadVector3();
+                        Quaternion rotation = packet.ReadQuaternion();
+                        Vector3 forward = packet.ReadVector3();
+                        bool walking = packet.ReadBool();
+                        bool sprinting = packet.ReadBool();
+                        bool crouching = packet.ReadBool();
+                        bool grounded = packet.ReadBool();
+                        bool jumped = packet.ReadBool();
+                        bool grabbed = packet.ReadBool();
+                        SpawnPlayer(playerId, position, rotation, forward, walking, sprinting, crouching, grounded, jumped, grabbed);
                     }
 
                     break;
@@ -44,14 +52,14 @@ public class PlayerClientService : ClientService
         }
     }
 
-    private void SpawnPlayer(byte playerId, Vector3? position = null, Quaternion? rotation = null, Vector3? forward = null)
+    private void SpawnPlayer(byte playerId, Vector3? position = null, Quaternion? rotation = null, Vector3? forward = null, bool? walking = null, bool? sprinting = null, bool? crouching = null, bool? grounded = null, bool? jumped = null, bool? grabbed = null)
     {
         UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
         if (!ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.ContainsKey(user) || !ClientManager.Instance.CurrentLobby.GameData.ClientObjects.ContainsKey(user.PlayerId))
         {
             OtherPlayer op = Instantiate(Resources.Load<GameObject>("Prefabs/OtherPlayer")).GetComponent<OtherPlayer>();
             op.Init(user.PlayerId);
-            op.Register(user, position, rotation, forward);
+            op.Register(user, position, rotation, forward, walking, sprinting, crouching, grounded, jumped, grabbed);
             ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.Add(user, op);
             ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Add(op.Id, op);
         }

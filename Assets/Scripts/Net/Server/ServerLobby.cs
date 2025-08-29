@@ -42,24 +42,12 @@ public class ServerLobby : MonoBehaviour
 
     public void SendToLobby(NetPacket packet, TransportMethod method, UserData exception = null)
     {
-        Dictionary<NetTransport, List<uint>> userDict = new Dictionary<NetTransport, List<uint>>();
-        foreach (var user in LobbyData.LobbyUsers)
-        {
-            if (user != exception)
-            {
-                var (userId, transportIndex) = ServerManager.Instance.GetUserIdAndTransportIndex(user);
-                if (!userDict.ContainsKey(transports[transportIndex]))
-                {
-                    userDict[transports[transportIndex]] = new List<uint>();
-                }
-                userDict[transports[transportIndex]].Add(userId);
-            }
-        }
+        SendToUsers(LobbyData.LobbyUsers.Where(u => u != exception).ToList(), packet, method);
+    }
 
-        foreach (var (transport, userIds) in userDict)
-        {
-            transport.SendToList(userIds, packet, method);
-        }
+    public void SendToGame(NetPacket packet, TransportMethod method, UserData exception = null)
+    {
+        SendToUsers(LobbyData.LobbyUsers.Where(u => u.InGame && u != exception).ToList(), packet, method);
     }
 
     public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
@@ -114,6 +102,8 @@ public class ServerLobby : MonoBehaviour
 
     public void UserJoinedGame(UserData user)
     {
+        user.InGame = true;
+        SendToLobby(PacketBuilder.GameUserJoined(user), TransportMethod.Reliable);
         foreach (var service in services.Values)
         {
             service.UserJoinedGame(this, user);

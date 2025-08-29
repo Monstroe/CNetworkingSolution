@@ -9,6 +9,13 @@ using UnityEngine.Networking;
 
 public class ServerManager : MonoBehaviour
 {
+    public static ServerManager Instance { get; private set; }
+
+    public ulong ServerTick { get; private set; } = 0;
+    public ServerData ServerData { get; private set; } = new ServerData();
+
+    [SerializeField] private List<NetTransport> transports;
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
     public delegate void PublicIpAddressFetchedHandler(string ipAddress);
     public event PublicIpAddressFetchedHandler OnPublicIpAddressFetched;
@@ -17,16 +24,7 @@ public class ServerManager : MonoBehaviour
     {
         public string Ip { get; set; }
     }
-#endif
 
-    public static ServerManager Instance { get; private set; }
-
-    public int ServerTick { get; private set; }
-    public ServerData ServerData { get; private set; } = new ServerData();
-
-    [SerializeField] private List<NetTransport> transports;
-
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
     [Header("Multi-Lobby Settings")]
     [SerializeField] private string publicIpApiUrl = "https://api.ipify.org/?format=json";
     [SerializeField] private string dbConnectionString = "localhost:6379";
@@ -36,11 +34,6 @@ public class ServerManager : MonoBehaviour
     [SerializeField] private int tokenValidityDurationMinutes = 2;
     private ServerDatabaseHandler db;
     private ServerTokenVerifier tokenVerifier;
-#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
-    [Header("Single-Lobby Settings")]
-    [SerializeField] private int lobbyId = 0;
-    [SerializeField] private int maxUsers = 256;
-    [SerializeField] private string lobbyName = "Default Lobby";
 #endif
 
     void Awake()
@@ -160,13 +153,12 @@ public class ServerManager : MonoBehaviour
 
     private async void HandleNetworkReceived(NetTransport transport, ReceivedArgs args)
     {
+        if (ServerData.ConnectedUsers.TryGetValue(args.RemoteId, out UserData remoteUser))
+        {
 #if !UNITY_EDITOR
-        try
-        {
+            try
+            {
 #endif
-        if (ServerData.ConnectedUsers.ContainsKey(args.RemoteId))
-        {
-            UserData remoteUser = ServerData.ConnectedUsers[args.RemoteId];
             if (remoteUser.InLobby && ServerData.ActiveLobbies.ContainsKey(remoteUser.LobbyId))
             {
                 ServerLobby lobby = ServerData.ActiveLobbies[remoteUser.LobbyId];
@@ -181,44 +173,16 @@ public class ServerManager : MonoBehaviour
                 {
                     ConnectionData connectionData;
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-                        connectionData = tokenVerifier.VerifyToken(packet.ReadString());
-#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
-                    connectionData = new ConnectionData
-                    {
-                        LobbyId = lobbyId,
-                        UserGuid = Guid.Parse(packet.ReadString()),
-                        UserSettings = new UserSettings
-                        {
-                            UserName = packet.ReadString()
-                        },
-                        LobbySettings = new LobbySettings
-                        {
-                            MaxUsers = maxUsers,
-                            LobbyVisibility = LobbyVisibility.PUBLIC,
-                            LobbyName = lobbyName
-                        }
-                    };
-#elif CNS_HOST_AUTH
-                        connectionData = new ConnectionData
-                        {
-                            LobbyId = packet.ReadInt(),
-                            UserGuid = Guid.Parse(packet.ReadString()),
-                            UserSettings = new UserSettings
-                            {
-                                UserName = packet.ReadString()
-                            },
-                            LobbySettings = new LobbySettings
-                            {
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-                                SteamCode = packet.ReadULong(),
-#endif
-                                MaxUsers = packet.ReadByte(),
-                                LobbyVisibility = Enum.Parse<LobbyVisibility>(packet.ReadString()),
-                                LobbyName = packet.ReadString()
-                            }
-                        };
+                    connectionData = tokenVerifier.VerifyToken(packet.ReadString());
+#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH || CNS_HOST_AUTH
+                    connectionData = new ConnectionData().Deserialize(ref packet);
 #else
-                        connectionData = null;
+                    connectionData = null;
+#endif
+
+#if CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
+                    connectionData.LobbyId = GameResources.Instance.DefaultLobbyId;
+                    connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
 #endif
                     if (connectionData != null)
                     {
@@ -258,20 +222,20 @@ public class ServerManager : MonoBehaviour
                     KickUser(remoteUser);
                 }
             }
+#if !UNITY_EDITOR
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {args.RemoteId}: {ex.Message}");
+                KickUser(remoteUser);
+            }
+#endif
         }
         else
         {
             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received data from unknown user ID {args.RemoteId}.");
             KickUser(new UserData { UserId = args.RemoteId });
         }
-#if !UNITY_EDITOR
-        }
-
-        catch (Exception ex)
-        {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {args.RemoteId}: {ex.Message}");
-        }
-#endif
     }
 
     void FixedUpdate()
@@ -391,14 +355,6 @@ public class ServerManager : MonoBehaviour
         lobby.UserJoined(user);
     }
 
-    public void RegisterTransport(NetTransport transport)
-    {
-        transports.Add(transport);
-        transport.OnNetworkConnected += HandleNetworkConnected;
-        transport.OnNetworkDisconnected += HandleNetworkDisconnected;
-        transport.OnNetworkReceived += HandleNetworkReceived;
-    }
-
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     private async Task RemoveUserFromLobby(UserData user, ServerLobby lobby)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -407,6 +363,14 @@ public class ServerManager : MonoBehaviour
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
         await db.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
 #endif
+    }
+
+    public void RegisterTransport(NetTransport transport)
+    {
+        transports.Add(transport);
+        transport.OnNetworkConnected += HandleNetworkConnected;
+        transport.OnNetworkDisconnected += HandleNetworkDisconnected;
+        transport.OnNetworkReceived += HandleNetworkReceived;
     }
 
     public (uint, int) GetUserIdAndTransportIndex(UserData user)
