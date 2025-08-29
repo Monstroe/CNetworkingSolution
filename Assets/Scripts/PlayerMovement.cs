@@ -221,7 +221,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (updateAnimationState)
         {
-            ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Player.Instance.PlayerInteract.Grabbed), TransportMethod.Reliable);
+            ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Player.Instance.PlayerInteract.Grabbed)), TransportMethod.Reliable);
             updateAnimationState = false;
         }
     }

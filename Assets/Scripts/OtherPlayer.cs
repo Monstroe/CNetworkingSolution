@@ -94,7 +94,7 @@ public class OtherPlayer : ClientObject
     void Update()
     {
         transform.position = Vector3.Lerp(transform.position, position, lerpSpeed * Time.deltaTime);
-        transform.rotation = Quaternion.Lerp(transform.rotation, rotation, lerpSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(Vector3.ProjectOnPlane(rotation.eulerAngles, Vector3.up)), lerpSpeed * Time.deltaTime);
         transform.forward = Vector3.Lerp(transform.forward, forward, lerpSpeed * Time.deltaTime);
     }
 
@@ -122,7 +122,6 @@ public class OtherPlayer : ClientObject
                 }
             case CommandType.PLAYER_ANIM:
                 {
-                    Debug.Log($"OtherPlayer {OtherUser.PlayerId} received PLAYER_ANIM update.");
                     IsWalking = packet.ReadBool();
                     IsSprinting = packet.ReadBool();
                     IsCrouching = packet.ReadBool();
