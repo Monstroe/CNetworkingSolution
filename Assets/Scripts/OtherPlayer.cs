@@ -94,8 +94,8 @@ public class OtherPlayer : ClientObject
     void Update()
     {
         transform.position = Vector3.Lerp(transform.position, position, lerpSpeed * Time.deltaTime);
-        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(Vector3.ProjectOnPlane(rotation.eulerAngles, Vector3.up)), lerpSpeed * Time.deltaTime);
-        //transform.forward = Vector3.Lerp(transform.forward, forward, lerpSpeed * Time.deltaTime);
+        //transform.rotation = Quaternion.Lerp(transform.rotation, rotation, lerpSpeed * Time.deltaTime);
+        transform.forward = Vector3.Lerp(transform.forward, Vector3.ProjectOnPlane(forward, Vector3.up), lerpSpeed * Time.deltaTime);
     }
 
     public void Register(UserData otherUser, Vector3? initialPosition, Quaternion? initialRotation, Vector3? initialForward)
