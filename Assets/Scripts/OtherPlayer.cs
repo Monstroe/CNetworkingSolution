@@ -122,6 +122,7 @@ public class OtherPlayer : ClientObject
                 }
             case CommandType.PLAYER_ANIM:
                 {
+                    Debug.Log($"OtherPlayer {OtherUser.PlayerId} received PLAYER_ANIM update.");
                     IsWalking = packet.ReadBool();
                     IsSprinting = packet.ReadBool();
                     IsCrouching = packet.ReadBool();
