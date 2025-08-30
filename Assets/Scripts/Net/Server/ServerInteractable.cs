@@ -26,7 +26,7 @@ public class ServerInteractable : ServerObject
                         player.CurrentInteractable = this;
                         InteractingObject = player;
                         Grab(lobby, user, packet, transportMethod);
-                        lobby.SendToLobby(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerGrab(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
+                        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerGrab(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
                     }
                     break;
                 }
@@ -38,7 +38,7 @@ public class ServerInteractable : ServerObject
                         Drop(lobby, user, packet, transportMethod);
                         player.CurrentInteractable = null;
                         InteractingObject = null;
-                        lobby.SendToLobby(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerDrop(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
+                        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerDrop(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
                     }
                     break;
                 }
@@ -48,7 +48,7 @@ public class ServerInteractable : ServerObject
                     if (player != null && player.CurrentInteractable == this && InteractingObject == player)
                     {
                         Interact(lobby, user, packet, transportMethod);
-                        lobby.SendToLobby(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerInteract(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
+                        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerInteract(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
                     }
                     break;
                 }

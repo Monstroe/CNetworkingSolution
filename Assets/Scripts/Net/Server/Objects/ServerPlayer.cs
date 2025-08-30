@@ -48,7 +48,7 @@ public class ServerPlayer : ServerObject
                     IsGrounded = packet.ReadBool();
                     Jumped = packet.ReadBool();
                     Grabbed = packet.ReadBool();
-                    lobby.SendToLobby(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed)), transportMethod ?? TransportMethod.Reliable, User);
+                    lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed)), transportMethod ?? TransportMethod.Reliable, User);
                     break;
                 }
         }
@@ -56,6 +56,6 @@ public class ServerPlayer : ServerObject
 
     public override void Tick(ServerLobby lobby)
     {
-        lobby.SendToLobby(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerState(Position, Rotation, Forward)), TransportMethod.Unreliable, User);
+        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerState(Position, Rotation, Forward)), TransportMethod.Unreliable, User);
     }
 }

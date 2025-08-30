@@ -13,7 +13,7 @@ public class ChatServerService : ServerService
                     if (thisUser != null && thisUser.PlayerId == user.PlayerId)
                     {
                         string message = packet.ReadString();
-                        lobby.SendToLobby(PacketBuilder.ChatMessage(thisUser, message), TransportMethod.Reliable);
+                        lobby.SendToGame(PacketBuilder.ChatMessage(thisUser, message), TransportMethod.Reliable);
                     }
                     break;
                 }
@@ -32,11 +32,11 @@ public class ChatServerService : ServerService
 
     public override void UserJoinedGame(ServerLobby lobby, UserData user)
     {
-        lobby.SendToLobby(PacketBuilder.ChatUserJoined(user), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.ChatUserJoined(user), TransportMethod.Reliable);
     }
 
     public override void UserLeft(ServerLobby lobby, UserData user)
     {
-        lobby.SendToLobby(PacketBuilder.ChatUserLeft(user), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.ChatUserLeft(user), TransportMethod.Reliable);
     }
 }

@@ -35,7 +35,7 @@ public class PlayerServerService : ServerService
         player.Forward = forward;
         lobby.GameData.ServerPlayers.Add(user, player);
         lobby.GameData.ServerObjects.Add(player.Id, player);
-        lobby.SendToLobby(PacketBuilder.PlayerSpawn(user, position, rotation, forward), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.PlayerSpawn(user, position, rotation, forward), TransportMethod.Reliable);
     }
 
     public override void UserLeft(ServerLobby lobby, UserData user)
@@ -44,7 +44,7 @@ public class PlayerServerService : ServerService
         {
             lobby.GameData.ServerPlayers.Remove(user);
             lobby.GameData.ServerObjects.Remove(player.Id);
-            lobby.SendToLobby(PacketBuilder.ObjectCommunication(player, PacketBuilder.PlayerDestroy()), TransportMethod.Reliable, user);
+            lobby.SendToGame(PacketBuilder.ObjectCommunication(player, PacketBuilder.PlayerDestroy()), TransportMethod.Reliable, user);
         }
     }
 }

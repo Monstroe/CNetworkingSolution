@@ -7,11 +7,11 @@ public class FXServerService : ServerService
         switch (commandType)
         {
             case CommandType.SFX:
-                lobby.SendToLobby(packet, transportMethod ?? TransportMethod.Reliable, user);
+                lobby.SendToGame(packet, transportMethod ?? TransportMethod.Reliable, user);
                 break;
 
             case CommandType.VFX:
-                lobby.SendToLobby(packet, transportMethod ?? TransportMethod.Reliable, user);
+                lobby.SendToGame(packet, transportMethod ?? TransportMethod.Reliable, user);
                 break;
         }
     }
