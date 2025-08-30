@@ -36,6 +36,16 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         SceneManager.sceneLoaded += SceneLoaded;
+
+        ClientManager.Instance.OnCurrentUserUpdated += (userSettings) =>
+        {
+            Debug.Log($"Current user updated: UserName: {userSettings.UserName}");
+        };
+
+        ClientManager.Instance.OnCurrentLobbyUpdated += (lobbySettings) =>
+        {
+            Debug.Log($"Current lobby updated: MaxUsers: {lobbySettings.MaxUsers}, LobbyVisibility: {lobbySettings.LobbyVisibility}, LobbyName: {lobbySettings.LobbyName}");
+        };
     }
 
     // Update is called once per frame
@@ -71,6 +81,11 @@ public class GameManager : MonoBehaviour
     private IEnumerator InitGame()
     {
         yield return new WaitForSeconds(pregameLoadDuration);
+
+        // NOTE: These two calls aren't necessary, I'm just showcasing features here
+        ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
+        ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MyLobby", LobbyVisibility = LobbyVisibility.PUBLIC, MaxUsers = 8 });
+
         FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
             LoadGame();

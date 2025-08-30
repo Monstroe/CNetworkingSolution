@@ -9,15 +9,7 @@ public class Menu : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        ClientManager.Instance.OnCurrentUserUpdated += (userSettings) =>
-        {
-            Debug.Log($"Current user updated: UserName: {userSettings.UserName}");
-        };
 
-        ClientManager.Instance.OnCurrentLobbyUpdated += (lobbySettings) =>
-        {
-            Debug.Log($"Current lobby updated: MaxUsers: {lobbySettings.MaxUsers}, LobbyVisibility: {lobbySettings.LobbyVisibility}, LobbyName: {lobbySettings.LobbyName}");
-        };
     }
 
     // Update is called once per frame
@@ -36,8 +28,6 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
             Debug.Log($"Successfully connected to lobby {lobbyId}.");
-            ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
-            ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "SinglePlayer", LobbyVisibility = LobbyVisibility.PRIVATE, MaxUsers = 1 });
 
             FadeScreen.Instance.Display(true, fadeDuration, () =>
             {
@@ -57,8 +47,6 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
             Debug.Log($"Successfully connected to lobby {lobbyId}.");
-            ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
-            ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MultiPlayer", LobbyVisibility = LobbyVisibility.PUBLIC, MaxUsers = 8 });
 
             FadeScreen.Instance.Display(true, fadeDuration, () =>
             {
