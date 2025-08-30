@@ -84,12 +84,6 @@ public class OtherPlayer : ClientObject
     private bool jumpingState = false;
     private bool grabbingState = false;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        anim = GetComponentInChildren<Animator>();
-    }
-
     // Update is called once per frame
     void Update()
     {
@@ -100,6 +94,8 @@ public class OtherPlayer : ClientObject
 
     public void Register(UserData otherUser, Vector3? initialPosition, Quaternion? initialRotation, Vector3? initialForward, bool? walking, bool? sprinting, bool? crouching, bool? grounded, bool? jumped, bool? grabbed)
     {
+        anim = GetComponentInChildren<Animator>();
+
         OtherUser = otherUser;
         position = initialPosition ?? transform.position;
         rotation = initialRotation ?? transform.rotation;

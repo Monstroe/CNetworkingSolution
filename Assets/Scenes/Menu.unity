@@ -199,7 +199,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   port: 7777
-  address: 127.0.0.1
+  address: 192.168.1.129
   connectionKey: Bruh-Wizz-Arcgis
   pingInterval: 1
   disconnectTimeout: 5
