@@ -21,16 +21,14 @@ public class ChatClientService : ClientService
                 }
             case CommandType.CHAT_USER_JOINED:
                 {
-                    byte playerId = packet.ReadByte();
-                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                    Chat.Instance.AddUserJoinedMessage(user);
+                    string userName = packet.ReadString();
+                    Chat.Instance.AddUserJoinedMessage(userName);
                     break;
                 }
             case CommandType.CHAT_USER_LEFT:
                 {
-                    byte playerId = packet.ReadByte();
-                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                    Chat.Instance.AddUserLeftMessage(user);
+                    string userName = packet.ReadString();
+                    Chat.Instance.AddUserLeftMessage(userName);
                     break;
                 }
         }

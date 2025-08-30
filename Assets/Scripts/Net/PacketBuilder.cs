@@ -294,7 +294,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.CHAT);
         packet.Write((byte)CommandType.CHAT_USER_JOINED);
-        packet.Write(user.PlayerId);
+        packet.Write(user.Settings.UserName);
         return packet;
     }
 
@@ -303,7 +303,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.CHAT);
         packet.Write((byte)CommandType.CHAT_USER_LEFT);
-        packet.Write(user.PlayerId);
+        packet.Write(user.Settings.UserName);
         return packet;
     }
 }
