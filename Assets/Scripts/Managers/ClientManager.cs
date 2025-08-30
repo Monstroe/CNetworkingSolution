@@ -254,7 +254,7 @@ public class ClientManager : MonoBehaviour
         }
 
 #if CNS_HOST_AUTH
-        StartCoroutine(UpdateUserCoroutine(userSettings, invokeEvent));
+        StartCoroutine(UpdateUserCoroutine(userSettings, !IsConnected && invokeEvent));
 #endif
     }
 
@@ -390,7 +390,7 @@ public class ClientManager : MonoBehaviour
         }
 
 #if CNS_HOST_AUTH
-        StartCoroutine(UpdateLobbyCoroutine(lobbySettings, invokeEvent));
+        StartCoroutine(UpdateLobbyCoroutine(lobbySettings, !IsConnected && invokeEvent));
 #endif
     }
 
