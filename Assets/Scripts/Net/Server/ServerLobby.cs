@@ -112,7 +112,6 @@ public class ServerLobby : MonoBehaviour
 
     public void UserLeft(UserData user)
     {
-        Debug.Log($"User {user.PlayerId} left the lobby.");
         foreach (var service in services.Values)
         {
             service.UserLeft(this, user);
