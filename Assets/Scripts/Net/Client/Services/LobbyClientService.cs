@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public class LobbyClientService : ClientService
 {
@@ -22,6 +23,7 @@ public class LobbyClientService : ClientService
                     LobbySettings settings = new LobbySettings().Deserialize(ref packet);
                     ClientManager.Instance.UpdateCurrentLobby(settings, ClientManager.Instance.CurrentUser.IsHost, false);
                     ClientManager.Instance.CurrentLobby.LobbyData.Settings = settings;
+                    Debug.Log($"Lobby settings updated: MaxUsers: {settings.MaxUsers}, LobbyVisibility: {settings.LobbyVisibility}, LobbyName: {settings.LobbyName}");
                     break;
                 }
             case CommandType.LOBBY_USER_SETTINGS:
@@ -36,6 +38,7 @@ public class LobbyClientService : ClientService
                     }
                     else
                     {
+                        Debug.Log($"Updating settings for remote user {userId}: UserName: {userSettings.UserName}");
                         user.Settings = userSettings;
                     }
                     break;

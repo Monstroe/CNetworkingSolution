@@ -39,12 +39,12 @@ public class GameManager : MonoBehaviour
 
         ClientManager.Instance.OnCurrentUserUpdated += (userSettings) =>
         {
-            Debug.Log($"Current user updated: UserName: {userSettings.UserName}");
+            Debug.Log($"Updating settings for local user: UserName: {userSettings.UserName}");
         };
 
         ClientManager.Instance.OnCurrentLobbyUpdated += (lobbySettings) =>
         {
-            Debug.Log($"Current lobby updated: MaxUsers: {lobbySettings.MaxUsers}, LobbyVisibility: {lobbySettings.LobbyVisibility}, LobbyName: {lobbySettings.LobbyName}");
+            Debug.Log($"Successfully updated lobby settings");
         };
     }
 
