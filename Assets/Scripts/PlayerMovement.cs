@@ -198,7 +198,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Networking
-        ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerState(transform.position, transform.rotation, cameraTransform.forward)), TransportMethod.Unreliable);
+        ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerTransform(transform.position, transform.rotation, cameraTransform.forward)), TransportMethod.Unreliable);
     }
 
     void Rotate()

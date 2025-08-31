@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class OtherPlayer : ClientObject
 {
-    public UserData OtherUser { get; private set; }
+    public UserData OtherUser { get; set; }
     public bool IsGrounded
     {
         get { return groundedState; }
@@ -74,6 +74,8 @@ public class OtherPlayer : ClientObject
     private Quaternion rotation;
     private Vector3 forward;
 
+    private bool firstTransformReceived = false;
+
     // Animations
     private Animator anim;
     private bool groundedState = false;
@@ -91,36 +93,29 @@ public class OtherPlayer : ClientObject
         transform.forward = Vector3.Lerp(transform.forward, Vector3.ProjectOnPlane(forward, Vector3.up), lerpSpeed * Time.deltaTime);
     }
 
-    public void Register(UserData otherUser, Vector3? initialPosition, Quaternion? initialRotation, Vector3? initialForward, bool? walking, bool? sprinting, bool? crouching, bool? grounded, bool? jumped, bool? grabbed)
+    public override void Init(ushort id)
     {
+        base.Init(id);
         anim = GetComponentInChildren<Animator>();
-
-        OtherUser = otherUser;
-        position = initialPosition ?? transform.position;
-        rotation = initialRotation ?? transform.rotation;
-        forward = initialForward ?? transform.forward;
-
-        IsWalking = walking ?? false;
-        IsSprinting = sprinting ?? false;
-        IsCrouching = crouching ?? false;
-        IsGrounded = grounded ?? false;
-        Jumped = jumped ?? false;
-        Grabbed = grabbed ?? false;
-
-        transform.position = position;
-        //transform.rotation = rotation;
-        transform.forward = Vector3.ProjectOnPlane(forward, Vector3.up);
     }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
-            case CommandType.PLAYER_STATE:
+            case CommandType.PLAYER_TRANSFORM:
                 {
                     position = packet.ReadVector3();
                     rotation = packet.ReadQuaternion();
                     forward = packet.ReadVector3();
+
+                    if (!firstTransformReceived)
+                    {
+                        firstTransformReceived = true;
+                        transform.position = position;
+                        //transform.rotation = rotation;
+                        transform.forward = Vector3.ProjectOnPlane(forward, Vector3.up);
+                    }
                     break;
                 }
             case CommandType.PLAYER_ANIM:

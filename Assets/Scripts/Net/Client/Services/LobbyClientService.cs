@@ -21,7 +21,7 @@ public class LobbyClientService : ClientService
             case CommandType.LOBBY_SETTINGS:
                 {
                     LobbySettings settings = new LobbySettings().Deserialize(ref packet);
-                    ClientManager.Instance.UpdateCurrentLobby(settings, ClientManager.Instance.CurrentUser.IsHost, false);
+                    ClientManager.Instance.UpdateCurrentLobby(settings, ClientManager.Instance.CurrentUser.IsHost(ClientManager.Instance.CurrentLobby.LobbyData), false);
                     ClientManager.Instance.CurrentLobby.LobbyData.Settings = settings;
                     Debug.Log($"Lobby settings changed: MaxUsers: {settings.MaxUsers}, LobbyVisibility: {settings.LobbyVisibility}, LobbyName: {settings.LobbyName}");
                     break;

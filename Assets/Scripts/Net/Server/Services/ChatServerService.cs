@@ -25,18 +25,18 @@ public class ChatServerService : ServerService
         // Nothing
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData user)
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
     {
-
+        //Nothing
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData user)
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
     {
-        lobby.SendToGame(PacketBuilder.ChatUserJoined(user), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.ChatUserJoined(joinedUser), TransportMethod.Reliable);
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData user)
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
-        lobby.SendToGame(PacketBuilder.ChatUserLeft(user), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.ChatUserLeft(leftUser), TransportMethod.Reliable);
     }
 }

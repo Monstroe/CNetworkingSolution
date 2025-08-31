@@ -19,11 +19,14 @@ public class ServerLobby : MonoBehaviour
         // Init Server Services (ADD NEW SERVICES HERE)
         services.Add(ServiceType.LOBBY, new GameObject("LobbyServerService").AddComponent<LobbyServerService>());
         services.Add(ServiceType.GAME, new GameObject("GameServerService").AddComponent<GameServerService>());
-        services.Add(ServiceType.OBJECT, new GameObject("ObjectServerService").AddComponent<ObjectServerService>());
         services.Add(ServiceType.PLAYER, new GameObject("PlayerServerService").AddComponent<PlayerServerService>());
         services.Add(ServiceType.FX, new GameObject("FXServerService").AddComponent<FXServerService>());
-        services.Add(ServiceType.MAP, new GameObject("MapServerService").AddComponent<MapServerService>());
+        services.Add(ServiceType.ITEM, new GameObject("ItemServerService").AddComponent<ItemServerService>());
         services.Add(ServiceType.CHAT, new GameObject("ChatServerService").AddComponent<ChatServerService>());
+        // The object server service is special because it handles all networked object communication
+        // Server services should run first, then server objects
+        // Therefore THIS SERVER SERVICE SHOULD ALWAYS BE ADDED LAST, DON'T ADD ANYTHING AFTER THIS
+        services.Add(ServiceType.OBJECT, new GameObject("ObjectServerService").AddComponent<ObjectServerService>());
 
         foreach (var service in services.Values)
         {

@@ -1,14 +1,12 @@
-using UnityEngine;
-
-public class ClientInteractable : ClientObject
+public abstract class ClientInteractable : ClientObject
 {
     public ClientObject InteractingObject { get; protected set; }
 
-    public virtual void Grab(NetPacket packet, TransportMethod? transportMethod) { Debug.Log("Object with Id " + InteractingObject.Id + " grabbed object"); }
+    public abstract void Grab(NetPacket packet, TransportMethod? transportMethod);
 
-    public virtual void Interact(NetPacket packet, TransportMethod? transportMethod) { Debug.Log("Object with Id " + InteractingObject.Id + " interacted with object"); }
+    public abstract void Interact(NetPacket packet, TransportMethod? transportMethod);
 
-    public virtual void Drop(NetPacket packet, TransportMethod? transportMethod) { Debug.Log("Object with Id " + InteractingObject.Id + " dropped object"); }
+    public abstract void Drop(NetPacket packet, TransportMethod? transportMethod);
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {

@@ -1,12 +1,11 @@
 
 using System;
 using UnityEngine;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 
 public enum ServiceType
 {
-    CONNECTION, LOBBY, GAME, OBJECT, PLAYER, FX, MAP, CHAT, NOTIFICATION
+    CONNECTION, LOBBY, GAME, PLAYER, FX, ITEM, CHAT, OBJECT
 }
 
 public enum CommandType
@@ -17,25 +16,16 @@ public enum CommandType
     LOBBY_SETTINGS, LOBBY_USER_SETTINGS, LOBBY_USERS_LIST, LOBBY_USER_JOINED, LOBBY_USER_LEFT, LOBBY_TICK,
     /* GAME */
     GAME_USER_JOINED,
-    /* OBJECT */
-    OBJECT_COMMUNICATION,
     /* PLAYER */
-    PLAYERS_LIST, PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_STATE, PLAYER_ANIM, PLAYER_GRAB, PLAYER_DROP, PLAYER_INTERACT,
+    PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_TRANSFORM, PLAYER_ANIM, PLAYER_GRAB, PLAYER_DROP, PLAYER_INTERACT,
     /* FX */
-    /* MAP */
-    MAP_OBJECTS_INIT,
     SFX, VFX,
+    /* ITEM */
+    STARTING_ITEMS_INIT, ITEM_SPAWN, ITEM_DESTROY,
     /* CHAT */
     CHAT_MESSAGE, CHAT_USER_JOINED, CHAT_USER_LEFT,
-    /* GAME */
-    CHECK_IN_STATES, START_GAME, TICK, CREATE_CAMERA,
-    /* NOTIFICATION */
-    MID_SCREEN_NOTIF,
-    /* EVENT */
-    /* CRITTER */
-    CRITTER_STATE, CRITTER_PICTURE, CRITTER_LIST, CRITTER_INTERACT, CRITTER_DESTROY, CRITTER_DROP,
-    /* ITEM */
-    REQUEST_ITEM_SPAWN, ITEM_STATE, ITEM_SPAWN, ITEM_INTERACT, ITEM_DESTROY, ITEM_DROP
+    /* OBJECT */
+    OBJECT_COMMUNICATION,
 }
 
 public static class PacketBuilder
@@ -140,47 +130,13 @@ public static class PacketBuilder
         return packet;
     }
 
-    /* OBJECT */
-    public static NetPacket ObjectCommunication(INetObject netObject, NetPacket packet)
-    {
-        packet.Insert(0, (byte)ServiceType.OBJECT);
-        packet.Insert(1, (byte)CommandType.OBJECT_COMMUNICATION);
-        packet.Insert(2, netObject.Id);
-        return packet;
-    }
-
     /* PLAYER */
-    public static NetPacket PlayersList(List<ServerPlayer> players)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.PLAYER);
-        packet.Write((byte)CommandType.PLAYERS_LIST);
-        packet.Write((byte)players.Count);
-        foreach (ServerPlayer player in players)
-        {
-            packet.Write((byte)player.Id);
-            packet.Write(player.Position);
-            packet.Write(player.Rotation);
-            packet.Write(player.Forward);
-            packet.Write(player.IsWalking);
-            packet.Write(player.IsSprinting);
-            packet.Write(player.IsCrouching);
-            packet.Write(player.IsGrounded);
-            packet.Write(player.Jumped);
-            packet.Write(player.Grabbed);
-        }
-        return packet;
-    }
-
-    public static NetPacket PlayerSpawn(UserData user, Vector3 position, Quaternion rotation, Vector3 forward)
+    public static NetPacket PlayerSpawn(UserData user)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYER_SPAWN);
         packet.Write(user.PlayerId);
-        packet.Write(position);
-        packet.Write(rotation);
-        packet.Write(forward);
         return packet;
     }
 
@@ -192,11 +148,11 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket PlayerState(Vector3 position, Quaternion rotation, Vector3 forward)
+    public static NetPacket PlayerTransform(Vector3 position, Quaternion rotation, Vector3 forward)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
-        packet.Write((byte)CommandType.PLAYER_STATE);
+        packet.Write((byte)CommandType.PLAYER_TRANSFORM);
         packet.Write(position);
         packet.Write(rotation);
         packet.Write(forward);
@@ -226,21 +182,21 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket PlayerInteract(byte objectId)
+    public static NetPacket PlayerInteract(byte playerId)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYER_INTERACT);
-        packet.Write(objectId);
+        packet.Write(playerId);
         return packet;
     }
 
-    public static NetPacket PlayerDrop(byte objectId)
+    public static NetPacket PlayerDrop(byte playerId)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYER_DROP);
-        packet.Write(objectId);
+        packet.Write(playerId);
         return packet;
     }
 
@@ -268,13 +224,31 @@ public static class PacketBuilder
         return packet;
     }
 
-    /* MAP */
-    public static NetPacket MapObjectsInit(ushort[] startingObjectIds)
+    /* ITEM */
+    public static NetPacket StartingItemsInit(ushort[] startingItemIds)
     {
         NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.MAP);
-        packet.Write((byte)CommandType.MAP_OBJECTS_INIT);
-        packet.Write(startingObjectIds);
+        packet.Write((byte)ServiceType.ITEM);
+        packet.Write((byte)CommandType.STARTING_ITEMS_INIT);
+        packet.Write(startingItemIds);
+        return packet;
+    }
+
+    public static NetPacket ItemSpawn(ushort itemId, ItemType itemType)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.ITEM);
+        packet.Write((byte)CommandType.ITEM_SPAWN);
+        packet.Write(itemId);
+        packet.Write((byte)itemType);
+        return packet;
+    }
+
+    public static NetPacket ItemDestroy()
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.ITEM);
+        packet.Write((byte)CommandType.ITEM_DESTROY);
         return packet;
     }
 
@@ -304,6 +278,15 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.CHAT);
         packet.Write((byte)CommandType.CHAT_USER_LEFT);
         packet.Write(user.Settings.UserName);
+        return packet;
+    }
+
+    /* OBJECT */
+    public static NetPacket ObjectCommunication(INetObject netObject, NetPacket packet)
+    {
+        packet.Insert(0, (byte)ServiceType.OBJECT);
+        packet.Insert(1, (byte)CommandType.OBJECT_COMMUNICATION);
+        packet.Insert(2, netObject.Id);
         return packet;
     }
 }

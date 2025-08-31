@@ -21,17 +21,17 @@ public class FXServerService : ServerService
         // Nothing
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData user)
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
     {
         // Nothing
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData user)
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
     {
         // Nothing
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData user)
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
         // Nothing
     }

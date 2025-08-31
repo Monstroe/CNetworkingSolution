@@ -66,6 +66,16 @@ public class Player : ClientObject
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
-
+        switch (commandType)
+        {
+            case CommandType.PLAYER_TRANSFORM:
+                {
+                    Vector3 position = packet.ReadVector3();
+                    Quaternion rotation = packet.ReadQuaternion();
+                    Vector3 forward = packet.ReadVector3();
+                    PlayerMovement.SetTransform(position, rotation, forward);
+                    break;
+                }
+        }
     }
 }

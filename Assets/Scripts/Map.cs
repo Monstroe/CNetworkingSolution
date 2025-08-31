@@ -27,8 +27,8 @@ public class Map : MonoBehaviour
         return position;
     }
 
-    public List<ClientObject> GetStartingClientObjects()
+    public List<ClientItem> GetStartingClientItems()
     {
-        return gameObject.GetComponentsInChildren<ClientObject>(true).OrderBy(n => n.transform.GetSiblingIndex()).ToList();
+        return gameObject.GetComponentsInChildren<ClientItem>(true).OrderBy(n => n.transform.GetSiblingIndex()).ToList();
     }
 }

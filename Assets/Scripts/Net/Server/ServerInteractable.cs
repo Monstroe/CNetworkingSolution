@@ -1,18 +1,20 @@
 using UnityEngine;
 
-public class ServerInteractable : ServerObject
+public abstract class ServerInteractable : ServerObject
 {
-    public ServerObject InteractingObject { get; private set; }
+    public ServerObject InteractingObject { get; set; }
 
     public ServerInteractable(ushort id) : base(id)
     {
     }
 
-    public virtual void Grab(ServerLobby lobby, UserData user, NetPacket packet, TransportMethod? transportMethod) { }
+#nullable enable
+    public abstract void Grab(ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod);
 
-    public virtual void Drop(ServerLobby lobby, UserData user, NetPacket packet, TransportMethod? transportMethod) { }
+    public abstract void Drop(ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod);
 
-    public virtual void Interact(ServerLobby lobby, UserData user, NetPacket packet, TransportMethod? transportMethod) { }
+    public abstract void Interact(ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod);
+#nullable disable
 
     public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
@@ -69,6 +71,21 @@ public class ServerInteractable : ServerObject
 
     public override void Tick(ServerLobby lobby)
     {
-        // Do nothing here, as this class is meant to be extended
+        // Nothing
+    }
+
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
+    {
+        // Nothing
+    }
+
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
+    {
+        // Nothing
+    }
+
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
+    {
+        // Nothing
     }
 }

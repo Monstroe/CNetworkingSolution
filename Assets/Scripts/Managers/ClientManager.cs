@@ -68,16 +68,6 @@ public class ClientManager : MonoBehaviour
     [SerializeField] private string lobbyApiUrl = "http://localhost:8080/api/";
 #endif
 
-#if CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
-    public int DefaultLobbyId
-    {
-        get => defaultLobbyId;
-        set => defaultLobbyId = value;
-    }
-    [Tooltip("The ID of the lobby to connect to on the server.")]
-    [SerializeField] private int defaultLobbyId = 0;
-#endif
-
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
     private string webToken;
     private string gameServerToken;
@@ -303,11 +293,11 @@ public class ClientManager : MonoBehaviour
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
         StartCoroutine(CreateLobbyCoroutine(lobbySettings, invokeEvent));
 #elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
-        CurrentLobby.Init(defaultLobbyId, transport);
+        CurrentLobby.Init(GameResources.Instance.DefaultLobbyId, transport);
         CurrentLobby.LobbyData.Settings = lobbySettings ?? GameResources.Instance.DefaultLobbySettings;
         if (invokeEvent)
         {
-            OnLobbyCreateRequested?.Invoke(defaultLobbyId, CurrentLobby.LobbyData.Settings, null, null);
+            OnLobbyCreateRequested?.Invoke(GameResources.Instance.DefaultLobbyId, CurrentLobby.LobbyData.Settings, null, null);
         }
 #endif
     }

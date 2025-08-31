@@ -8,9 +8,13 @@ public class UserData : INetSerializable<UserData>
     public byte PlayerId { get; set; }
     public int LobbyId { get; set; } = -1;
     public bool InLobby { get { return LobbyId > -1; } }
-    public bool IsHost { get => ClientManager.Instance.CurrentLobby != null && ClientManager.Instance.CurrentLobby.LobbyData.HostUser != null && ClientManager.Instance.CurrentLobby.LobbyData.HostUser.UserId == UserId; }
     public bool InGame { get; set; } = false;
     public UserSettings Settings { get; set; } = new UserSettings();
+
+    public bool IsHost(LobbyData lobby)
+    {
+        return lobby.HostUser != null && lobby.HostUser.UserId == UserId;
+    }
 
     public UserData Deserialize(ref NetPacket packet)
     {

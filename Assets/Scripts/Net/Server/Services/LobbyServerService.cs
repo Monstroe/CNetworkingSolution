@@ -24,7 +24,7 @@ public class LobbyServerService : ServerService
             // TEMP: REMOVE THIS LATER
             case CommandType.LOBBY_SETTINGS:
                 {
-                    if (!user.IsHost)
+                    if (!user.IsHost(lobby.LobbyData))
                     {
                         Debug.LogWarning($"User {user.UserId} tried to set lobby settings, but only the host can change lobby settings.");
                         return;
@@ -57,21 +57,21 @@ public class LobbyServerService : ServerService
 
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData user)
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
     {
-        lobby.SendToUser(user, PacketBuilder.LobbySettings(lobby.LobbyData.Settings), TransportMethod.Reliable);
-        lobby.SendToUser(user, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
-        lobby.SendToUser(user, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
-        lobby.SendToLobby(PacketBuilder.LobbyUserJoined(user), TransportMethod.Reliable, user);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
+        lobby.SendToLobby(PacketBuilder.LobbyUserJoined(joinedUser), TransportMethod.Reliable, joinedUser);
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData user)
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
     {
-
+        // Nothing
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData user)
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
-        lobby.SendToLobby(PacketBuilder.LobbyUserLeft(user), TransportMethod.Reliable, user);
+        lobby.SendToLobby(PacketBuilder.LobbyUserLeft(leftUser), TransportMethod.Reliable, leftUser);
     }
 }
