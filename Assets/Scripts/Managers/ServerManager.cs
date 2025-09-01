@@ -9,6 +9,9 @@ using UnityEngine.Networking;
 
 public class ServerManager : MonoBehaviour
 {
+    public delegate void ServerManagerSingletonCreatedHandler(ServerManager manager);
+    public static event ServerManagerSingletonCreatedHandler OnServerManagerSingletonCreated;
+
     public static ServerManager Instance { get; private set; }
 
     public ulong ServerTick { get; private set; } = 0;
@@ -47,6 +50,8 @@ public class ServerManager : MonoBehaviour
             Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple instances of ServerManager detected. Destroying duplicate instance.");
             Destroy(gameObject);
         }
+
+        OnServerManagerSingletonCreated?.Invoke(this);
 
         Debug.Log("<color=green><b>CNS</b></color>: Initializing ServerManager.");
 
@@ -365,12 +370,45 @@ public class ServerManager : MonoBehaviour
 #endif
     }
 
-    public void RegisterTransport(NetTransport transport)
+    public void RegisterTransport(TransportType transportType)
     {
+        NetTransport transport = null;
+
+        switch (transportType)
+        {
+#if CNS_TRANSPORT_LOCAL
+            case TransportType.Local:
+                transport = gameObject.AddComponent<LocalTransport>();
+                break;
+#endif
+#if CNS_TRANSPORT_LITENETLIB
+            case TransportType.LiteNetLib:
+                transport = gameObject.AddComponent<LiteNetLibTransport>();
+                break;
+#endif
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+            case TransportType.Steamworks:
+                transport = gameObject.AddComponent<SteamworksTransport>();
+                break;
+#endif
+        }
+
         transports.Add(transport);
         transport.OnNetworkConnected += HandleNetworkConnected;
         transport.OnNetworkDisconnected += HandleNetworkDisconnected;
         transport.OnNetworkReceived += HandleNetworkReceived;
+    }
+
+    public void ClearTransports()
+    {
+        foreach (NetTransport transport in transports)
+        {
+            transport.OnNetworkConnected -= HandleNetworkConnected;
+            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
+            transport.OnNetworkReceived -= HandleNetworkReceived;
+            Destroy(transport);
+        }
+        transports.Clear();
     }
 
     public (uint, int) GetUserIdAndTransportIndex(UserData user)

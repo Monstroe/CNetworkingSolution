@@ -2,18 +2,29 @@ using UnityEngine;
 
 public abstract class ServerInteractable : ServerObject
 {
-    public ServerObject InteractingObject { get; set; }
+    public ServerPlayer InteractingPlayer { get; set; }
 
     public ServerInteractable(ushort id) : base(id)
     {
     }
 
 #nullable enable
-    public abstract void Grab(ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod);
+    public virtual void Grab(ServerPlayer interactingPlayer, ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod)
+    {
+        interactingPlayer.CurrentInteractable = this;
+        InteractingPlayer = interactingPlayer;
+    }
 
-    public abstract void Drop(ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod);
+    public virtual void Interact(ServerPlayer interactingPlayer, ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod)
+    {
 
-    public abstract void Interact(ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod);
+    }
+
+    public virtual void Drop(ServerPlayer interactingPlayer, ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod)
+    {
+        interactingPlayer.CurrentInteractable = null;
+        InteractingPlayer = null;
+    }
 #nullable disable
 
     public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
@@ -22,70 +33,34 @@ public abstract class ServerInteractable : ServerObject
         {
             case CommandType.PLAYER_GRAB:
                 {
-                    ServerPlayer player = CheckPlayerValidity(lobby, user);
-                    if (player != null && player.CurrentInteractable == null && InteractingObject == null)
+                    lobby.GameData.ServerPlayers.TryGetValue(user, out ServerPlayer player);
+                    if (player != null && player.CurrentInteractable == null && InteractingPlayer == null)
                     {
-                        player.CurrentInteractable = this;
-                        InteractingObject = player;
-                        Grab(lobby, user, packet, transportMethod);
+                        Grab(player, lobby, user, packet, transportMethod);
                         lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerGrab(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
-                    }
-                    break;
-                }
-            case CommandType.PLAYER_DROP:
-                {
-                    ServerPlayer player = CheckPlayerValidity(lobby, user);
-                    if (player != null && player.CurrentInteractable == this && InteractingObject == player)
-                    {
-                        Drop(lobby, user, packet, transportMethod);
-                        player.CurrentInteractable = null;
-                        InteractingObject = null;
-                        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerDrop(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
                     }
                     break;
                 }
             case CommandType.PLAYER_INTERACT:
                 {
-                    ServerPlayer player = CheckPlayerValidity(lobby, user);
-                    if (player != null && player.CurrentInteractable == this && InteractingObject == player)
+                    lobby.GameData.ServerPlayers.TryGetValue(user, out ServerPlayer player);
+                    if (player != null && player.CurrentInteractable == this && InteractingPlayer == player)
                     {
-                        Interact(lobby, user, packet, transportMethod);
+                        Interact(player, lobby, user, packet, transportMethod);
                         lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerInteract(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
                     }
                     break;
                 }
+            case CommandType.PLAYER_DROP:
+                {
+                    lobby.GameData.ServerPlayers.TryGetValue(user, out ServerPlayer player);
+                    if (player != null && player.CurrentInteractable == this && InteractingPlayer == player)
+                    {
+                        Drop(player, lobby, user, packet, transportMethod);
+                        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerDrop(user.PlayerId)), transportMethod ?? TransportMethod.Reliable);
+                    }
+                    break;
+                }
         }
-    }
-
-    private ServerPlayer CheckPlayerValidity(ServerLobby lobby, UserData user)
-    {
-        lobby.GameData.ServerPlayers.TryGetValue(user, out ServerPlayer serverPlayer);
-        if (serverPlayer == null)
-        {
-            Debug.LogWarning($"ServerPlayer for UserData with PlayerId {user.PlayerId} not found.");
-            return null;
-        }
-
-        return serverPlayer;
-    }
-
-    public override void Tick(ServerLobby lobby)
-    {
-        // Nothing
-    }
-
-    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
-    {
-        // Nothing
-    }
-
-    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
-    {
-        // Nothing
-    }
-
-    public override void UserLeft(ServerLobby lobby, UserData leftUser)
-    {
-        // Nothing
     }
 }

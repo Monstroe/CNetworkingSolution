@@ -4,24 +4,16 @@ using UnityEngine;
 
 public class LocalTransport : NetTransport
 {
-    private static LocalTransport clientInstance;
-    private static LocalTransport serverInstance;
+    private static LocalTransport[] instances = new LocalTransport[2];
+    private int instanceIndex = -1;
 
-    void Awake()
+    private Queue<(uint remoteId, NetPacket packet, TransportMethod method)> queuedPackets = new Queue<(uint remoteId, NetPacket packet, TransportMethod method)>();
+    private bool isConnecting = false;
+    private bool isDisconnecting = false;
+
+    void FixedUpdate()
     {
-        if (clientInstance == null)
-        {
-            clientInstance = this;
-        }
-        else if (serverInstance == null)
-        {
-            serverInstance = this;
-        }
-        else
-        {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: More than 2 instances of SinglePlayerTransport detected. Destroying extra instance.");
-            Destroy(gameObject);
-        }
+        PollEvents();
     }
 
     public override void Initialize()
@@ -39,6 +31,27 @@ public class LocalTransport : NetTransport
 #nullable disable
     }
 
+    void PollEvents()
+    {
+        if (isConnecting)
+        {
+            isConnecting = false;
+            RaiseNetworkConnected(0);
+        }
+
+        if (isDisconnecting)
+        {
+            isDisconnecting = false;
+            RaiseNetworkDisconnected(0);
+        }
+
+        while (queuedPackets.Count > 0)
+        {
+            var (remoteId, packet, method) = queuedPackets.Dequeue();
+            RaiseNetworkReceived(remoteId, packet, method);
+        }
+    }
+
     public override bool StartClient()
     {
         if (hostType != NetDeviceType.None)
@@ -47,7 +60,18 @@ public class LocalTransport : NetTransport
             return false;
         }
 
+        if (!UpdateInstances())
+        {
+            return false;
+        }
+
         hostType = NetDeviceType.Client;
+
+        if (instances[0] != null && instances[1] != null && instances[0].HostType != NetDeviceType.None && instances[1].HostType != NetDeviceType.None)
+        {
+            instances[1 - instanceIndex].isConnecting = true;
+            instances[instanceIndex].isConnecting = true;
+        }
         return true;
     }
 
@@ -59,34 +83,36 @@ public class LocalTransport : NetTransport
             return false;
         }
 
+        if (!UpdateInstances())
+        {
+            return false;
+        }
+
         hostType = NetDeviceType.Server;
-        serverInstance.RaiseNetworkConnected(0);
-        clientInstance.RaiseNetworkConnected(0);
+
+        if (instances[0] != null && instances[1] != null && instances[0].HostType != NetDeviceType.None && instances[1].HostType != NetDeviceType.None)
+        {
+            instances[instanceIndex].isConnecting = true;
+            instances[1 - instanceIndex].isConnecting = true;
+        }
         return true;
     }
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod method)
     {
-        if (clientInstance == this)
+        var otherInstance = instances[1 - instanceIndex];
+        if (otherInstance == null)
         {
-            serverInstance.RaiseNetworkReceived(remoteId, packet, method);
+            Debug.LogError("<color=red><b>CNS</b></color>: No other LocalTransport instance found to send data to.");
+            return;
         }
-        else if (serverInstance == this)
-        {
-            clientInstance.RaiseNetworkReceived(remoteId, packet, method);
-        }
-        else
-        {
-            Debug.LogError("<color=red><b>CNS</b></color>: SinglePlayerTransport is not initialized correctly.");
-        }
+
+        otherInstance.queuedPackets.Enqueue((remoteId, packet, method));
     }
 
     public override void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method)
     {
-        if (remoteIds.Count == 1)
-        {
-            Send(remoteIds[0], packet, method);
-        }
+        Send(0, packet, method);
     }
 
     public override void SendToAll(NetPacket packet, TransportMethod method)
@@ -96,8 +122,16 @@ public class LocalTransport : NetTransport
 
     public override void Disconnect()
     {
-        serverInstance.RaiseNetworkDisconnected(0);
-        clientInstance.RaiseNetworkDisconnected(0);
+        if (hostType == NetDeviceType.Server)
+        {
+            isDisconnecting = true;
+            instances[1 - instanceIndex].isDisconnecting = true;
+        }
+        else if (hostType == NetDeviceType.Client)
+        {
+            instances[1 - instanceIndex].isDisconnecting = true;
+            isDisconnecting = true;
+        }
     }
 
     public override void DisconnectRemote(uint remoteId)
@@ -108,9 +142,30 @@ public class LocalTransport : NetTransport
     public override void Shutdown()
     {
         Disconnect();
-        clientInstance = null;
-        serverInstance = null;
+        instances[instanceIndex] = null;
+        instanceIndex = -1;
         hostType = NetDeviceType.None;
+    }
+
+    private bool UpdateInstances()
+    {
+        if (instances[0] == null)
+        {
+            instances[0] = this;
+            instanceIndex = 0;
+        }
+        else if (instances[1] == null)
+        {
+            instances[1] = this;
+            instanceIndex = 1;
+        }
+        else
+        {
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: More than 2 instances of LocalTransport detected. Destroying extra instance.");
+            Destroy(this);
+            return false;
+        }
+        return true;
     }
 }
 #endif

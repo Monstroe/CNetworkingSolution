@@ -49,17 +49,17 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         simulateMaxLatency = Math.Max(simulateMinLatency, simulateMaxLatency);
     }
 
-    void FixedUpdate()
-    {
-        netManager?.PollEvents();
-    }
-
     void OnDestroy()
     {
         if (hostType != NetDeviceType.None)
         {
             Shutdown();
         }
+    }
+
+    void FixedUpdate()
+    {
+        netManager?.PollEvents();
     }
 
     public override void Initialize()

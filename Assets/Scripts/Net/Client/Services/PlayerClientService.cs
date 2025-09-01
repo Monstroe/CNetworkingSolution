@@ -18,17 +18,18 @@ public class PlayerClientService : ClientService
                     if (ClientManager.Instance.CurrentUser.PlayerId == playerId)
                     {
                         Player.Instance.Init(ClientManager.Instance.CurrentUser.PlayerId);
+                        ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.Add(ClientManager.Instance.CurrentUser, Player.Instance);
                         ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Add(Player.Instance.Id, Player.Instance);
                     }
                     else
                     {
                         UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                        if (!ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.ContainsKey(user) || !ClientManager.Instance.CurrentLobby.GameData.ClientObjects.ContainsKey(user.PlayerId))
+                        if (!ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.ContainsKey(user) || !ClientManager.Instance.CurrentLobby.GameData.ClientObjects.ContainsKey(user.PlayerId))
                         {
                             OtherPlayer op = Instantiate(Resources.Load<GameObject>("Prefabs/OtherPlayer")).GetComponent<OtherPlayer>();
                             op.Init(user.PlayerId);
-                            op.OtherUser = user;
-                            ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.Add(user, op);
+                            op.User = user;
+                            ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.Add(user, op);
                             ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Add(op.Id, op);
                         }
                         else

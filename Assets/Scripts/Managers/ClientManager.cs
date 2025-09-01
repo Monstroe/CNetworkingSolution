@@ -8,6 +8,9 @@ using UnityEngine.Networking;
 [RequireComponent(typeof(ClientLobby))]
 public class ClientManager : MonoBehaviour
 {
+    public delegate void ClientManagerSingletonCreatedHandler(ClientManager manager);
+    public static event ClientManagerSingletonCreatedHandler OnClientManagerSingletonCreated;
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
     class UserResponse
     {
@@ -491,11 +494,43 @@ public class ClientManager : MonoBehaviour
         CurrentUser = userData;
     }
 
-    public void SetTransport(NetTransport transport)
+    public void SetTransport(TransportType transportType)
     {
-        this.transport = transport;
+        ResetTransport();
+
+        switch (transportType)
+        {
+#if CNS_TRANSPORT_LOCAL
+            case TransportType.Local:
+                transport = gameObject.AddComponent<LocalTransport>();
+                break;
+#endif
+#if CNS_TRANSPORT_LITENETLIB
+            case TransportType.LiteNetLib:
+                transport = gameObject.AddComponent<LiteNetLibTransport>();
+                break;
+#endif
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+            case TransportType.Steamworks:
+                transport = gameObject.AddComponent<SteamworksTransport>();
+                break;
+#endif
+        }
+
         transport.OnNetworkConnected += HandleNetworkConnected;
         transport.OnNetworkDisconnected += HandleNetworkDisconnected;
         transport.OnNetworkReceived += HandleNetworkReceived;
+    }
+
+    public void ResetTransport()
+    {
+        if (transport != null)
+        {
+            transport.OnNetworkConnected -= HandleNetworkConnected;
+            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
+            transport.OnNetworkReceived -= HandleNetworkReceived;
+            Destroy(transport);
+        }
+        transport = null;
     }
 }

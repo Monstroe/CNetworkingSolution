@@ -79,9 +79,7 @@ public class ServerPlayer : ServerObject
             lobby.GameData.ServerObjects.Remove(Id);
             if (CurrentInteractable != null)
             {
-                CurrentInteractable.Drop(lobby, leftUser, null, TransportMethod.Reliable);
-                CurrentInteractable.InteractingObject = null;
-                CurrentInteractable = null;
+                CurrentInteractable.Drop(this, lobby, leftUser, null, TransportMethod.Reliable);
                 lobby.SendToGame(PacketBuilder.ObjectCommunication(CurrentInteractable, PacketBuilder.PlayerDrop(User.PlayerId)), TransportMethod.Reliable);
             }
             lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerDestroy()), TransportMethod.Reliable);

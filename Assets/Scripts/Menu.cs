@@ -35,7 +35,33 @@ public class Menu : MonoBehaviour
                 SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
             });
         };
+
         ClientManager.Instance.CreateNewUser();
+
+
+        /*ServerManager.OnServerManagerSingletonCreated += (_) =>
+        {
+            ClientManager.Instance.SetTransport(TransportType.Local);
+            ServerManager.Instance.ClearTransports();
+            ServerManager.Instance.RegisterTransport(TransportType.Local);
+
+            ClientManager.Instance.OnNewUserCreated += (user) =>
+            {
+                ClientManager.Instance.JoinLobby(GameResources.Instance.DefaultLobbyId);
+            };
+            ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
+            {
+                Debug.Log($"Successfully connected to lobby {lobbyId}.");
+
+                FadeScreen.Instance.Display(true, fadeDuration, () =>
+                {
+                    SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
+                    SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
+                });
+            };
+
+            ClientManager.Instance.CreateNewUser();
+        };*/
     }
 
     public void StartMultiPlayer()

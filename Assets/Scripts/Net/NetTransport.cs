@@ -73,19 +73,6 @@ public class ReceivedArgs
     public TransportMethod? TransportMethod { get; set; }
 }
 
-public enum NetTransportType
-{
-#if CNS_TRANSPORT_LOCAL
-    Local,
-#endif
-#if CNS_TRANSPORT_LITENETLIB
-    LiteNetLib,
-#endif
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-    SteamWorks,
-#endif
-}
-
 public enum NetDeviceType
 {
     None,
@@ -99,4 +86,17 @@ public enum TransportMethod
     ReliableUnordered,
     UnreliableSequenced,
     Unreliable,
+}
+
+public enum TransportType
+{
+#if CNS_TRANSPORT_LOCAL
+    Local,
+#endif
+#if CNS_TRANSPORT_LITENETLIB
+    LiteNetLib,
+#endif
+#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+    SteamWorks,
+#endif
 }

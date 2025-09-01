@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(PlayerInput))]
-public class Player : ClientObject
+public class Player : ClientPlayer
 {
     public static Player Instance { get; private set; }
 

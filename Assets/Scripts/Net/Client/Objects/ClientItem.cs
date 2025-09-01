@@ -6,18 +6,24 @@ public class ClientItem : ClientInteractable
 
     [SerializeField] private ItemType startingItemType = ItemType.NONE;
 
-    public override void Grab(NetPacket packet, TransportMethod? transportMethod)
+    public override void Grab(ClientPlayer interactingPlayer, NetPacket packet, TransportMethod? transportMethod)
     {
-        Debug.Log("Object with Id " + InteractingObject.Id + " grabbed object");
+        base.Grab(interactingPlayer, packet, transportMethod);
+        Debug.Log("Object with Id " + interactingPlayer.Id + " grabbed object");
+        // Additional logic for when an item is grabbed can be added here
     }
 
-    public override void Interact(NetPacket packet, TransportMethod? transportMethod)
+    public override void Interact(ClientPlayer interactingPlayer, NetPacket packet, TransportMethod? transportMethod)
     {
-        Debug.Log("Object with Id " + InteractingObject.Id + " interacted with object");
+        base.Interact(interactingPlayer, packet, transportMethod);
+        Debug.Log("Object with Id " + interactingPlayer.Id + " interacted with object");
+        // Additional logic for when an item is interacted with can be added here
     }
 
-    public override void Drop(NetPacket packet, TransportMethod? transportMethod)
+    public override void Drop(ClientPlayer interactingPlayer, NetPacket packet, TransportMethod? transportMethod)
     {
-        Debug.Log("Object with Id " + InteractingObject.Id + " dropped object");
+        base.Drop(interactingPlayer, packet, transportMethod);
+        Debug.Log("Object with Id " + interactingPlayer.Id + " dropped object");
+        // Additional logic for when an item is dropped can be added here
     }
 }

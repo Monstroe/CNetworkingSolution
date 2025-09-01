@@ -1,12 +1,39 @@
 public abstract class ClientInteractable : ClientObject
 {
-    public ClientObject InteractingObject { get; protected set; }
+    public ClientPlayer InteractingPlayer { get; protected set; }
 
-    public abstract void Grab(NetPacket packet, TransportMethod? transportMethod);
+    public virtual void Grab(ClientPlayer interactingPlayer, NetPacket packet, TransportMethod? transportMethod)
+    {
+        if (interactingPlayer == Player.Instance)
+        {
+            Player.Instance.PlayerInteract.SetInteractable(this);
+        }
+        else
+        {
+            interactingPlayer.CurrentInteractable = this;
+        }
 
-    public abstract void Interact(NetPacket packet, TransportMethod? transportMethod);
+        InteractingPlayer = interactingPlayer;
+    }
 
-    public abstract void Drop(NetPacket packet, TransportMethod? transportMethod);
+    public virtual void Interact(ClientPlayer interactingPlayer, NetPacket packet, TransportMethod? transportMethod)
+    {
+
+    }
+
+    public virtual void Drop(ClientPlayer interactingPlayer, NetPacket packet, TransportMethod? transportMethod)
+    {
+        if (interactingPlayer == Player.Instance)
+        {
+            Player.Instance.PlayerInteract.SetInteractable(null);
+        }
+        else
+        {
+            interactingPlayer.CurrentInteractable = null;
+        }
+
+        InteractingPlayer = null;
+    }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
@@ -15,43 +42,25 @@ public abstract class ClientInteractable : ClientObject
             case CommandType.PLAYER_GRAB:
                 {
                     byte playerId = packet.ReadByte();
-                    if (playerId == Player.Instance.Id)
-                    {
-                        Player.Instance.PlayerInteract.SetInteractable(this);
-                        InteractingObject = Player.Instance;
-                    }
-                    else
-                    {
-                        UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                        ClientManager.Instance.CurrentLobby.GameData.OtherPlayers.TryGetValue(user, out OtherPlayer otherPlayer);
-                        otherPlayer.CurrentInteractable = this;
-                        InteractingObject = otherPlayer;
-                    }
-
-                    Grab(packet, transportMethod);
-                    break;
-                }
-            case CommandType.PLAYER_DROP:
-                {
-                    byte playerId = packet.ReadByte();
-                    Drop(packet, transportMethod);
-
-                    if (playerId == Player.Instance.Id)
-                    {
-                        Player.Instance.PlayerInteract.ResetInteractable();
-                        InteractingObject = null;
-                    }
-                    else
-                    {
-                        ((OtherPlayer)InteractingObject).CurrentInteractable = null;
-                        InteractingObject = null;
-                    }
+                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                    ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
+                    Grab(clientPlayer, packet, transportMethod);
                     break;
                 }
             case CommandType.PLAYER_INTERACT:
                 {
                     byte playerId = packet.ReadByte();
-                    Interact(packet, transportMethod);
+                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                    ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
+                    Interact(clientPlayer, packet, transportMethod);
+                    break;
+                }
+            case CommandType.PLAYER_DROP:
+                {
+                    byte playerId = packet.ReadByte();
+                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                    ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
+                    Drop(clientPlayer, packet, transportMethod);
                     break;
                 }
         }
