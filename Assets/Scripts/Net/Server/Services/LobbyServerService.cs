@@ -9,21 +9,6 @@ public class LobbyServerService : ServerService
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
             case CommandType.LOBBY_SETTINGS:
                 {
-                    if (!user.IsHost)
-                    {
-                        Debug.LogWarning($"User {user.UserId} tried to set lobby settings, but only the host can change lobby settings.");
-                        return;
-                    }
-
-                    LobbySettings lobbySettings = new LobbySettings().Deserialize(ref packet);
-                    lobby.LobbyData.Settings = lobbySettings;
-                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
-                    break;
-                }
-#endif
-            // TEMP: REMOVE THIS LATER
-            case CommandType.LOBBY_SETTINGS:
-                {
                     if (!user.IsHost(lobby.LobbyData))
                     {
                         Debug.LogWarning($"User {user.UserId} tried to set lobby settings, but only the host can change lobby settings.");
@@ -35,6 +20,7 @@ public class LobbyServerService : ServerService
                     lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
                     break;
                 }
+#endif
             case CommandType.LOBBY_USER_SETTINGS:
                 {
                     ulong userId = packet.ReadULong();

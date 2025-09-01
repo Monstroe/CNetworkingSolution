@@ -15,7 +15,7 @@ public class ConnectionData : INetSerializable<ConnectionData>
         return new ConnectionData()
         {
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-            TokenId = packet.ReadGuid(),
+            TokenId = Guid.Parse(packet.ReadString()),
 #endif
             LobbyId = packet.ReadInt(),
             UserGuid = Guid.Parse(packet.ReadString()),
@@ -27,7 +27,7 @@ public class ConnectionData : INetSerializable<ConnectionData>
     public void Serialize(ref NetPacket packet)
     {
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        packet.Write(TokenId);
+        packet.Write(TokenId.ToString());
 #endif
         packet.Write(LobbyId);
         packet.Write(UserGuid.ToString());
