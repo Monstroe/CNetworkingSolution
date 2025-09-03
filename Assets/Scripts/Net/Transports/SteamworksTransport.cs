@@ -83,27 +83,30 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         };
 
 #nullable enable
-        ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
+        if (ClientManager.Instance) 
         {
-            if (lobbySettings == null)
+            ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
             {
-                Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
-                return;
-            }
+                if (lobbySettings == null)
+                {
+                    Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
+                    return;
+                }
 
-            await CreateSteamLobby(lobbySettings);
-        };
+                await CreateSteamLobby(lobbySettings);
+            };
 
-        ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
-        {
-            if (lobbySettings == null)
+            ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
             {
-                Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
-                return;
-            }
+                if (lobbySettings == null)
+                {
+                    Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
+                    return;
+                }
 
-            await JoinSteamLobby(lobbySettings.SteamCode);
-        };
+                await JoinSteamLobby(lobbySettings.SteamCode);
+            };
+        }
 #nullable disable
     }
 

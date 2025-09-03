@@ -19,15 +19,18 @@ public class LocalTransport : NetTransport
     public override void Initialize()
     {
 #nullable enable
-        ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+        if (ClientManager.Instance)
         {
-            StartClient();
-        };
+            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            {
+                StartClient();
+            };
 
-        ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
-        {
-            StartClient();
-        };
+            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            {
+                StartClient();
+            };
+        }
 #nullable disable
     }
 

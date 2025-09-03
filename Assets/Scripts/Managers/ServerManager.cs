@@ -71,10 +71,12 @@ public class ServerManager : MonoBehaviour
                 db = new ServerDatabaseHandler();
                 await db.Connect(dbConnectionString, ServerData.Settings.ServerId);
                 db.StartHeartbeat(secondsBetweenHeartbeats);
+                Debug.Log($"<color=green><b>CNS</b></color>: Connected to Redis database at {dbConnectionString}.");
 
                 tokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
                 tokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
                 tokenVerifier.StartTokenCleanup(tokenValidityDurationMinutes);
+                Debug.Log($"<color=green><b>CNS</b></color>: Server ID: {ServerData.Settings.ServerId}");
             };
 
             StartCoroutine(GetPublicIpAddress());

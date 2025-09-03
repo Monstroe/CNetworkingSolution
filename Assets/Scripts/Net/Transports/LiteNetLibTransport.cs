@@ -78,17 +78,20 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         };
 
 #nullable enable
-        ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+        if (ClientManager.Instance)
         {
-            address = serverSettings?.ServerAddress ?? address;
-            StartClient();
-        };
+            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            {
+                address = serverSettings?.ServerAddress ?? address;
+                StartClient();
+            };
 
-        ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
-        {
-            address = serverSettings?.ServerAddress ?? address;
-            StartClient();
-        };
+            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            {
+                address = serverSettings?.ServerAddress ?? address;
+                StartClient();
+            };
+        }
 #nullable disable
     }
 
