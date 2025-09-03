@@ -51,7 +51,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 
     void OnDestroy()
     {
-        if (hostType != NetDeviceType.None)
+        if (!initialized)
         {
             Shutdown();
         }
@@ -62,8 +62,10 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         netManager?.PollEvents();
     }
 
-    public override void Initialize()
+    public override void Initialize(NetDeviceType deviceType)
     {
+        this.deviceType = deviceType;
+
         netManager = new NetManager(this)
         {
             PingInterval = SecondsToMilliseconds(pingInterval),
@@ -78,7 +80,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         };
 
 #nullable enable
-        if (ClientManager.Instance)
+        if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
             {
@@ -95,15 +97,15 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 #nullable disable
     }
 
-    public override bool StartClient()
+    protected override bool StartClient()
     {
-        if (hostType != NetDeviceType.None)
+        if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
-        hostType = NetDeviceType.Client;
+        initialized = true;
 
         var success = netManager.Start();
         if (!success)
@@ -122,15 +124,15 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         return true;
     }
 
-    public override bool StartServer()
+    protected override bool StartServer()
     {
-        if (hostType != NetDeviceType.None)
+        if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
-        hostType = NetDeviceType.Server;
+        initialized = true;
 
         bool success = netManager.Start(port);
         if (!success)
@@ -204,7 +206,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
                 netManager.Stop();
             }
 
-            hostType = NetDeviceType.None;
+            initialized = false;
         }
         catch (Exception e)
         {

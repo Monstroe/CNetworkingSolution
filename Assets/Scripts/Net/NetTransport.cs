@@ -21,15 +21,34 @@ public abstract class NetTransport : MonoBehaviour
     /// </summary>
     public event NetworkReceivedHandler OnNetworkReceived;
 
-    public NetDeviceType HostType => hostType;
+    public NetDeviceType DeviceType => deviceType;
     public virtual uint ServerClientId { get; }
     public virtual List<uint> ConnectedClientIds { get; }
 
-    protected NetDeviceType hostType = NetDeviceType.None;
+    protected NetDeviceType deviceType;
+    protected bool initialized = false;
 
-    public abstract void Initialize();
-    public abstract bool StartClient();
-    public abstract bool StartServer();
+    public abstract void Initialize(NetDeviceType deviceType);
+
+    public virtual bool StartDevice()
+    {
+        if (deviceType == NetDeviceType.Client)
+        {
+            return StartClient();
+        }
+        else if (deviceType == NetDeviceType.Server)
+        {
+            return StartServer();
+        }
+        else
+        {
+            Debug.LogError("<color=red><b>CNS</b></color>: Device type not set. Cannot start transport.");
+            return false;
+        }
+    }
+
+    protected abstract bool StartClient();
+    protected abstract bool StartServer();
     public abstract void Send(uint remoteId, NetPacket packet, TransportMethod method);
     public abstract void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method);
     public abstract void SendToAll(NetPacket packet, TransportMethod method);
@@ -75,9 +94,8 @@ public class ReceivedArgs
 
 public enum NetDeviceType
 {
-    None,
-    Server,
-    Client
+    Client,
+    Server
 }
 
 public enum TransportMethod

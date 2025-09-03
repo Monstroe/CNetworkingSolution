@@ -18,6 +18,9 @@ public class LobbyServerService : ServerService
                     LobbySettings lobbySettings = new LobbySettings().Deserialize(ref packet);
                     lobby.LobbyData.Settings = lobbySettings;
                     lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+                    ServerManager.Instance.DB.UpdateLobbyMetadataAsync(lobby.LobbyData);
+#endif
                     break;
                 }
 #endif
@@ -33,6 +36,9 @@ public class LobbyServerService : ServerService
                     UserSettings userSettings = new UserSettings().Deserialize(ref packet);
                     user.Settings = userSettings;
                     lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable);
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+                    ServerManager.Instance.DB.UpdateUserMetadataAsync(user);
+#endif
                     break;
                 }
         }

@@ -16,10 +16,12 @@ public class LocalTransport : NetTransport
         PollEvents();
     }
 
-    public override void Initialize()
+    public override void Initialize(NetDeviceType deviceType)
     {
+        this.deviceType = deviceType;
+
 #nullable enable
-        if (ClientManager.Instance)
+        if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
             {
@@ -55,11 +57,28 @@ public class LocalTransport : NetTransport
         }
     }
 
-    public override bool StartClient()
+    public override bool StartDevice()
     {
-        if (hostType != NetDeviceType.None)
+        if (deviceType == NetDeviceType.Client)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            return StartClient();
+        }
+        else if (deviceType == NetDeviceType.Server)
+        {
+            return StartServer();
+        }
+        else
+        {
+            Debug.LogError("<color=red><b>CNS</b></color>: Device type not set. Cannot start Local transport.");
+            return false;
+        }
+    }
+
+    protected override bool StartClient()
+    {
+        if (initialized)
+        {
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
@@ -68,9 +87,9 @@ public class LocalTransport : NetTransport
             return false;
         }
 
-        hostType = NetDeviceType.Client;
+        initialized = true;
 
-        if (instances[0] != null && instances[1] != null && instances[0].HostType != NetDeviceType.None && instances[1].HostType != NetDeviceType.None)
+        if (instances[0] != null && instances[1] != null && instances[0].initialized && instances[1].initialized)
         {
             instances[1 - instanceIndex].isConnecting = true;
             instances[instanceIndex].isConnecting = true;
@@ -78,11 +97,11 @@ public class LocalTransport : NetTransport
         return true;
     }
 
-    public override bool StartServer()
+    protected override bool StartServer()
     {
-        if (hostType != NetDeviceType.None)
+        if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
@@ -91,9 +110,9 @@ public class LocalTransport : NetTransport
             return false;
         }
 
-        hostType = NetDeviceType.Server;
+        initialized = true;
 
-        if (instances[0] != null && instances[1] != null && instances[0].HostType != NetDeviceType.None && instances[1].HostType != NetDeviceType.None)
+        if (instances[0] != null && instances[1] != null && instances[0].initialized && instances[1].initialized)
         {
             instances[instanceIndex].isConnecting = true;
             instances[1 - instanceIndex].isConnecting = true;
@@ -125,12 +144,12 @@ public class LocalTransport : NetTransport
 
     public override void Disconnect()
     {
-        if (hostType == NetDeviceType.Server)
+        if (deviceType == NetDeviceType.Server)
         {
             isDisconnecting = true;
             instances[1 - instanceIndex].isDisconnecting = true;
         }
-        else if (hostType == NetDeviceType.Client)
+        else if (deviceType == NetDeviceType.Client)
         {
             instances[1 - instanceIndex].isDisconnecting = true;
             isDisconnecting = true;
@@ -147,7 +166,7 @@ public class LocalTransport : NetTransport
         Disconnect();
         instances[instanceIndex] = null;
         instanceIndex = -1;
-        hostType = NetDeviceType.None;
+        initialized = false;
     }
 
     private bool UpdateInstances()

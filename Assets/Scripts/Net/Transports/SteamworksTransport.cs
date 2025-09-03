@@ -38,8 +38,27 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         public Connection connection;
     }
 
-    void Awake()
+    void FixedUpdate()
     {
+        SteamClient.RunCallbacks();
+        connectionManager?.Receive();
+        socketManager?.Receive();
+    }
+
+    void OnDestroy()
+    {
+        if (!initialized)
+        {
+            Shutdown();
+        }
+
+        SteamClient.Shutdown();
+    }
+
+    public override void Initialize(NetDeviceType deviceType)
+    {
+        this.deviceType = deviceType;
+
         try
         {
             SteamClient.Init(steamAppId, false);
@@ -53,27 +72,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         {
             StartCoroutine(InitSteamworks());
         }
-    }
 
-    void FixedUpdate()
-    {
-        SteamClient.RunCallbacks();
-        connectionManager?.Receive();
-        socketManager?.Receive();
-    }
-
-    void OnDestroy()
-    {
-        if (hostType != NetDeviceType.None)
-        {
-            Shutdown();
-        }
-
-        SteamClient.Shutdown();
-    }
-
-    public override void Initialize()
-    {
         messageBuffer = new byte[messageBufferSize];
         connectedClients = new Dictionary<uint, Client>();
 
@@ -83,7 +82,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         };
 
 #nullable enable
-        if (ClientManager.Instance) 
+        if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
             {
@@ -140,30 +139,30 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         StartClient();
     }
 
-    public override bool StartClient()
+    protected override bool StartClient()
     {
-        if (hostType != NetDeviceType.None)
+        if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
-        hostType = NetDeviceType.Client;
+        initialized = true;
 
         connectionManager = SteamNetworkingSockets.ConnectRelay<ConnectionManager>(targetSteamId);
         connectionManager.Interface = this;
         return true;
     }
 
-    public override bool StartServer()
+    protected override bool StartServer()
     {
-        if (hostType != NetDeviceType.None)
+        if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
-        hostType = NetDeviceType.Server;
+        initialized = true;
 
         socketManager = SteamNetworkingSockets.CreateRelaySocket<SocketManager>();
         socketManager.Interface = this;
@@ -248,7 +247,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         try
         {
             Disconnect();
-            hostType = NetDeviceType.None;
+            initialized = false;
         }
         catch (Exception e)
         {
@@ -335,7 +334,7 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
         {
             IntPtr ptr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
 
-            if (hostType == NetDeviceType.Client)
+            if (deviceType == NetDeviceType.Client)
             {
                 connectionManager.Connection.SendMessage(ptr, packet.Length, sendType);
             }

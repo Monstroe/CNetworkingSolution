@@ -64,8 +64,8 @@ public class ClientManager : MonoBehaviour
         get => lobbyApiUrl;
         set => lobbyApiUrl = value;
     }
-    [Tooltip("The URL of the lobby API. PLEASE PUT SLASH AT THE END.")]
-    [SerializeField] private string lobbyApiUrl = "http://localhost:8080/api/";
+    [Tooltip("The URL of the lobby API. PLEASE DON'T PUT A SLASH AT THE END.")]
+    [SerializeField] private string lobbyApiUrl = "http://localhost:5107/api";
 #endif
 
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
@@ -374,6 +374,7 @@ public class ClientManager : MonoBehaviour
                 CurrentLobby.Init(createdLobbyData.LobbyId, transport);
                 CurrentLobby.LobbyData.Settings = createdLobbyData.Settings;
                 serverToken = lobbyResponse.ServerToken;
+                Debug.Log($"<color=green><b>CNS</b></color>: Created lobby with Id {createdLobbyData.LobbyId}.");
 
                 if (invokeEvent)
                 {
@@ -525,6 +526,7 @@ public class ClientManager : MonoBehaviour
                 CurrentLobby.Init(joinedLobbyData.LobbyId, transport);
                 CurrentLobby.LobbyData.Settings = joinedLobbyData.Settings;
                 serverToken = lobbyResponse.ServerToken;
+                Debug.Log($"<color=green><b>CNS</b></color>: Joined lobby with Id {joinedLobbyData.LobbyId}.");
 
                 if (invokeEvent)
                 {
