@@ -66,7 +66,7 @@ public class ServerManager : MonoBehaviour
             {
                 ServerData.Settings.ServerId = Guid.NewGuid();
                 ServerData.Settings.ServerKey = GenerateSecretKey();
-                ServerData.Settings.ServerAddress = "127.0.0.1";// + ip; // TODO: REMOVE THIS
+                ServerData.Settings.ServerAddress = "192.168.1.129";// + ip; // TODO: REMOVE THIS
 
                 DB = new ServerDatabaseHandler();
                 await DB.Connect(dbConnectionString, ServerData.Settings.ServerId);
