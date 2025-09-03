@@ -141,7 +141,8 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
     {
         if (hostType != NetDeviceType.None)
         {
-            throw new InvalidOperationException("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            return false;
         }
 
         hostType = NetDeviceType.Client;
@@ -155,7 +156,8 @@ public class SteamworksTransport : NetTransport, IConnectionManager, ISocketMana
     {
         if (hostType != NetDeviceType.None)
         {
-            throw new InvalidOperationException("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
+            return false;
         }
 
         hostType = NetDeviceType.Server;

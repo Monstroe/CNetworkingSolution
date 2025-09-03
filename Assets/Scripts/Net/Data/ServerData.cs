@@ -12,7 +12,7 @@ public class ServerData
 
 public class ServerSettings
 {
-    public Guid GameServerId { get; set; }
-    public string GameServerKey { get; set; }
-    public string GameServerAddress { get; set; }
+    public Guid ServerId { get; set; }
+    public string ServerKey { get; set; }
+    public string ServerAddress { get; set; }
 }

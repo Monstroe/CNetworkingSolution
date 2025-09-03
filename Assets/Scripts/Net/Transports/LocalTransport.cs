@@ -56,7 +56,7 @@ public class LocalTransport : NetTransport
     {
         if (hostType != NetDeviceType.None)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
             return false;
         }
 
@@ -79,7 +79,7 @@ public class LocalTransport : NetTransport
     {
         if (hostType != NetDeviceType.None)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
             return false;
         }
 

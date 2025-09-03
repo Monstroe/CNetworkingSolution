@@ -9,9 +9,6 @@ using UnityEngine.Networking;
 
 public class ServerManager : MonoBehaviour
 {
-    public delegate void ServerManagerSingletonCreatedHandler(ServerManager manager);
-    public static event ServerManagerSingletonCreatedHandler OnServerManagerSingletonCreated;
-
     public static ServerManager Instance { get; private set; }
 
     public ulong ServerTick { get; private set; } = 0;
@@ -51,48 +48,38 @@ public class ServerManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        OnServerManagerSingletonCreated?.Invoke(this);
-
         Debug.Log("<color=green><b>CNS</b></color>: Initializing ServerManager.");
 
         foreach (NetTransport transport in transports)
         {
             transport.Initialize();
-        }
-    }
-
-    void Start()
-    {
-        foreach (NetTransport transport in transports)
-        {
+            transport.StartServer();
             transport.OnNetworkConnected += HandleNetworkConnected;
             transport.OnNetworkDisconnected += HandleNetworkDisconnected;
             transport.OnNetworkReceived += HandleNetworkReceived;
         }
 
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        OnPublicIpAddressFetched += async (ip) =>
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
-            ServerData.Settings.GameServerId = Guid.NewGuid();
-            ServerData.Settings.GameServerKey = GenerateSecretKey();
-            ServerData.Settings.GameServerAddress = ip;
+            OnPublicIpAddressFetched += async (ip) =>
+            {
+                ServerData.Settings.ServerId = Guid.NewGuid();
+                ServerData.Settings.ServerKey = GenerateSecretKey();
+                ServerData.Settings.ServerAddress = ip;
 
-            db = new ServerDatabaseHandler();
-            await db.Connect(dbConnectionString, ServerData.Settings.GameServerId);
-            db.StartHeartbeat(secondsBetweenHeartbeats);
+                db = new ServerDatabaseHandler();
+                await db.Connect(dbConnectionString, ServerData.Settings.ServerId);
+                db.StartHeartbeat(secondsBetweenHeartbeats);
 
-            tokenVerifier = new ServerTokenVerifier(ServerData.Settings.GameServerKey);
-            tokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
-            tokenVerifier.StartTokenCleanup(tokenValidityDurationMinutes);
-        };
+                tokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
+                tokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
+                tokenVerifier.StartTokenCleanup(tokenValidityDurationMinutes);
+            };
 
-        StartCoroutine(GetPublicIpAddress());
-#endif
-
-        foreach (NetTransport transport in transports)
-        {
-            transport.StartServer();
+            StartCoroutine(GetPublicIpAddress());
         }
+#endif
     }
 
     public void BroadcastMessage(NetPacket packet, TransportMethod method)
@@ -178,7 +165,14 @@ public class ServerManager : MonoBehaviour
                 {
                     ConnectionData connectionData;
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-                    connectionData = tokenVerifier.VerifyToken(packet.ReadString());
+                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+                    {
+                        connectionData = tokenVerifier.VerifyToken(packet.ReadString());
+                    }
+                    else
+                    {
+                        connectionData = new ConnectionData().Deserialize(ref packet);
+                    }
 #elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH || CNS_HOST_AUTH
                     connectionData = new ConnectionData().Deserialize(ref packet);
 #else
@@ -192,7 +186,10 @@ public class ServerManager : MonoBehaviour
                     if (connectionData != null)
                     {
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-                        tokenVerifier.RemoveUnverifiedUser(remoteUser);
+                        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+                        {
+                            tokenVerifier.RemoveUnverifiedUser(remoteUser);
+                        }
 #endif
                         ServerLobby lobby = null;
                         if (ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
@@ -282,9 +279,13 @@ public class ServerManager : MonoBehaviour
             UserId = userId
         };
         ServerData.ConnectedUsers[user.UserId] = user;
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        await db.SaveUserMetadataAsync(user);
-        tokenVerifier.AddUnverifiedUser(user);
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            await db.SaveUserMetadataAsync(user);
+            tokenVerifier.AddUnverifiedUser(user);
+        }
 #endif
         return user;
     }
@@ -292,10 +293,6 @@ public class ServerManager : MonoBehaviour
     private async Task RemoveUser(UserData user)
     {
         ServerData.ConnectedUsers.Remove(user.UserId);
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        await db.DeleteUserAsync(user.GlobalGuid);
-        await db.RemoveUserFromGameServerAsync(user.GlobalGuid);
-#endif
         if (ServerData.ActiveLobbies.ContainsKey(user.LobbyId))
         {
             ServerLobby lobby = ServerData.ActiveLobbies[user.LobbyId];
@@ -310,8 +307,14 @@ public class ServerManager : MonoBehaviour
                 lobby.UserLeft(user);
             }
         }
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        tokenVerifier.RemoveUnverifiedUser(user);
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            await db.DeleteUserAsync(user.GlobalGuid);
+            await db.RemoveUserFromServerAsync(user.GlobalGuid);
+            tokenVerifier.RemoveUnverifiedUser(user);
+        }
 #endif
     }
 
@@ -324,10 +327,14 @@ public class ServerManager : MonoBehaviour
         lobby.LobbyData.Settings = data.LobbySettings;
         lobby.transform.SetParent(gameObject.transform);
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        await db.SaveLobbyMetadataAsync(lobby.LobbyData);
-        await db.RemoveLobbyFromLimbo(lobby.LobbyData.LobbyId);
-        await db.AddLobbyToGameServerAsync(lobby.LobbyData.LobbyId);
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            await db.SaveLobbyMetadataAsync(lobby.LobbyData);
+            await db.RemoveLobbyFromLimbo(lobby.LobbyData.LobbyId);
+            await db.AddLobbyToServerAsync(lobby.LobbyData.LobbyId);
+        }
 #endif
         return lobby;
     }
@@ -337,9 +344,13 @@ public class ServerManager : MonoBehaviour
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         ServerData.ActiveLobbies.Remove(lobby.LobbyData.LobbyId);
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        await db.RemoveLobbyFromGameServerAsync(lobby.LobbyData.LobbyId);
-        await db.DeleteLobbyAsync(lobby.LobbyData.LobbyId);
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            await db.RemoveLobbyFromServerAsync(lobby.LobbyData.LobbyId);
+            await db.DeleteLobbyAsync(lobby.LobbyData.LobbyId);
+        }
 #endif
         Destroy(lobby.gameObject);
     }
@@ -352,10 +363,14 @@ public class ServerManager : MonoBehaviour
         user.GlobalGuid = data.UserGuid;
         user.Settings = data.UserSettings;
         lobby.LobbyData.LobbyUsers.Add(user);
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        await db.SaveUserMetadataAsync(user);
-        await db.AddUserToGameServerAsync(user.GlobalGuid);
-        await db.AddUserToLobbyAsync(data.LobbyId, user.GlobalGuid);
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            await db.SaveUserMetadataAsync(user);
+            await db.AddUserToServerAsync(user.GlobalGuid);
+            await db.AddUserToLobbyAsync(data.LobbyId, user.GlobalGuid);
+        }
 #endif
         lobby.UserJoined(user);
     }
@@ -365,8 +380,12 @@ public class ServerManager : MonoBehaviour
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         lobby.LobbyData.LobbyUsers.Remove(user);
+
 #if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        await db.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            await db.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
+        }
 #endif
     }
 
@@ -387,7 +406,7 @@ public class ServerManager : MonoBehaviour
                 break;
 #endif
 #if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-            case TransportType.Steamworks:
+            case TransportType.SteamWorks:
                 transport = gameObject.AddComponent<SteamworksTransport>();
                 break;
 #endif

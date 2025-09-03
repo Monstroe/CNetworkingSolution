@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -5,6 +6,14 @@ public class Menu : MonoBehaviour
 {
     [Header("Fade Settings")]
     [SerializeField] private float fadeDuration = 3f;
+    [Space]
+    [SerializeField] private GameObject localServerPrefab;
+
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
+    [SerializeField] private GameObject mainMenu;
+    [SerializeField] private GameObject multiLobbyMenu;
+    [SerializeField] private TMP_InputField lobbyIdInputField;
+#endif
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -20,10 +29,13 @@ public class Menu : MonoBehaviour
 
     public void StartSinglePlayer()
     {
-        SceneManager.LoadScene(GameResources.Instance.ServerSceneName, LoadSceneMode.Additive);
+        GameResources.Instance.GameMode = GameMode.SINGLEPLAYER;
+        ClientManager.Instance.SetTransport(TransportType.Local);
+        Instantiate(localServerPrefab);
+
         ClientManager.Instance.OnNewUserCreated += (user) =>
         {
-            ClientManager.Instance.JoinLobby(GameResources.Instance.DefaultLobbyId);
+            ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
         };
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
@@ -31,48 +43,91 @@ public class Menu : MonoBehaviour
 
             FadeScreen.Instance.Display(true, fadeDuration, () =>
             {
-                SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
-                SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
+                SceneManager.LoadScene(GameResources.Instance.GameSceneName);
             });
         };
 
         ClientManager.Instance.CreateNewUser();
-
-
-        /*ServerManager.OnServerManagerSingletonCreated += (_) =>
-        {
-            ClientManager.Instance.SetTransport(TransportType.Local);
-            ServerManager.Instance.ClearTransports();
-            ServerManager.Instance.RegisterTransport(TransportType.Local);
-
-            ClientManager.Instance.OnNewUserCreated += (user) =>
-            {
-                ClientManager.Instance.JoinLobby(GameResources.Instance.DefaultLobbyId);
-            };
-            ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
-            {
-                Debug.Log($"Successfully connected to lobby {lobbyId}.");
-
-                FadeScreen.Instance.Display(true, fadeDuration, () =>
-                {
-                    SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
-                    SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
-                });
-            };
-
-            ClientManager.Instance.CreateNewUser();
-        };*/
     }
 
     public void StartMultiPlayer()
     {
+
+#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
+        mainMenu.SetActive(false);
+        multiLobbyMenu.SetActive(true);
+#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
         ClientManager.Instance.OnNewUserCreated += (user) =>
         {
-            ClientManager.Instance.JoinLobby(GameResources.Instance.DefaultLobbyId);
+            ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
         };
         ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
         {
             Debug.Log($"Successfully connected to lobby {lobbyId}.");
+
+            FadeScreen.Instance.Display(true, fadeDuration, () =>
+            {
+                if (SceneManager.GetSceneByName(GameResources.Instance.ServerSceneName).isLoaded)
+                {
+                    SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
+                    SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
+                }
+                else
+                {
+                    SceneManager.LoadScene(GameResources.Instance.GameSceneName);
+                }
+            });
+        };
+        ClientManager.Instance.CreateNewUser();
+#endif
+    }
+
+    public void BackToMainMenu()
+    {
+        multiLobbyMenu.SetActive(false);
+        mainMenu.SetActive(true);
+    }
+
+    public void CreateLobby()
+    {
+        ClientManager.Instance.OnNewUserCreated += (user) =>
+        {
+            ClientManager.Instance.CreateNewLobby();
+        };
+        ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
+        {
+            Debug.Log($"Successfully created lobby {lobbyId}.");
+
+            FadeScreen.Instance.Display(true, fadeDuration, () =>
+            {
+                if (SceneManager.GetSceneByName(GameResources.Instance.ServerSceneName).isLoaded)
+                {
+                    SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
+                    SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
+                }
+                else
+                {
+                    SceneManager.LoadScene(GameResources.Instance.GameSceneName);
+                }
+            });
+        };
+        ClientManager.Instance.CreateNewUser();
+    }
+
+    public void JoinLobby()
+    {
+        if (!int.TryParse(lobbyIdInputField.text, out int parsedId))
+        {
+            return;
+        }
+
+        ClientManager.Instance.OnNewUserCreated += (user) =>
+        {
+            ClientManager.Instance.JoinExistingLobby(parsedId);
+        };
+        ClientManager.Instance.OnLobbyConnectionEstablished += (lobbyId) =>
+        {
+            Debug.Log($"Successfully joined lobby {lobbyId}.");
 
             FadeScreen.Instance.Display(true, fadeDuration, () =>
             {

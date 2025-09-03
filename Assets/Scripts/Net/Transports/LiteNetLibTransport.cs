@@ -80,13 +80,13 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 #nullable enable
         ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
         {
-            address = serverSettings?.GameServerAddress ?? address;
+            address = serverSettings?.ServerAddress ?? address;
             StartClient();
         };
 
         ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
         {
-            address = serverSettings?.GameServerAddress ?? address;
+            address = serverSettings?.ServerAddress ?? address;
             StartClient();
         };
 #nullable disable
@@ -96,7 +96,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
     {
         if (hostType != NetDeviceType.None)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
             return false;
         }
 
@@ -123,7 +123,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
     {
         if (hostType != NetDeviceType.None)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + hostType);
             return false;
         }
 

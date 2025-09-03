@@ -10,13 +10,13 @@ public class ServerDatabaseHandler
     private IDatabase db;
     private CancellationTokenSource heartbeatTokenSource;
 
-    private Guid gameServerId;
+    private Guid serverId;
 
-    public async Task Connect(string connectionString, Guid gameServerId)
+    public async Task Connect(string connectionString, Guid serverId)
     {
         redis = await ConnectionMultiplexer.ConnectAsync(connectionString);
         db = redis.GetDatabase();
-        this.gameServerId = gameServerId;
+        this.serverId = serverId;
     }
 
     public void StartHeartbeat(int secondsBetweenHeartbeats)
@@ -29,7 +29,7 @@ public class ServerDatabaseHandler
         {
             while (!token.IsCancellationRequested)
             {
-                await SetGameServerHeartbeatAsync();
+                await SetServerHeartbeatAsync();
                 await Task.Delay(TimeSpan.FromSeconds(secondsBetweenHeartbeats), token);
             }
         });
@@ -42,61 +42,61 @@ public class ServerDatabaseHandler
             heartbeatTokenSource.Cancel();
             heartbeatTokenSource.Dispose();
         }
-        await RemoveGameServerAsync();
+        await RemoveServerAsync();
     }
 
-    /* GAME SERVER */
+    /* SERVER */
 
-    public async Task SaveGameServerMetadataAsync(ServerData serverData)
+    public async Task SaveServerMetadataAsync(ServerData serverData)
     {
-        await db.HashSetAsync($"game_server:{serverData.Settings.GameServerId}", new HashEntry[]
+        await db.HashSetAsync($"game_server:{serverData.Settings.ServerId}", new HashEntry[]
             {
-            new HashEntry("game_server_id", serverData.Settings.GameServerId.ToString()),
-            new HashEntry("game_server_key", serverData.Settings.GameServerKey),
-            new HashEntry("game_server_address", serverData.Settings.GameServerAddress),
+            new HashEntry("game_server_id", serverData.Settings.ServerId.ToString()),
+            new HashEntry("game_server_key", serverData.Settings.ServerKey),
+            new HashEntry("game_server_address", serverData.Settings.ServerAddress),
             });
-        await db.SetAddAsync("game_servers", serverData.Settings.GameServerId.ToString());
+        await db.SetAddAsync("game_servers", serverData.Settings.ServerId.ToString());
 
-        string usersKey = $"lobby:{serverData.Settings.GameServerId}:connected_users";
+        string usersKey = $"lobby:{serverData.Settings.ServerId}:connected_users";
         await db.KeyDeleteAsync(usersKey);
-        string lobbiesKey = $"lobby:{serverData.Settings.GameServerId}:active_lobbies";
+        string lobbiesKey = $"lobby:{serverData.Settings.ServerId}:active_lobbies";
         await db.KeyDeleteAsync(lobbiesKey);
     }
 
-    public async Task AddUserToGameServerAsync(Guid userGlobalId)
+    public async Task AddUserToServerAsync(Guid userGlobalId)
     {
-        string usersKey = $"game_server:{gameServerId}:connected_users";
+        string usersKey = $"game_server:{serverId}:connected_users";
         await db.SetAddAsync(usersKey, userGlobalId.ToString());
     }
 
-    public async Task RemoveUserFromGameServerAsync(Guid userGlobalId)
+    public async Task RemoveUserFromServerAsync(Guid userGlobalId)
     {
-        string usersKey = $"game_server:{gameServerId}:connected_users";
+        string usersKey = $"game_server:{serverId}:connected_users";
         await db.SetRemoveAsync(usersKey, userGlobalId.ToString());
     }
 
-    public async Task AddLobbyToGameServerAsync(int lobbyId)
+    public async Task AddLobbyToServerAsync(int lobbyId)
     {
-        string lobbiesKey = $"game_server:{gameServerId}:active_lobbies";
+        string lobbiesKey = $"game_server:{serverId}:active_lobbies";
         await db.SetAddAsync(lobbiesKey, lobbyId.ToString());
     }
 
-    public async Task RemoveLobbyFromGameServerAsync(int lobbyId)
+    public async Task RemoveLobbyFromServerAsync(int lobbyId)
     {
-        string lobbiesKey = $"game_server:{gameServerId}:active_lobbies";
+        string lobbiesKey = $"game_server:{serverId}:active_lobbies";
         await db.SetRemoveAsync(lobbiesKey, lobbyId.ToString());
     }
 
-    public async Task SetGameServerHeartbeatAsync()
+    public async Task SetServerHeartbeatAsync()
     {
-        await db.StringSetAsync($"game_server:{gameServerId}:heartbeat", "alive", TimeSpan.FromSeconds(30));
+        await db.StringSetAsync($"game_server:{serverId}:heartbeat", "alive", TimeSpan.FromSeconds(30));
     }
 
-    public async Task RemoveGameServerAsync()
+    public async Task RemoveServerAsync()
     {
-        await db.KeyDeleteAsync($"game_server:{gameServerId}");
-        await db.KeyDeleteAsync($"game_server:{gameServerId}:heartbeat");
-        await db.SetRemoveAsync("game_servers", gameServerId.ToString());
+        await db.KeyDeleteAsync($"game_server:{serverId}");
+        await db.KeyDeleteAsync($"game_server:{serverId}:heartbeat");
+        await db.SetRemoveAsync("game_servers", serverId.ToString());
     }
 
     /* LOBBY */
@@ -106,7 +106,7 @@ public class ServerDatabaseHandler
         await db.HashSetAsync($"lobby:{lobby.LobbyId}", new HashEntry[]
         {
             new HashEntry("lobby_id", lobby.LobbyId),
-            new HashEntry("game_server_id", gameServerId.ToString()),
+            new HashEntry("game_server_id", serverId.ToString()),
             new HashEntry("max_users", lobby.Settings.MaxUsers),
             new HashEntry("lobby_visibility", lobby.Settings.LobbyVisibility.ToString()),
             new HashEntry("lobby_name", lobby.Settings.LobbyName),
@@ -143,7 +143,7 @@ public class ServerDatabaseHandler
         {
             new HashEntry("global_guid", user.GlobalGuid.ToString()),
             new HashEntry("lobby_id", user.LobbyId.ToString()),
-            new HashEntry("game_server_id", gameServerId.ToString()),
+            new HashEntry("game_server_id", serverId.ToString()),
             new HashEntry("user_name", user.Settings.UserName),
         });
     }

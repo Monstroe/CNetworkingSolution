@@ -40,7 +40,7 @@ public static class PacketBuilder
         packet.Write(token);
         return packet;
     }
-#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH || CNS_HOST_AUTH
+#endif
     public static NetPacket ConnectionRequest(ConnectionData connectionData)
     {
         NetPacket packet = new NetPacket();
@@ -49,7 +49,7 @@ public static class PacketBuilder
         connectionData.Serialize(ref packet);
         return packet;
     }
-#endif
+
 
     public static NetPacket ConnectionResponse(bool accepted)
     {

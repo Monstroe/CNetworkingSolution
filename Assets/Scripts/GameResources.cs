@@ -15,13 +15,20 @@ public class GameResources : MonoBehaviour
     public LobbySettings DefaultLobbySettings => defaultLobbySettings;
     public UserSettings DefaultUserSettings => defaultUserSettings;
 
+    public GameMode GameMode { get => gameMode; set => gameMode = value; }
+
+    [Header("Game Settings")]
+    [SerializeField] private GameMode gameMode = GameMode.MULTIPLAYER;
+
     [Header("Layer Masks")]
     [SerializeField] private LayerMask groundMask;
     [SerializeField] private LayerMask interactionMask;
+
     [Header("Scene Names")]
     [SerializeField] private string gameSceneName = "Game";
     [SerializeField] private string menuSceneName = "Menu";
     [SerializeField] private string serverSceneName = "Server";
+
     [Header("Default Settings")]
     [SerializeField] private int defaultLobbyId = 0;
     [SerializeField] private LobbySettings defaultLobbySettings = new LobbySettings();
@@ -40,4 +47,10 @@ public class GameResources : MonoBehaviour
             Destroy(gameObject);
         }
     }
+}
+
+public enum GameMode
+{
+    SINGLEPLAYER,
+    MULTIPLAYER
 }
