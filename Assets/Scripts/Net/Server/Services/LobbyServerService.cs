@@ -6,6 +6,7 @@ public class LobbyServerService : ServerService
     {
         switch (commandType)
         {
+#if !CNS_LOBBY_SINGLE
             case CommandType.LOBBY_SETTINGS:
                 {
                     if (!user.IsHost(lobby.LobbyData))
@@ -25,6 +26,7 @@ public class LobbyServerService : ServerService
 #endif
                     break;
                 }
+#endif
             case CommandType.LOBBY_USER_SETTINGS:
                 {
                     ulong userId = packet.ReadULong();
