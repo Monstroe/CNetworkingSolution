@@ -9,11 +9,9 @@ public class Menu : MonoBehaviour
     [Space]
     [SerializeField] private GameObject localServerPrefab;
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject multiLobbyMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
-#endif
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

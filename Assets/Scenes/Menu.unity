@@ -342,7 +342,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transport: {fileID: 161184808}
-  lobbyApiUrl: https://monstroe.live/api
 --- !u!114 &161184808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -356,7 +355,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   port: 7777
-  address: 127.0.0.1
+  address: 159.65.186.84
   connectionKey: Bruh-Wizz-Arcgis
   pingInterval: 1
   disconnectTimeout: 5
