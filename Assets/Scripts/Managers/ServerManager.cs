@@ -182,13 +182,16 @@ public class ServerManager : MonoBehaviour
 #endif
 
 #if CNS_SYNC_LOBBY_SINGLE
-                    if (connectionData != null && connectionData.LobbyId == GameResources.Instance.DefaultLobbyId)
+                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
                     {
-                        connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
-                    }
-                    else
-                    {
-                        connectionData = null;
+                        if (connectionData != null && connectionData.LobbyId == GameResources.Instance.DefaultLobbyId)
+                        {
+                            connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
+                        }
+                        else
+                        {
+                            connectionData = null;
+                        }
                     }
 #endif
                     if (connectionData != null)
