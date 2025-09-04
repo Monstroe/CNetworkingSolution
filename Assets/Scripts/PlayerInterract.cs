@@ -15,7 +15,7 @@ public class PlayerInteract : MonoBehaviour
     private bool grabCached = false;
 
     // Animations
-    private bool updateAnimationState = false;
+    private bool previousGrabState = false;
 
     // Update is called once per frame
     void Update()
@@ -33,6 +33,8 @@ public class PlayerInteract : MonoBehaviour
         {
             return;
         }
+
+        previousGrabState = Player.Instance.Grabbed;
 
         if (playerGrab.action.WasPressedThisFrame() && Player.Instance.CurrentInteractable == null)
         {
@@ -64,10 +66,9 @@ public class PlayerInteract : MonoBehaviour
 
     void Animate()
     {
-        if (updateAnimationState)
+        if (previousGrabState != Player.Instance.Grabbed)
         {
             ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerAnim(Player.Instance.IsWalking, Player.Instance.IsSprinting, Player.Instance.IsCrouching, Player.Instance.IsGrounded, Player.Instance.Jumped, Player.Instance.Grabbed)), TransportMethod.Reliable);
-            updateAnimationState = false;
         }
     }
 

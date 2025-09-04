@@ -46,7 +46,10 @@ public class PlayerMovement : MonoBehaviour
     private float crouchingHeight;
 
     // Animations
-    private bool updateAnimationState = false;
+    private bool previousGroundedState = false;
+    private bool previousCrouchingState = false;
+    private bool previousWalkingState = false;
+    private bool previousSprintingState = false;
 
     private bool locked = false;
     private bool justGrounded = true;
@@ -170,15 +173,19 @@ public class PlayerMovement : MonoBehaviour
 
     void Animate()
     {
+        previousGroundedState = Player.Instance.IsGrounded;
+        previousCrouchingState = Player.Instance.IsCrouching;
+        previousWalkingState = Player.Instance.IsWalking;
+        previousSprintingState = Player.Instance.IsSprinting;
+
         Player.Instance.IsGrounded = Physics.CheckSphere(transform.position, .15f, GameResources.Instance.GroundMask);
         Player.Instance.IsCrouching = playerCrouchValue > 0 && Player.Instance.IsGrounded;
         Player.Instance.IsWalking = playerMoveValue.sqrMagnitude > 0 && Player.Instance.IsGrounded;
         Player.Instance.IsSprinting = playerSprintValue > 0f && Player.Instance.IsWalking && !Player.Instance.IsCrouching && Vector3.Angle(moveDir, forwardDir) < 80;
 
-        if (updateAnimationState)
+        if (previousGroundedState != Player.Instance.IsGrounded || previousCrouchingState != Player.Instance.IsCrouching || previousWalkingState != Player.Instance.IsWalking || previousSprintingState != Player.Instance.IsSprinting)
         {
             ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerAnim(Player.Instance.IsWalking, Player.Instance.IsSprinting, Player.Instance.IsCrouching, Player.Instance.IsGrounded, Player.Instance.Jumped, Player.Instance.Grabbed)), TransportMethod.Reliable);
-            updateAnimationState = false;
         }
     }
 
