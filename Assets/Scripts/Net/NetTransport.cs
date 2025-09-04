@@ -114,7 +114,7 @@ public enum TransportType
 #if CNS_TRANSPORT_LITENETLIB
     LiteNetLib,
 #endif
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
-    SteamWorks,
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
+    SteamRelay,
 #endif
 }

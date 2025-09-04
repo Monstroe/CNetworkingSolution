@@ -9,7 +9,7 @@ public class Menu : MonoBehaviour
     [Space]
     [SerializeField] private GameObject localServerPrefab;
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject multiLobbyMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
@@ -32,6 +32,8 @@ public class Menu : MonoBehaviour
         GameResources.Instance.GameMode = GameMode.SINGLEPLAYER;
         ClientManager.Instance.SetTransport(TransportType.Local);
         Instantiate(localServerPrefab);
+        ServerManager.Instance.ClearTransports();
+        ServerManager.Instance.AddTransport(TransportType.Local);
 
         ClientManager.Instance.OnNewUserCreated += (user) =>
         {
@@ -53,10 +55,10 @@ public class Menu : MonoBehaviour
     public void StartMultiPlayer()
     {
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
         mainMenu.SetActive(false);
         multiLobbyMenu.SetActive(true);
-#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
+#elif CNS_SYNC_SERVER_SINGLE
         ClientManager.Instance.OnNewUserCreated += (user) =>
         {
             ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);

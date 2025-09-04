@@ -6,6 +6,7 @@ public class ServerLobby : MonoBehaviour
 {
     public LobbyData LobbyData { get; protected set; } = new LobbyData();
     public ServerLobbyGameData GameData { get; private set; } = new ServerLobbyGameData();
+    public EventManager EventManager { get; private set; }
     public Map Map { get; private set; }
 
     protected List<NetTransport> transports;
@@ -21,6 +22,7 @@ public class ServerLobby : MonoBehaviour
         services.Add(ServiceType.GAME, new GameObject("GameServerService").AddComponent<GameServerService>());
         services.Add(ServiceType.PLAYER, new GameObject("PlayerServerService").AddComponent<PlayerServerService>());
         services.Add(ServiceType.FX, new GameObject("FXServerService").AddComponent<FXServerService>());
+        services.Add(ServiceType.EVENT, new GameObject("EventServerService").AddComponent<EventServerService>());
         services.Add(ServiceType.ITEM, new GameObject("ItemServerService").AddComponent<ItemServerService>());
         services.Add(ServiceType.CHAT, new GameObject("ChatServerService").AddComponent<ChatServerService>());
         // The object server service is special because it handles all networked object communication
@@ -32,6 +34,10 @@ public class ServerLobby : MonoBehaviour
         {
             service.transform.SetParent(transform);
         }
+
+        // Init Event Manager
+        EventManager = new GameObject("EventManager").AddComponent<EventManager>();
+        EventManager.transform.SetParent(transform);
 
         // Init Map
         Map = Instantiate(Resources.Load<GameObject>("Prefabs/Map"), this.transform).GetComponent<Map>();

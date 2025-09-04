@@ -15,25 +15,25 @@ public class LobbyData
 [Serializable]
 public class LobbySettings : INetSerializable<LobbySettings>
 {
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
     public ulong SteamCode { get => steamCode; set => steamCode = value; }
 #endif
     public int MaxUsers { get => maxUsers; set => maxUsers = value; }
     public LobbyVisibility LobbyVisibility { get => lobbyVisibility; set => lobbyVisibility = value; }
     public string LobbyName { get => lobbyName; set => lobbyName = value; }
 
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
     [SerializeField] private ulong steamCode;
 #endif
     [SerializeField] private int maxUsers;
     [SerializeField] private LobbyVisibility lobbyVisibility;
     [SerializeField] private string lobbyName;
 
-    public LobbySettings Deserialize(ref NetPacket packet)
+    public LobbySettings Deserialize(NetPacket packet)
     {
         return new LobbySettings()
         {
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
             SteamCode = packet.ReadULong(),
 #endif
             MaxUsers = packet.ReadInt(),
@@ -42,9 +42,9 @@ public class LobbySettings : INetSerializable<LobbySettings>
         };
     }
 
-    public void Serialize(ref NetPacket packet)
+    public void Serialize(NetPacket packet)
     {
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
         packet.Write(SteamCode);
 #endif
         packet.Write(MaxUsers);

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public enum ServiceType
 {
-    CONNECTION, LOBBY, GAME, PLAYER, FX, ITEM, CHAT, OBJECT
+    CONNECTION, LOBBY, GAME, PLAYER, FX, EVENT, ITEM, CHAT, OBJECT
 }
 
 public enum CommandType
@@ -20,6 +20,8 @@ public enum CommandType
     PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_TRANSFORM, PLAYER_ANIM, PLAYER_GRAB, PLAYER_DROP, PLAYER_INTERACT,
     /* FX */
     SFX, VFX,
+    /* EVENT */
+    EVENT_GROUND_HIT,
     /* ITEM */
     STARTING_ITEMS_INIT, ITEM_SPAWN, ITEM_DESTROY,
     /* CHAT */
@@ -31,7 +33,7 @@ public enum CommandType
 public static class PacketBuilder
 {
     /* CONNECTION */
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
     public static NetPacket ConnectionRequest(string token)
     {
         NetPacket packet = new NetPacket();
@@ -46,7 +48,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.CONNECTION);
         packet.Write((byte)CommandType.CONNECTION_REQUEST);
-        connectionData.Serialize(ref packet);
+        connectionData.Serialize(packet);
         return packet;
     }
 
@@ -66,7 +68,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_SETTINGS);
-        settings.Serialize(ref packet);
+        settings.Serialize(packet);
         return packet;
     }
 
@@ -76,7 +78,7 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_USER_SETTINGS);
         packet.Write(user.UserId);
-        settings.Serialize(ref packet);
+        settings.Serialize(packet);
         return packet;
     }
 
@@ -88,7 +90,7 @@ public static class PacketBuilder
         packet.Write((byte)users.Count);
         foreach (UserData user in users)
         {
-            user.Serialize(ref packet);
+            user.Serialize(packet);
         }
         return packet;
     }
@@ -98,7 +100,7 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_USER_JOINED);
-        user.Serialize(ref packet);
+        user.Serialize(packet);
         return packet;
     }
 
@@ -201,26 +203,37 @@ public static class PacketBuilder
     }
 
     /* FX */
-    public static NetPacket PlaySFX(int sfxId, float volume, Vector3? pos)
+    public static NetPacket PlaySFX(string name, float volume, Vector3? pos)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.FX);
         packet.Write((byte)CommandType.SFX);
-        packet.Write(sfxId);
+        packet.Write(GameResources.Instance.GetSFXIdByName(name));
         packet.Write(volume);
         if (pos != null)
             packet.Write(pos.Value);
         return packet;
     }
 
-    public static NetPacket PlayVFX(int vfxId, Vector3 pos, float scale)
+    public static NetPacket PlayVFX(string name, Vector3 pos, float scale)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.FX);
         packet.Write((byte)CommandType.VFX);
-        packet.Write(vfxId);
+        packet.Write(GameResources.Instance.GetVFXIdByName(name));
         packet.Write(pos);
         packet.Write(scale);
+        return packet;
+    }
+
+    /* EVENT */
+    public static NetPacket EventGroundHit(byte playerId, GroundHitArgs args)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.EVENT);
+        packet.Write((byte)CommandType.EVENT_GROUND_HIT);
+        packet.Write(playerId);
+        args.Serialize(packet);
         return packet;
     }
 

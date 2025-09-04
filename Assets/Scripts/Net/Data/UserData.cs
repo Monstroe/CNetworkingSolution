@@ -16,7 +16,7 @@ public class UserData : INetSerializable<UserData>
         return lobby.HostUser != null && lobby.HostUser.UserId == UserId;
     }
 
-    public UserData Deserialize(ref NetPacket packet)
+    public UserData Deserialize(NetPacket packet)
     {
         return new UserData()
         {
@@ -25,18 +25,18 @@ public class UserData : INetSerializable<UserData>
             PlayerId = packet.ReadByte(),
             LobbyId = packet.ReadInt(),
             InGame = packet.ReadBool(),
-            Settings = new UserSettings().Deserialize(ref packet)
+            Settings = new UserSettings().Deserialize(packet)
         };
     }
 
-    public void Serialize(ref NetPacket packet)
+    public void Serialize(NetPacket packet)
     {
         packet.Write(GlobalGuid.ToString());
         packet.Write(UserId);
         packet.Write(PlayerId);
         packet.Write(LobbyId);
         packet.Write(InGame);
-        Settings.Serialize(ref packet);
+        Settings.Serialize(packet);
     }
 }
 
@@ -47,7 +47,7 @@ public class UserSettings : INetSerializable<UserSettings>
 
     [SerializeField] private string userName;
 
-    public UserSettings Deserialize(ref NetPacket packet)
+    public UserSettings Deserialize(NetPacket packet)
     {
         return new UserSettings()
         {
@@ -55,7 +55,7 @@ public class UserSettings : INetSerializable<UserSettings>
         };
     }
 
-    public void Serialize(ref NetPacket packet)
+    public void Serialize(NetPacket packet)
     {
         packet.Write(UserName);
     }

@@ -1,4 +1,4 @@
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-public class SteamworksTransport : NetTransport, IConnectionManager, ISocketManager
+public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketManager
 {
     [Tooltip("The Steam App ID of your game. Technically you're not allowed to use 480, but Valve doesn't do anything about it so it's fine for testing purposes.")]
     [SerializeField] private uint steamAppId = 480;

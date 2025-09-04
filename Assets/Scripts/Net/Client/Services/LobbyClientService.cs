@@ -20,7 +20,7 @@ public class LobbyClientService : ClientService
                 }
             case CommandType.LOBBY_SETTINGS:
                 {
-                    LobbySettings settings = new LobbySettings().Deserialize(ref packet);
+                    LobbySettings settings = new LobbySettings().Deserialize(packet);
                     ClientManager.Instance.UpdateCurrentLobby(settings, ClientManager.Instance.CurrentUser.IsHost(ClientManager.Instance.CurrentLobby.LobbyData), false);
                     ClientManager.Instance.CurrentLobby.LobbyData.Settings = settings;
                     Debug.Log($"Lobby settings changed: MaxUsers: {settings.MaxUsers}, LobbyVisibility: {settings.LobbyVisibility}, LobbyName: {settings.LobbyName}");
@@ -30,7 +30,7 @@ public class LobbyClientService : ClientService
                 {
                     ulong userId = packet.ReadULong();
                     UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
-                    UserSettings userSettings = new UserSettings().Deserialize(ref packet);
+                    UserSettings userSettings = new UserSettings().Deserialize(packet);
 
                     if (userId == ClientManager.Instance.CurrentUser.UserId)
                     {
@@ -49,7 +49,7 @@ public class LobbyClientService : ClientService
                     List<UserData> updatedUsers = new List<UserData>(userCount);
                     for (int i = 0; i < userCount; i++)
                     {
-                        UserData user = new UserData().Deserialize(ref packet);
+                        UserData user = new UserData().Deserialize(packet);
                         updatedUsers.Add(user);
                     }
 
@@ -59,7 +59,7 @@ public class LobbyClientService : ClientService
                 }
             case CommandType.LOBBY_USER_JOINED:
                 {
-                    UserData user = new UserData().Deserialize(ref packet);
+                    UserData user = new UserData().Deserialize(packet);
                     ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Add(user);
                     break;
                 }

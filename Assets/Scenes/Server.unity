@@ -124,7 +124,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3917522912902519047, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
   m_PrefabInstance: {fileID: 8987536223995492725}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &458500227
+--- !u!114 &458500230
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -159,10 +159,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Server
       objectReference: {fileID: 0}
-    - target: {fileID: 2256639419262196867, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
-      propertyPath: gameMode
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 2357092467687029804, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
       propertyPath: transports.Array.size
       value: 1
@@ -170,7 +166,7 @@ PrefabInstance:
     - target: {fileID: 2357092467687029804, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
       propertyPath: 'transports.Array.data[0]'
       value: 
-      objectReference: {fileID: 458500227}
+      objectReference: {fileID: 458500230}
     - target: {fileID: 6932918761478102723, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -212,14 +208,13 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
-    - {fileID: 874992502486094215, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
-    - {fileID: 7138603913017836888, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
+    - {fileID: 795843296005319581, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3917522912902519047, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 458500227}
+      addedObject: {fileID: 458500230}
   m_SourcePrefab: {fileID: 100100000, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

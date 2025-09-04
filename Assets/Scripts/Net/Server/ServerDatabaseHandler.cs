@@ -1,4 +1,4 @@
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
 using StackExchange.Redis;
 using System.Threading.Tasks;
 using System;

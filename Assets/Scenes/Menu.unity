@@ -342,7 +342,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transport: {fileID: 161184808}
-  lobbyApiUrl: http://localhost:5107/api
+  lobbyApiUrl: https://monstroe.live/api
 --- !u!114 &161184808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1390,9 +1390,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sfxPrefab: {fileID: 1668362275006792882, guid: db00438a26b6bd443ad86f762ec8e3b8, type: 3}
-  sfxDirectory: SFX/
   vfxPrefab: {fileID: 2512653528728713639, guid: 9c1adea53886dbf4684dfb0e3f6d784e, type: 3}
-  vfxDirectory: VFX/
 --- !u!1 &828511378
 GameObject:
   m_ObjectHideFlags: 0

@@ -49,6 +49,8 @@ public class PlayerMovement : MonoBehaviour
     private bool updateAnimationState = false;
 
     private bool locked = false;
+    private bool justGrounded = true;
+    private float footstepTimer = 0;
 
     void OnEnable()
     {
@@ -118,9 +120,16 @@ public class PlayerMovement : MonoBehaviour
                 Player.Instance.Jumped = true;
                 Jump(jumpHeight);
             }
+
+            if (!justGrounded)
+            {
+                justGrounded = true;
+                ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.EventGroundHit(ClientManager.Instance.CurrentUser.PlayerId, new GroundHitArgs() { position = transform.position, rotation = transform.rotation }), TransportMethod.Reliable);
+            }
         }
         else
         {
+            justGrounded = false;
             yVelocity += gravity * Time.fixedDeltaTime;
         }
 
@@ -132,6 +141,17 @@ public class PlayerMovement : MonoBehaviour
             cc.Move(xVelocity * Time.deltaTime);
             cc.Move(Vector3.up * yVelocity * Time.deltaTime);
         }
+
+        // Footstep SFX
+        if (moveDir.sqrMagnitude > 0.01f && Player.Instance.IsGrounded)
+        {
+            if (footstepTimer > (Player.Instance.IsSprinting ? (.55f / sprintMultiplier) : .55f))
+            {
+                footstepTimer = 0;
+                FXManager.Instance.PlaySFX("Footstep", 0.5f, transform.position);
+            }
+        }
+        footstepTimer += Time.deltaTime;
 
         // Networking
         ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerTransform(transform.position, transform.rotation, cameraTransform.forward)), TransportMethod.Unreliable);

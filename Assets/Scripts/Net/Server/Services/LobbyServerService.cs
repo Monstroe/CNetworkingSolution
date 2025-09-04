@@ -6,7 +6,6 @@ public class LobbyServerService : ServerService
     {
         switch (commandType)
         {
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH || CNS_HOST_AUTH
             case CommandType.LOBBY_SETTINGS:
                 {
                     if (!user.IsHost(lobby.LobbyData))
@@ -15,15 +14,17 @@ public class LobbyServerService : ServerService
                         return;
                     }
 
-                    LobbySettings lobbySettings = new LobbySettings().Deserialize(ref packet);
+                    LobbySettings lobbySettings = new LobbySettings().Deserialize(packet);
                     lobby.LobbyData.Settings = lobbySettings;
                     lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-                    ServerManager.Instance.DB.UpdateLobbyMetadataAsync(lobby.LobbyData);
+#if CNS_SYNC_SERVER_MULTIPLE
+                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+                    {
+                        ServerManager.Instance.DB.UpdateLobbyMetadataAsync(lobby.LobbyData);
+                    }
 #endif
                     break;
                 }
-#endif
             case CommandType.LOBBY_USER_SETTINGS:
                 {
                     ulong userId = packet.ReadULong();
@@ -33,11 +34,14 @@ public class LobbyServerService : ServerService
                         return;
                     }
 
-                    UserSettings userSettings = new UserSettings().Deserialize(ref packet);
+                    UserSettings userSettings = new UserSettings().Deserialize(packet);
                     user.Settings = userSettings;
                     lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable);
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-                    ServerManager.Instance.DB.UpdateUserMetadataAsync(user);
+#if CNS_SYNC_SERVER_MULTIPLE
+                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+                    {
+                        ServerManager.Instance.DB.UpdateUserMetadataAsync(user);
+                    }
 #endif
                     break;
                 }
@@ -46,7 +50,7 @@ public class LobbyServerService : ServerService
 
     public override void Tick(ServerLobby lobby)
     {
-
+        // Nothing
     }
 
     public override void UserJoined(ServerLobby lobby, UserData joinedUser)

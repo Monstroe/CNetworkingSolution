@@ -16,7 +16,7 @@ public class ServerManager : MonoBehaviour
 
     [SerializeField] private List<NetTransport> transports;
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
     public delegate void PublicIpAddressFetchedHandler(string ipAddress);
     public event PublicIpAddressFetchedHandler OnPublicIpAddressFetched;
 
@@ -59,14 +59,15 @@ public class ServerManager : MonoBehaviour
             transport.OnNetworkReceived += HandleNetworkReceived;
         }
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             OnPublicIpAddressFetched += async (ip) =>
             {
+                Debug.Log("<color=green><b>CNS</b></color>: Initializing database connection and token verifier.");
                 ServerData.Settings.ServerId = Guid.NewGuid();
                 ServerData.Settings.ServerKey = GenerateSecretKey();
-                ServerData.Settings.ServerAddress = "127.0.0.1";// + ip; // TODO: REMOVE THIS
+                ServerData.Settings.ServerAddress = ip;
 
                 DB = new ServerDatabaseHandler();
                 await DB.Connect(dbConnectionString, ServerData.Settings.ServerId);
@@ -165,24 +166,30 @@ public class ServerManager : MonoBehaviour
                 if (serviceType == ServiceType.CONNECTION && commandType == CommandType.CONNECTION_REQUEST)
                 {
                     ConnectionData connectionData;
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
                     if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
                     {
                         connectionData = TokenVerifier.VerifyToken(packet.ReadString());
                     }
                     else
                     {
-                        connectionData = new ConnectionData().Deserialize(ref packet);
+                        connectionData = new ConnectionData().Deserialize(packet);
                     }
-#elif CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH || CNS_HOST_AUTH
-                    connectionData = new ConnectionData().Deserialize(ref packet);
+#elif CNS_SYNC_SERVER_SINGLE || CNS_SYNC_HOST
+                    connectionData = new ConnectionData().Deserialize(packet);
 #else
                     connectionData = null;
 #endif
 
-#if CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH
-                    connectionData.LobbyId = GameResources.Instance.DefaultLobbyId;
-                    connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
+#if CNS_SYNC_LOBBY_SINGLE
+                    if (connectionData != null && connectionData.LobbyId == GameResources.Instance.DefaultLobbyId)
+                    {
+                        connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
+                    }
+                    else
+                    {
+                        connectionData = null;
+                    }
 #endif
                     if (connectionData != null)
                     {
@@ -249,8 +256,11 @@ public class ServerManager : MonoBehaviour
     async void OnDestroy()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
-        await DB.Close();
+#if CNS_SYNC_SERVER_MULTIPLE
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            await DB.Close();
+        }
 #endif
     }
 
@@ -281,7 +291,7 @@ public class ServerManager : MonoBehaviour
         };
         ServerData.ConnectedUsers[user.UserId] = user;
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             await DB.AddUserToServerLimboAsync(user.UserId, maxSecondsBeforeUnverifiedUserRemoval);
@@ -309,7 +319,7 @@ public class ServerManager : MonoBehaviour
             }
         }
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             await DB.DeleteUserAsync(user.GlobalGuid);
@@ -330,7 +340,7 @@ public class ServerManager : MonoBehaviour
         lobby.transform.SetParent(gameObject.transform);
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             await DB.SaveLobbyMetadataAsync(lobby.LobbyData);
@@ -347,7 +357,7 @@ public class ServerManager : MonoBehaviour
     {
         ServerData.ActiveLobbies.Remove(lobby.LobbyData.LobbyId);
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             await DB.RemoveLobbyFromServerAsync(lobby.LobbyData.LobbyId);
@@ -366,7 +376,7 @@ public class ServerManager : MonoBehaviour
         user.Settings = data.UserSettings;
         lobby.LobbyData.LobbyUsers.Add(user);
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             TokenVerifier.RemoveUnverifiedUser(user);
@@ -385,7 +395,7 @@ public class ServerManager : MonoBehaviour
     {
         lobby.LobbyData.LobbyUsers.Remove(user);
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             await DB.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
@@ -393,7 +403,7 @@ public class ServerManager : MonoBehaviour
 #endif
     }
 
-    public void RegisterTransport(TransportType transportType)
+    public void AddTransport(TransportType transportType)
     {
         NetTransport transport = null;
 
@@ -409,7 +419,7 @@ public class ServerManager : MonoBehaviour
                 transport = gameObject.AddComponent<LiteNetLibTransport>();
                 break;
 #endif
-#if CNS_TRANSPORT_STEAMWORKS && CNS_HOST_AUTH
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
             case TransportType.SteamWorks:
                 transport = gameObject.AddComponent<SteamworksTransport>();
                 break;
@@ -417,6 +427,8 @@ public class ServerManager : MonoBehaviour
         }
 
         transports.Add(transport);
+        transport.Initialize(NetDeviceType.Server);
+        transport.StartDevice();
         transport.OnNetworkConnected += HandleNetworkConnected;
         transport.OnNetworkDisconnected += HandleNetworkDisconnected;
         transport.OnNetworkReceived += HandleNetworkReceived;
@@ -439,7 +451,7 @@ public class ServerManager : MonoBehaviour
         return ((uint)user.UserId, (int)(user.UserId >> 32));
     }
 
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
     private IEnumerator GetPublicIpAddress()
     {
         using (var www = UnityWebRequest.Get(publicIpApiUrl))
