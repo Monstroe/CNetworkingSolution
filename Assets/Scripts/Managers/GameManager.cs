@@ -4,16 +4,20 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
+    public delegate void GameInitializedEventHandler();
+    public event GameInitializedEventHandler OnGameInitialized;
+
     public static GameManager Instance { get; private set; }
 
     public bool Initialized { get; private set; } = false;
 
     [Header("Game Initialization")]
-    [SerializeField] private float pregameDuration = 3f;
+    [SerializeField] private float pregameLoadDuration = 3f;
+    [SerializeField] private float gameLoadDuration = 1f;
     [SerializeField] private float fadeDuration = 1f;
 
-    private bool loopCanStart = false;
-    private bool loopCanEnd = false;
+    private bool initLoopCanStart = false;
+    private bool initLoopCanEnd = false;
 
     void Awake()
     {
@@ -32,26 +36,36 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         SceneManager.sceneLoaded += SceneLoaded;
+
+        ClientManager.Instance.OnCurrentUserUpdated += (userSettings) =>
+        {
+            Debug.Log($"Updating settings for local user: UserName: {userSettings.UserName}");
+        };
+
+        ClientManager.Instance.OnCurrentLobbyUpdated += (lobbySettings) =>
+        {
+            Debug.Log($"Successfully updated lobby settings");
+        };
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (loopCanStart)
+        if (initLoopCanStart)
         {
-            loopCanStart = false;
-            FadeScreen.Instance.Display(false, fadeDuration / 2, () =>
+            initLoopCanStart = false;
+            FadeScreen.Instance.Display(false, fadeDuration, () =>
             {
                 Debug.Log("Scene loaded, initializing game...");
                 StartCoroutine(InitGame());
             });
         }
 
-        if (loopCanEnd)
+        if (initLoopCanEnd)
         {
-            loopCanEnd = false;
-            Initialized = true;
-            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.GameUserJoined(), TransportMethod.Reliable);
+            initLoopCanEnd = false;
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.GameUserJoined(ClientManager.Instance.CurrentUser), TransportMethod.Reliable);
+            StartCoroutine(StartGame());
         }
     }
 
@@ -59,26 +73,38 @@ public class GameManager : MonoBehaviour
     {
         if (scene.name.Equals(GameResources.Instance.GameSceneName))
         {
-            StartPreGame();
-            loopCanStart = true;
+            LoadPreGame();
+            initLoopCanStart = true;
         }
     }
 
     private IEnumerator InitGame()
     {
-        yield return new WaitForSeconds(pregameDuration);
-        FadeScreen.Instance.Display(true, fadeDuration / 2, () =>
+        yield return new WaitForSeconds(pregameLoadDuration);
+
+        // NOTE: These two calls aren't necessary, I'm just showcasing features here
+        ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
+        ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MyLobby", LobbyVisibility = LobbyVisibility.PUBLIC, MaxUsers = 8 });
+
+        FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
-            StartGame();
-            loopCanEnd = true;
-            FadeScreen.Instance.Display(false, fadeDuration / 2, () =>
-            {
-                Debug.Log("Game started successfully.");
-            });
+            LoadGame();
+            initLoopCanEnd = true;
         });
     }
 
-    private void StartPreGame()
+    private IEnumerator StartGame()
+    {
+        yield return new WaitForSeconds(gameLoadDuration);
+        Initialized = true;
+        OnGameInitialized?.Invoke();
+        FadeScreen.Instance.Display(false, fadeDuration, () =>
+        {
+            Debug.Log("Game initialized successfully.");
+        });
+    }
+
+    private void LoadPreGame()
     {
         GameUI.Instance.ShowGame(false);
         GameContent.Instance.ShowGame(false);
@@ -86,7 +112,7 @@ public class GameManager : MonoBehaviour
         GameContent.Instance.ShowPregame(true);
     }
 
-    private void StartGame()
+    private void LoadGame()
     {
         GameUI.Instance.ShowPregame(false);
         GameContent.Instance.ShowPregame(false);

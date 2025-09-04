@@ -82,7 +82,7 @@ PlayerSettings:
   androidApplicationEntry: 2
   defaultIsNativeResolution: 1
   macRetinaSupport: 1
-  runInBackground: 0
+  runInBackground: 1
   muteOtherAudioSources: 0
   Prepare IOS For Recording: 0
   Force IOS Speakers When Recording: 0
@@ -817,7 +817,9 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
-    Standalone: CNS_DEDICATED_SERVER_SINGLE_LOBBY_AUTH;CNS_TRANSPORT_LITENETLIB;CNS_TRANSPORT_LOCAL
+    Android: 
+    Server: CNS_SYNC_SERVER_MULTIPLE;CNS_LOBBY_MULTIPLE;CNS_TRANSPORT_LOCAL;CNS_TRANSPORT_LITENETLIB
+    Standalone: CNS_SYNC_SERVER_MULTIPLE;CNS_LOBBY_MULTIPLE;CNS_TRANSPORT_LOCAL;CNS_TRANSPORT_LITENETLIB
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

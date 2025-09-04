@@ -1,7 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class ServerPlayer : ServerObject
@@ -33,7 +30,7 @@ public class ServerPlayer : ServerObject
     {
         switch (commandType)
         {
-            case CommandType.PLAYER_STATE:
+            case CommandType.PLAYER_TRANSFORM:
                 {
                     Position = packet.ReadVector3();
                     Rotation = packet.ReadQuaternion();
@@ -48,7 +45,7 @@ public class ServerPlayer : ServerObject
                     IsGrounded = packet.ReadBool();
                     Jumped = packet.ReadBool();
                     Grabbed = packet.ReadBool();
-                    lobby.SendToLobby(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed)), transportMethod ?? TransportMethod.Reliable, User);
+                    lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed)), transportMethod ?? TransportMethod.Reliable, User);
                     break;
                 }
         }
@@ -56,6 +53,36 @@ public class ServerPlayer : ServerObject
 
     public override void Tick(ServerLobby lobby)
     {
-        lobby.SendToLobby(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerState(Position, Rotation, Forward)), TransportMethod.Unreliable, User);
+        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerTransform(Position, Rotation, Forward)), TransportMethod.Unreliable, User);
+    }
+
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
+    {
+        // Nothing
+    }
+
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
+    {
+        lobby.SendToUser(joinedUser, PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerTransform(Position, Rotation, Forward)), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed)), TransportMethod.Reliable);
+        if (CurrentInteractable != null)
+        {
+            lobby.SendToUser(joinedUser, PacketBuilder.ObjectCommunication(CurrentInteractable, PacketBuilder.PlayerGrab(User.PlayerId)), TransportMethod.Reliable);
+        }
+    }
+
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
+    {
+        if (User == leftUser)
+        {
+            lobby.GameData.ServerPlayers.Remove(User);
+            lobby.GameData.ServerObjects.Remove(Id);
+            if (CurrentInteractable != null)
+            {
+                CurrentInteractable.Drop(this, lobby, leftUser, null, TransportMethod.Reliable);
+                lobby.SendToGame(PacketBuilder.ObjectCommunication(CurrentInteractable, PacketBuilder.PlayerDrop(User.PlayerId)), TransportMethod.Reliable);
+            }
+            lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerDestroy()), TransportMethod.Reliable);
+        }
     }
 }

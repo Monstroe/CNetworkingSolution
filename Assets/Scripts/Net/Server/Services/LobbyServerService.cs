@@ -6,37 +6,45 @@ public class LobbyServerService : ServerService
     {
         switch (commandType)
         {
+#if !CNS_LOBBY_SINGLE
             case CommandType.LOBBY_SETTINGS:
                 {
-                    LobbySettings lobbySettings = new LobbySettings()
+                    if (!user.IsHost(lobby.LobbyData))
                     {
-#if CNS_TRANSPORT_STEAMWORKS
-                        SteamCode = packet.ReadULong(),
-#endif
-                        MaxUsers = packet.ReadInt(),
-                        LobbyVisibility = (LobbyVisibility)packet.ReadByte(),
-                        LobbyName = packet.ReadString()
-                    };
-                    lobby.LobbyData.Settings = lobbySettings;
-                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable, user);
-                    break;
-                }
-            case CommandType.LOBBY_USER_SETTINGS:
-                {
-                    uint userId = packet.ReadUInt();
-                    UserData thisUser = lobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
-                    if (thisUser != user)
-                    {
-                        Debug.LogWarning($"User {user.UserId} tried to set settings for user {thisUser.UserId}, but only the user themselves can set their own settings.");
+                        Debug.LogWarning($"User {user.UserId} tried to set lobby settings, but only the host can change lobby settings.");
                         return;
                     }
 
-                    UserSettings userSettings = new UserSettings()
+                    LobbySettings lobbySettings = new LobbySettings().Deserialize(packet);
+                    lobby.LobbyData.Settings = lobbySettings;
+                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
+#if CNS_SYNC_SERVER_MULTIPLE
+                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
                     {
-                        UserName = packet.ReadString()
-                    };
+                        ServerManager.Instance.DB.UpdateLobbyMetadataAsync(lobby.LobbyData);
+                    }
+#endif
+                    break;
+                }
+#endif
+            case CommandType.LOBBY_USER_SETTINGS:
+                {
+                    ulong userId = packet.ReadULong();
+                    if (userId != user.UserId)
+                    {
+                        Debug.LogWarning($"User {user.UserId} tried to set settings for user {userId}, but only the user themselves can set their own settings.");
+                        return;
+                    }
+
+                    UserSettings userSettings = new UserSettings().Deserialize(packet);
                     user.Settings = userSettings;
-                    lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable, user);
+                    lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable);
+#if CNS_SYNC_SERVER_MULTIPLE
+                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+                    {
+                        ServerManager.Instance.DB.UpdateUserMetadataAsync(user);
+                    }
+#endif
                     break;
                 }
         }
@@ -44,23 +52,24 @@ public class LobbyServerService : ServerService
 
     public override void Tick(ServerLobby lobby)
     {
-
+        // Nothing
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData user)
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
     {
-        lobby.SendToUser(user, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
-        lobby.SendToUser(user, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
-        lobby.SendToLobby(PacketBuilder.LobbyUserJoined(user), TransportMethod.Reliable, user);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
+        lobby.SendToLobby(PacketBuilder.LobbyUserJoined(joinedUser), TransportMethod.Reliable, joinedUser);
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData user)
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
     {
-
+        // Nothing
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData user)
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
-        lobby.SendToLobby(PacketBuilder.LobbyUserLeft(user), TransportMethod.Reliable, user);
+        lobby.SendToLobby(PacketBuilder.LobbyUserLeft(leftUser), TransportMethod.Reliable, leftUser);
     }
 }

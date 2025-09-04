@@ -72,15 +72,15 @@ public class Chat : MonoBehaviour
         ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ChatMessage(ClientManager.Instance?.CurrentUser, message), TransportMethod.Reliable);
     }
 
-    public void AddUserJoinedMessage(UserData user)
+    public void AddUserJoinedMessage(string userName)
     {
-        string message = $"{user.Settings.UserName} has joined the game.";
+        string message = $"{userName} has joined the game.";
         AddChatMessage(message, Color.green);
     }
 
-    public void AddUserLeftMessage(UserData user)
+    public void AddUserLeftMessage(string userName)
     {
-        string message = $"{user.Settings.UserName} has left the game.";
+        string message = $"{userName} has left the game.";
         AddChatMessage(message, Color.red);
     }
 

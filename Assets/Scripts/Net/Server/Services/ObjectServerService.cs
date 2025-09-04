@@ -26,18 +26,27 @@ public class ObjectServerService : ServerService
         }
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData user)
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
     {
-        // Nothing
+        foreach (var serverObject in lobby.GameData.ServerObjects.Values)
+        {
+            serverObject.UserJoined(lobby, joinedUser);
+        }
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData user)
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
     {
-        // Nothing
+        foreach (var serverObject in lobby.GameData.ServerObjects.Values)
+        {
+            serverObject.UserJoinedGame(lobby, joinedUser);
+        }
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData user)
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
-        // Nothing
+        foreach (var serverObject in lobby.GameData.ServerObjects.Values)
+        {
+            serverObject.UserLeft(lobby, leftUser);
+        }
     }
 }

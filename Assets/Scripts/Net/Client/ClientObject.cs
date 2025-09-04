@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class ClientObject : MonoBehaviour, NetObject
+public abstract class ClientObject : MonoBehaviour, INetObject
 {
     public ushort Id { get; protected set; }
 

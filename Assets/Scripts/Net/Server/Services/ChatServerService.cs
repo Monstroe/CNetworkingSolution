@@ -9,11 +9,11 @@ public class ChatServerService : ServerService
             case CommandType.CHAT_MESSAGE:
                 {
                     byte playerId = packet.ReadByte();
-                    UserData thisUser = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                    UserData thisUser = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
                     if (thisUser != null && thisUser.PlayerId == user.PlayerId)
                     {
                         string message = packet.ReadString();
-                        lobby.SendToLobby(PacketBuilder.ChatMessage(thisUser, message), TransportMethod.Reliable);
+                        lobby.SendToGame(PacketBuilder.ChatMessage(user, message), TransportMethod.Reliable);
                     }
                     break;
                 }
@@ -25,18 +25,18 @@ public class ChatServerService : ServerService
         // Nothing
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData user)
+    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
     {
-
+        //Nothing
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData user)
+    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
     {
-        lobby.SendToLobby(PacketBuilder.ChatUserJoined(user), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.ChatUserJoined(joinedUser), TransportMethod.Reliable);
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData user)
+    public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
-        lobby.SendToLobby(PacketBuilder.ChatUserLeft(user), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.ChatUserLeft(leftUser), TransportMethod.Reliable);
     }
 }

@@ -49,21 +49,23 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         simulateMaxLatency = Math.Max(simulateMinLatency, simulateMaxLatency);
     }
 
-    void FixedUpdate()
-    {
-        netManager?.PollEvents();
-    }
-
     void OnDestroy()
     {
-        if (hostType != NetDeviceType.None)
+        if (!initialized)
         {
             Shutdown();
         }
     }
 
-    public override void Initialize()
+    void FixedUpdate()
     {
+        netManager?.PollEvents();
+    }
+
+    public override void Initialize(NetDeviceType deviceType)
+    {
+        this.deviceType = deviceType;
+
         netManager = new NetManager(this)
         {
             PingInterval = SecondsToMilliseconds(pingInterval),
@@ -78,29 +80,32 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         };
 
 #nullable enable
-        ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, serverSettings, gameServerToken) =>
+        if (deviceType == NetDeviceType.Client)
         {
-            address = serverSettings?.GameServerAddress ?? address;
-            StartClient();
-        };
+            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            {
+                address = serverSettings?.ServerAddress ?? address;
+                StartClient();
+            };
 
-        ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, serverSettings, gameServerToken) =>
-        {
-            address = serverSettings?.GameServerAddress ?? address;
-            StartClient();
-        };
+            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            {
+                address = serverSettings?.ServerAddress ?? address;
+                StartClient();
+            };
+        }
 #nullable disable
     }
 
-    public override bool StartClient()
+    protected override bool StartClient()
     {
-        if (hostType != NetDeviceType.None)
+        if (initialized)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
-        hostType = NetDeviceType.Client;
+        initialized = true;
 
         var success = netManager.Start();
         if (!success)
@@ -119,15 +124,15 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         return true;
     }
 
-    public override bool StartServer()
+    protected override bool StartServer()
     {
-        if (hostType != NetDeviceType.None)
+        if (initialized)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: Already started as " + hostType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
             return false;
         }
 
-        hostType = NetDeviceType.Server;
+        initialized = true;
 
         bool success = netManager.Start(port);
         if (!success)
@@ -201,7 +206,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
                 netManager.Stop();
             }
 
-            hostType = NetDeviceType.None;
+            initialized = false;
         }
         catch (Exception e)
         {

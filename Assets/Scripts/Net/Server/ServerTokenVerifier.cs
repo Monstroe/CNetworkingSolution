@@ -1,4 +1,4 @@
-#if CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH
+#if CNS_SYNC_SERVER_MULTIPLE
 using JWT;
 using JWT.Algorithms;
 using JWT.Serializers;
@@ -22,6 +22,7 @@ public class ServerTokenVerifier
 
     public void StartUnverifiedUserCleanup(int maxSecondsBeforeUnverifiedUserRemoval)
     {
+        Debug.Log("<color=green><b>CNS</b></color>: Starting unverified user cleanup.");
         Task.Run(async () =>
         {
             while (true)
@@ -44,6 +45,7 @@ public class ServerTokenVerifier
 
     public void StartTokenCleanup(int tokenValidityDurationMinutes)
     {
+        Debug.Log("<color=green><b>CNS</b></color>: Starting token cleanup.");
         Task.Run(async () =>
         {
             while (true)
@@ -143,7 +145,7 @@ public class ServerTokenVerifier
     {
         return new LobbySettings
         {
-#if CNS_TRANSPORT_STEAMWORKS
+#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
             SteamCode = Convert.ToUInt64(payload["steam_code"]),
 #endif
             MaxUsers = Convert.ToInt32(payload["max_users"]),

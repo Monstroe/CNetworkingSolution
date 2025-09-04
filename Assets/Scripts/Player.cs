@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(PlayerInput))]
-public class Player : ClientObject
+public class Player : ClientPlayer
 {
     public static Player Instance { get; private set; }
 
@@ -20,8 +20,8 @@ public class Player : ClientObject
         }
     }
 
-    public bool MovementEnabled { get; private set; } = true;
-    public bool InteractEnabled { get; private set; } = true;
+    public bool MovementEnabled { get; private set; } = false;
+    public bool InteractEnabled { get; private set; } = false;
 
     public PlayerMovement PlayerMovement { get { return playerMovement; } }
     public PlayerInteract PlayerInteract { get { return playerInteract; } }
@@ -41,6 +41,11 @@ public class Player : ClientObject
     void Start()
     {
         GetComponent<PlayerInput>().actions.Enable();
+        GameManager.Instance.OnGameInitialized += () =>
+        {
+            SetMovementActive(true);
+            SetInteractActive(true);
+        };
     }
 
     public void SetMovementActive(bool value)
@@ -61,6 +66,16 @@ public class Player : ClientObject
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
-
+        switch (commandType)
+        {
+            case CommandType.PLAYER_TRANSFORM:
+                {
+                    Vector3 position = packet.ReadVector3();
+                    Quaternion rotation = packet.ReadQuaternion();
+                    Vector3 forward = packet.ReadVector3();
+                    PlayerMovement.SetTransform(position, rotation, forward);
+                    break;
+                }
+        }
     }
 }
