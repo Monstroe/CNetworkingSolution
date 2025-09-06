@@ -165,35 +165,7 @@ public class ServerManager : MonoBehaviour
                 CommandType commandType = (CommandType)packet.ReadByte();
                 if (serviceType == ServiceType.CONNECTION && commandType == CommandType.CONNECTION_REQUEST)
                 {
-                    ConnectionData connectionData;
-#if CNS_SYNC_SERVER_MULTIPLE
-                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
-                    {
-                        connectionData = TokenVerifier.VerifyToken(packet.ReadString());
-                    }
-                    else
-                    {
-                        connectionData = new ConnectionData().Deserialize(packet);
-                    }
-#elif CNS_SYNC_SERVER_SINGLE || CNS_SYNC_HOST
-                    connectionData = new ConnectionData().Deserialize(packet);
-#else
-                    connectionData = null;
-#endif
-
-#if CNS_SYNC_LOBBY_SINGLE
-                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
-                    {
-                        if (connectionData != null && connectionData.LobbyId == GameResources.Instance.DefaultLobbyId)
-                        {
-                            connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
-                        }
-                        else
-                        {
-                            connectionData = null;
-                        }
-                    }
-#endif
+                    ConnectionData connectionData = GetConnectionData(packet);
                     if (connectionData != null)
                     {
                         ServerLobby lobby = null;
@@ -265,6 +237,41 @@ public class ServerManager : MonoBehaviour
             await DB.Close();
         }
 #endif
+    }
+
+    private ConnectionData GetConnectionData(NetPacket packet)
+    {
+        ConnectionData connectionData = null;
+#if CNS_SYNC_SERVER_MULTIPLE
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            connectionData = TokenVerifier.VerifyToken(packet.ReadString());
+        }
+        else
+        {
+            connectionData = new ConnectionData().Deserialize(packet);
+        }
+#elif CNS_SYNC_SERVER_SINGLE || CNS_SYNC_HOST
+        connectionData = new ConnectionData().Deserialize(packet);
+#else
+        connectionData = null;
+#endif
+
+#if CNS_SYNC_LOBBY_SINGLE
+        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        {
+            if (connectionData != null && connectionData.LobbyId == GameResources.Instance.DefaultLobbyId)
+            {
+                connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
+            }
+            else
+            {
+                connectionData = null;
+            }
+        }
+#endif
+
+        return connectionData;
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
