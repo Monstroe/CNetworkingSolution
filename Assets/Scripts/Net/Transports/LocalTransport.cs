@@ -23,12 +23,12 @@ public class LocalTransport : NetTransport
 #nullable enable
         if (deviceType == NetDeviceType.Client)
         {
-            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings) =>
             {
                 StartClient();
             };
 
-            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings) =>
             {
                 StartClient();
             };

@@ -82,13 +82,13 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 #nullable enable
         if (deviceType == NetDeviceType.Client)
         {
-            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings) =>
             {
                 address = serverSettings?.ServerAddress ?? address;
                 StartClient();
             };
 
-            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings, gameServerToken) =>
+            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings) =>
             {
                 address = serverSettings?.ServerAddress ?? address;
                 StartClient();

@@ -37,15 +37,19 @@ public class GameManager : MonoBehaviour
     {
         SceneManager.sceneLoaded += SceneLoaded;
 
-        ClientManager.Instance.OnCurrentUserUpdated += (userSettings) =>
-        {
-            Debug.Log($"Updating settings for local user: UserName: {userSettings.UserName}");
-        };
+        // NOTE: These two calls aren't necessary, I'm just showcasing features here
+        ClientManager.Instance.OnCurrentUserUpdated += CurrentUserUpdated;
+        ClientManager.Instance.OnCurrentLobbyUpdated += CurrentLobbyUpdated;
+    }
 
-        ClientManager.Instance.OnCurrentLobbyUpdated += (lobbySettings) =>
-        {
-            Debug.Log($"Successfully updated lobby settings");
-        };
+    private void CurrentUserUpdated(UserSettings userSettings)
+    {
+        Debug.Log($"Updating settings for local user: UserName - {userSettings.UserName}");
+    }
+
+    private void CurrentLobbyUpdated(LobbySettings lobbySettings)
+    {
+        Debug.Log($"Successfully updated lobby settings: MaxUsers - {lobbySettings.MaxUsers}, LobbyVisibility - {lobbySettings.LobbyVisibility}, LobbyName - {lobbySettings.LobbyName}");
     }
 
     // Update is called once per frame
@@ -69,7 +73,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void SceneLoaded(Scene scene, LoadSceneMode mode)
+    private void SceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name.Equals(GameResources.Instance.GameSceneName))
         {

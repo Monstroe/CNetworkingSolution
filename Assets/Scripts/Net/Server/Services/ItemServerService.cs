@@ -24,7 +24,7 @@ public class ItemServerService : ServerService
 
     public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
     {
-        if (joinedUser.IsHost(lobby.LobbyData))
+        if (!startingItemsInitialized)
         {
             for (int i = 0; i < lobby.Map.GetComponentsInChildren<ClientObject>(true).Length; i++)
             {
@@ -40,7 +40,7 @@ public class ItemServerService : ServerService
 
         if (startingItemsInitialized)
         {
-            lobby.SendToUser(joinedUser, PacketBuilder.StartingItemsInit(startingItemIds.ToArray()), TransportMethod.Reliable);
+            lobby.SendToUser(joinedUser, PacketBuilder.ItemsInit(startingItemIds.ToArray()), TransportMethod.Reliable);
         }
 
         // Spawning happens first in the Server Service

@@ -21,7 +21,7 @@ public class LobbyServerService : ServerService
 #if CNS_SYNC_SERVER_MULTIPLE
                     if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
                     {
-                        ServerManager.Instance.DB.UpdateLobbyMetadataAsync(lobby.LobbyData);
+                        ServerManager.Instance.Database.UpdateLobbyMetadataAsync(lobby.LobbyData);
                     }
 #endif
                     break;
@@ -42,7 +42,7 @@ public class LobbyServerService : ServerService
 #if CNS_SYNC_SERVER_MULTIPLE
                     if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
                     {
-                        ServerManager.Instance.DB.UpdateUserMetadataAsync(user);
+                        ServerManager.Instance.Database.UpdateUserMetadataAsync(user);
                     }
 #endif
                     break;

@@ -6,7 +6,6 @@ public class ClientLobby : MonoBehaviour
 {
     public LobbyData LobbyData { get; protected set; } = new LobbyData();
     public ClientLobbyGameData GameData { get; private set; } = new ClientLobbyGameData();
-    public Map Map { get; private set; }
 
     private NetTransport transport;
     private Dictionary<ServiceType, ClientService> services = new Dictionary<ServiceType, ClientService>();

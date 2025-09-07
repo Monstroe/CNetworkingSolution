@@ -23,7 +23,7 @@ public enum CommandType
     /* EVENT */
     EVENT_GROUND_HIT,
     /* ITEM */
-    STARTING_ITEMS_INIT, ITEM_SPAWN, ITEM_DESTROY,
+    ITEMS_INIT, ITEM_SPAWN, ITEM_DESTROY,
     /* CHAT */
     CHAT_MESSAGE, CHAT_USER_JOINED, CHAT_USER_LEFT,
     /* OBJECT */
@@ -238,11 +238,11 @@ public static class PacketBuilder
     }
 
     /* ITEM */
-    public static NetPacket StartingItemsInit(ushort[] startingItemIds)
+    public static NetPacket ItemsInit(ushort[] startingItemIds)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.ITEM);
-        packet.Write((byte)CommandType.STARTING_ITEMS_INIT);
+        packet.Write((byte)CommandType.ITEMS_INIT);
         packet.Write(startingItemIds);
         return packet;
     }

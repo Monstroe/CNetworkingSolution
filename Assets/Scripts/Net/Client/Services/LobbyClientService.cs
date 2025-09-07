@@ -15,7 +15,7 @@ public class LobbyClientService : ClientService
             case CommandType.LOBBY_TICK:
                 {
                     ulong tick = packet.ReadULong();
-                    ClientManager.Instance.SetClientTick(tick);
+                    ClientManager.Instance.SetClientTick(tick); // Update the client tick
                     break;
                 }
             case CommandType.LOBBY_SETTINGS:
@@ -53,8 +53,8 @@ public class LobbyClientService : ClientService
                         updatedUsers.Add(user);
                     }
 
-                    ClientManager.Instance.SetCurrentUserData(updatedUsers[updatedUsers.Count - 1]); // Set the local user data
                     ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.AddRange(updatedUsers);
+                    ClientManager.Instance.SetCurrentUserData(updatedUsers[updatedUsers.Count - 1]); // Set the local user data
                     break;
                 }
             case CommandType.LOBBY_USER_JOINED:

@@ -184,7 +184,7 @@ GameObject:
   - component: {fileID: 83929239}
   - component: {fileID: 83929238}
   m_Layer: 5
-  m_Name: MultiLobbyServerMenu
+  m_Name: MultiplayerMenu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -342,6 +342,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transport: {fileID: 161184808}
+  lobbyApiUrl: http://localhost:5107/api
 --- !u!114 &161184808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1163,8 +1164,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -115, y: 85}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: -155, y: 85}
+  m_SizeDelta: {x: 115, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &618458918
 MonoBehaviour:
@@ -1309,7 +1310,7 @@ MonoBehaviour:
   fadeDuration: 3
   localServerPrefab: {fileID: 1652916004789258094, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
   mainMenu: {fileID: 492109544}
-  multiLobbyMenu: {fileID: 83929235}
+  multiplayerMenu: {fileID: 83929235}
   lobbyIdInputField: {fileID: 1135886610}
 --- !u!1 &765899494
 GameObject:
@@ -2816,7 +2817,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Dedicated Server Settings
+  m_text: Multiplayer
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

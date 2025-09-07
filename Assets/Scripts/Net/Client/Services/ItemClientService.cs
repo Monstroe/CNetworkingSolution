@@ -3,7 +3,6 @@ using UnityEngine;
 
 public class ItemClientService : ClientService
 {
-
     void Start()
     {
         ClientManager.Instance.CurrentLobby.RegisterService(ServiceType.ITEM, this);
@@ -13,7 +12,7 @@ public class ItemClientService : ClientService
     {
         switch (commandType)
         {
-            case CommandType.STARTING_ITEMS_INIT:
+            case CommandType.ITEMS_INIT:
                 {
                     ushort[] startingItemIds = packet.ReadUShorts();
                     List<ClientItem> startingClientItems = GameContent.Instance.Map.GetStartingClientItems();
@@ -33,8 +32,7 @@ public class ItemClientService : ClientService
 
                     if (!ClientManager.Instance.CurrentLobby.GameData.ClientItems.ContainsKey(itemId))
                     {
-                        string itemTypeName = char.ToUpper(itemType.ToString()[0]) + itemType.ToString().Substring(1).ToLower();
-                        ClientItem item = Instantiate(Resources.Load<GameObject>($"Prefabs/Items/{itemTypeName}")).GetComponent<ClientItem>();
+                        ClientItem item = Instantiate(Resources.Load<GameObject>($"Prefabs/Items/{itemType}Item")).GetComponent<ClientItem>();
                         item.Init(itemId);
                         item.Type = itemType;
                         ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Add(item.Id, item);

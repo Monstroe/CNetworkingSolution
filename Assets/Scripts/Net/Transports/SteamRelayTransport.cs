@@ -84,7 +84,7 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
 #nullable enable
         if (deviceType == NetDeviceType.Client)
         {
-            ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
+            ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData, lobbySettings, serverSettings) =>
             {
                 if (lobbySettings == null)
                 {
@@ -95,7 +95,7 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
                 await CreateSteamLobby(lobbySettings);
             };
 
-            ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData, lobbySettings, serverSettings, gameServerToken) =>
+            ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData, lobbySettings, serverSettings) =>
             {
                 if (lobbySettings == null)
                 {

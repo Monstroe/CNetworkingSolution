@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Text;
 using Newtonsoft.Json;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -34,7 +35,7 @@ public class ClientManager : MonoBehaviour
     public event CurrentUserUpdatedEventHandler OnCurrentUserUpdated;
 
 #nullable enable
-    public delegate void LobbyCreateRequestedEventHandler(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, string? serverToken);
+    public delegate void LobbyCreateRequestedEventHandler(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings);
 #nullable disable
     public event LobbyCreateRequestedEventHandler OnLobbyCreateRequested;
 
@@ -42,7 +43,7 @@ public class ClientManager : MonoBehaviour
     public event CurrentLobbyUpdatedEventHandler OnCurrentLobbyUpdated;
 
 #nullable enable
-    public delegate void LobbyJoinRequestedEventHandler(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, string? serverToken);
+    public delegate void LobbyJoinRequestedEventHandler(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings);
 #nullable disable
     public event LobbyJoinRequestedEventHandler OnLobbyJoinRequested;
 
@@ -86,11 +87,7 @@ public class ClientManager : MonoBehaviour
         }
 
         CurrentLobby = GetComponent<ClientLobby>();
-    }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
         if (transport)
         {
             transport.OnNetworkConnected += HandleNetworkConnected;
@@ -106,12 +103,7 @@ public class ClientManager : MonoBehaviour
 
     private void HandleNetworkConnected(NetTransport transport, ConnectedArgs args)
     {
-#if CNS_SYNC_SERVER_MULTIPLE
-        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
-        {
-            CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(serverToken), TransportMethod.Reliable);
-        }
-        else
+        if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
         {
             CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(new ConnectionData
             {
@@ -120,7 +112,11 @@ public class ClientManager : MonoBehaviour
                 UserSettings = CurrentUser.Settings,
                 LobbySettings = CurrentLobby.LobbyData.Settings
             }), TransportMethod.Reliable);
+            return;
         }
+
+#if CNS_SYNC_SERVER_MULTIPLE
+        CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(serverToken), TransportMethod.Reliable);
 #elif CNS_SYNC_SERVER_SINGLE || CNS_SYNC_HOST
         CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(new ConnectionData
         {
@@ -157,6 +153,10 @@ public class ClientManager : MonoBehaviour
                     CurrentUser.LobbyId = CurrentLobby.LobbyData.LobbyId;
                     OnLobbyConnectionEstablished?.Invoke(CurrentLobby.LobbyData.LobbyId);
                 }
+                else
+                {
+                    Debug.LogWarning($"<color=red><b>CNS</b></color>: Connection to lobby {CurrentLobby.LobbyData.LobbyId} was rejected by the server.");
+                }
             }
             else
             {
@@ -190,20 +190,6 @@ public class ClientManager : MonoBehaviour
 #endif
     }
 
-    private void CreateUser(Guid userGuid, UserSettings userSettings, bool invokeEvent)
-    {
-        UserData userData = new UserData
-        {
-            GlobalGuid = userGuid,
-            Settings = userSettings
-        };
-        CurrentUser = userData;
-        if (invokeEvent)
-        {
-            OnNewUserCreated?.Invoke(CurrentUser.GlobalGuid);
-        }
-    }
-
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
     private IEnumerator CreateUserCoroutine(UserSettings userSettings, bool invokeEvent)
     {
@@ -220,18 +206,8 @@ public class ClientManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 var userResponse = JsonConvert.DeserializeObject<UserResponse>(www.downloadHandler.text);
-                UserData createdUserData = new UserData
-                {
-                    GlobalGuid = userResponse.GlobalGuid,
-                    Settings = userResponse.UserSettings,
-                };
-                CurrentUser = createdUserData;
                 webToken = userResponse.Token;
-
-                if (invokeEvent)
-                {
-                    OnNewUserCreated?.Invoke(createdUserData.GlobalGuid);
-                }
+                CreateUser(userResponse.GlobalGuid, userResponse.UserSettings, invokeEvent);
             }
             else
             {
@@ -240,6 +216,20 @@ public class ClientManager : MonoBehaviour
         }
     }
 #endif
+
+    private void CreateUser(Guid userGuid, UserSettings userSettings, bool invokeEvent)
+    {
+        UserData userData = new UserData
+        {
+            GlobalGuid = userGuid,
+            Settings = userSettings
+        };
+        CurrentUser = userData;
+        if (invokeEvent)
+        {
+            OnNewUserCreated?.Invoke(CurrentUser.GlobalGuid);
+        }
+    }
 
     public void UpdateCurrentUser(UserSettings userSettings, bool invokeEvent = true, bool sync = true)
     {
@@ -253,19 +243,12 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbyUserSettings(CurrentUser, userSettings), TransportMethod.Reliable);
         }
-        else if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
-        {
-            UpdateUser(userSettings, invokeEvent);
-            return;
-        }
+#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_SERVER_SINGLE
         else
         {
-#if CNS_SYNC_SERVER_MULTIPLE
-            StartCoroutine(UpdateUserCoroutine(userSettings, invokeEvent));
-#elif CNS_SYNC_SERVER_SINGLE
             UpdateUser(userSettings, invokeEvent);
-#endif
         }
+#endif
 
 #if CNS_SYNC_HOST
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
@@ -275,16 +258,7 @@ public class ClientManager : MonoBehaviour
 #endif
     }
 
-    private void UpdateUser(UserSettings userSettings, bool invokeEvent)
-    {
-        CurrentUser.Settings = userSettings;
-        if (invokeEvent)
-        {
-            OnCurrentUserUpdated?.Invoke(userSettings);
-        }
-    }
-
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SYNC_HOST
     private IEnumerator UpdateUserCoroutine(UserSettings userSettings, bool invokeEvent)
     {
         string json = JsonConvert.SerializeObject(userSettings);
@@ -300,11 +274,7 @@ public class ClientManager : MonoBehaviour
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                CurrentUser.Settings = userSettings;
-                if (invokeEvent)
-                {
-                    OnCurrentUserUpdated?.Invoke(userSettings);
-                }
+                UpdateUser(userSettings, invokeEvent);
             }
             else
             {
@@ -323,30 +293,32 @@ public class ClientManager : MonoBehaviour
     }
 #endif
 
+    private void UpdateUser(UserSettings userSettings, bool invokeEvent)
+    {
+        CurrentUser.Settings = userSettings;
+        if (invokeEvent)
+        {
+            OnCurrentUserUpdated?.Invoke(userSettings);
+        }
+    }
 
     public void CreateNewLobby(LobbySettings lobbySettings = null, bool invokeEvent = true)
     {
         if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
         {
-            CreateLobby(GameResources.Instance.DefaultLobbyId, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, invokeEvent);
+            CreateLobby(GameResources.Instance.DefaultLobbyId, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
             return;
         }
 
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
         StartCoroutine(CreateLobbyCoroutine(lobbySettings, invokeEvent));
 #elif CNS_SYNC_SERVER_SINGLE
-        CreateLobby(GameResources.Instance.DefaultLobbyId, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, invokeEvent);
+#if CNS_LOBBY_MULTIPLE
+        CreateLobby(GenerateLobbyId(), lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
+#elif CNS_LOBBY_SINGLE
+        CreateLobby(GameResources.Instance.DefaultLobbyId, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
 #endif
-    }
-
-    private void CreateLobby(int lobbyId, LobbySettings lobbySettings, bool invokeEvent)
-    {
-        CurrentLobby.Init(lobbyId, transport);
-        CurrentLobby.LobbyData.Settings = lobbySettings ?? GameResources.Instance.DefaultLobbySettings;
-        if (invokeEvent)
-        {
-            OnLobbyCreateRequested?.Invoke(lobbyId, CurrentLobby.LobbyData.Settings, null, null);
-        }
+#endif
     }
 
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
@@ -366,20 +338,8 @@ public class ClientManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 var lobbyResponse = JsonConvert.DeserializeObject<LobbyResponse>(www.downloadHandler.text);
-                LobbyData createdLobbyData = new LobbyData
-                {
-                    LobbyId = lobbyResponse.LobbyId,
-                    Settings = lobbyResponse.LobbySettings
-                };
-                CurrentLobby.Init(createdLobbyData.LobbyId, transport);
-                CurrentLobby.LobbyData.Settings = createdLobbyData.Settings;
                 serverToken = lobbyResponse.ServerToken;
-                Debug.Log($"<color=green><b>CNS</b></color>: Created lobby with Id {createdLobbyData.LobbyId}.");
-
-                if (invokeEvent)
-                {
-                    OnLobbyCreateRequested?.Invoke(createdLobbyData.LobbyId, CurrentLobby.LobbyData.Settings, lobbyResponse.ServerSettings, lobbyResponse.ServerToken);
-                }
+                CreateLobby(lobbyResponse.LobbyId, lobbyResponse.LobbySettings, lobbyResponse.ServerSettings, invokeEvent);
             }
             else
             {
@@ -398,6 +358,18 @@ public class ClientManager : MonoBehaviour
     }
 #endif
 
+#nullable enable
+    private void CreateLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
+    {
+        CurrentLobby.Init(lobbyId, transport);
+        CurrentLobby.LobbyData.Settings = lobbySettings;
+        if (invokeEvent)
+        {
+            OnLobbyCreateRequested?.Invoke(lobbyId, CurrentLobby.LobbyData.Settings, serverSettings);
+        }
+    }
+#nullable disable
+
     public void UpdateCurrentLobby(LobbySettings lobbySettings, bool invokeEvent = true, bool sync = true)
     {
         if (!sync)
@@ -410,19 +382,12 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbySettings(lobbySettings), TransportMethod.Reliable);
         }
-        else if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
-        {
-            UpdateLobby(lobbySettings, invokeEvent);
-            return;
-        }
+#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_SERVER_SINGLE
         else
         {
-#if CNS_SYNC_SERVER_MULTIPLE
-            StartCoroutine(UpdateLobbyCoroutine(lobbySettings, invokeEvent));
-#elif CNS_SYNC_SERVER_SINGLE
             UpdateLobby(lobbySettings, invokeEvent);
-#endif
         }
+#endif
 
 #if CNS_SYNC_HOST
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
@@ -432,16 +397,7 @@ public class ClientManager : MonoBehaviour
 #endif
     }
 
-    private void UpdateLobby(LobbySettings lobbySettings, bool invokeEvent)
-    {
-        CurrentLobby.LobbyData.Settings = lobbySettings;
-        if (invokeEvent)
-        {
-            OnCurrentLobbyUpdated?.Invoke(lobbySettings);
-        }
-    }
-
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SYNC_HOST
     private IEnumerator UpdateLobbyCoroutine(LobbySettings lobbySettings, bool invokeEvent)
     {
         string json = JsonConvert.SerializeObject(lobbySettings);
@@ -457,11 +413,7 @@ public class ClientManager : MonoBehaviour
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                CurrentLobby.LobbyData.Settings = lobbySettings;
-                if (invokeEvent)
-                {
-                    OnCurrentLobbyUpdated?.Invoke(lobbySettings);
-                }
+                UpdateLobby(lobbySettings, invokeEvent);
             }
             else
             {
@@ -480,29 +432,28 @@ public class ClientManager : MonoBehaviour
     }
 #endif
 
+    private void UpdateLobby(LobbySettings lobbySettings, bool invokeEvent)
+    {
+        CurrentLobby.LobbyData.Settings = lobbySettings;
+        if (invokeEvent)
+        {
+            OnCurrentLobbyUpdated?.Invoke(lobbySettings);
+        }
+    }
+
     public void JoinExistingLobby(int lobbyId, bool invokeEvent = true)
     {
         if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
         {
-            JoinLobby(lobbyId, GameResources.Instance.DefaultLobbySettings, invokeEvent);
+            JoinLobby(lobbyId, GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
             return;
         }
 
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
         StartCoroutine(JoinLobbyCoroutine(lobbyId, invokeEvent));
 #elif CNS_SYNC_SERVER_SINGLE
-        JoinLobby(lobbyId, GameResources.Instance.DefaultLobbySettings, invokeEvent);
+        JoinLobby(lobbyId, GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
 #endif
-    }
-
-    private void JoinLobby(int lobbyId, LobbySettings lobbySettings, bool invokeEvent)
-    {
-        CurrentLobby.Init(lobbyId, transport);
-        CurrentLobby.LobbyData.Settings = lobbySettings;
-        if (invokeEvent)
-        {
-            OnLobbyJoinRequested?.Invoke(lobbyId, CurrentLobby.LobbyData.Settings, null, null);
-        }
     }
 
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
@@ -518,20 +469,8 @@ public class ClientManager : MonoBehaviour
             {
                 // TODO: Come back to this
                 var lobbyResponse = JsonConvert.DeserializeObject<LobbyResponse>(www.downloadHandler.text);
-                LobbyData joinedLobbyData = new LobbyData
-                {
-                    LobbyId = lobbyResponse.LobbyId,
-                    Settings = lobbyResponse.LobbySettings
-                };
-                CurrentLobby.Init(joinedLobbyData.LobbyId, transport);
-                CurrentLobby.LobbyData.Settings = joinedLobbyData.Settings;
                 serverToken = lobbyResponse.ServerToken;
-                Debug.Log($"<color=green><b>CNS</b></color>: Joined lobby with Id {joinedLobbyData.LobbyId}.");
-
-                if (invokeEvent)
-                {
-                    OnLobbyJoinRequested?.Invoke(joinedLobbyData.LobbyId, lobbyResponse.LobbySettings, lobbyResponse.ServerSettings, lobbyResponse.ServerToken);
-                }
+                JoinLobby(lobbyResponse.LobbyId, lobbyResponse.LobbySettings, lobbyResponse.ServerSettings, invokeEvent);
             }
             else
             {
@@ -549,6 +488,18 @@ public class ClientManager : MonoBehaviour
         }
     }
 #endif
+
+#nullable enable
+    private void JoinLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
+    {
+        CurrentLobby.Init(lobbyId, transport);
+        CurrentLobby.LobbyData.Settings = lobbySettings;
+        if (invokeEvent)
+        {
+            OnLobbyJoinRequested?.Invoke(lobbyId, CurrentLobby.LobbyData.Settings, serverSettings);
+        }
+    }
+#nullable disable
 
     public void SetClientTick(ulong tick)
     {
@@ -578,7 +529,7 @@ public class ClientManager : MonoBehaviour
 #endif
 #if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
             case TransportType.SteamWorks:
-                transport = gameObject.AddComponent<SteamworksTransport>();
+                transport = gameObject.AddComponent<SteamRelayTransport>();
                 break;
 #endif
         }
@@ -588,7 +539,7 @@ public class ClientManager : MonoBehaviour
         transport.OnNetworkReceived += HandleNetworkReceived;
     }
 
-    public void ClearTransport()
+    private void ClearTransport()
     {
         if (transport != null)
         {
@@ -599,4 +550,11 @@ public class ClientManager : MonoBehaviour
         }
         transport = null;
     }
+
+#if CNS_LOBBY_MULTIPLE
+    private int GenerateLobbyId()
+    {
+        return UnityEngine.Random.Range(100000, 999999);
+    }
+#endif
 }

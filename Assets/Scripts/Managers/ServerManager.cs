@@ -32,7 +32,7 @@ public class ServerManager : MonoBehaviour
     [Space]
     [SerializeField] private int maxSecondsBeforeUnverifiedUserRemoval = 15;
     [SerializeField] private int tokenValidityDurationMinutes = 2;
-    public ServerDatabaseHandler DB { get; private set; }
+    public ServerDatabaseHandler Database { get; private set; }
     public ServerTokenVerifier TokenVerifier { get; private set; }
 #endif
 
@@ -59,26 +59,15 @@ public class ServerManager : MonoBehaviour
             transport.OnNetworkReceived += HandleNetworkReceived;
         }
 
+        Debug.Log("<color=green><b>CNS</b></color>: ServerManager initialized.");
+
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             OnPublicIpAddressFetched += async (ip) =>
             {
-                Debug.Log("<color=green><b>CNS</b></color>: Initializing database connection and token verifier.");
-                ServerData.Settings.ServerId = Guid.NewGuid();
-                ServerData.Settings.ServerKey = GenerateSecretKey();
-                ServerData.Settings.ServerAddress = ip;
-
-                DB = new ServerDatabaseHandler();
-                await DB.Connect(dbConnectionString, ServerData.Settings.ServerId);
-                await DB.SaveServerMetadataAsync(ServerData);
-                DB.StartHeartbeat(secondsBetweenHeartbeats);
-
-                TokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
-                TokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
-                TokenVerifier.StartTokenCleanup(tokenValidityDurationMinutes);
+                await InitServer(ip);
             };
-
             StartCoroutine(GetPublicIpAddress());
         }
 #endif
@@ -149,7 +138,7 @@ public class ServerManager : MonoBehaviour
     {
         if (ServerData.ConnectedUsers.TryGetValue(args.RemoteId, out UserData remoteUser))
         {
-#if !UNITY_EDITOR
+#if UNITY_EDITOR
             try
             {
 #endif
@@ -176,13 +165,13 @@ public class ServerManager : MonoBehaviour
                         else
                         {
                             lobby = await RegisterLobby(connectionData);
-                        }
-                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true), TransportMethod.Reliable);
+                            }
 
-                        if (lobby != null && lobby.LobbyData.UserCount < lobby.LobbyData.Settings.MaxUsers)
-                        {
-                            await AddUserToLobby(remoteUser, lobby, connectionData);
-                        }
+                            if (lobby != null && lobby.LobbyData.UserCount < lobby.LobbyData.Settings.MaxUsers)
+                            {
+                                lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true), TransportMethod.Reliable);
+                                await AddUserToLobby(remoteUser, lobby, connectionData);
+                            }
                         else
                         {
                             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
@@ -201,7 +190,7 @@ public class ServerManager : MonoBehaviour
                     KickUser(remoteUser);
                 }
             }
-#if !UNITY_EDITOR
+#if UNITY_EDITOR
             }
             catch (Exception ex)
             {
@@ -234,23 +223,21 @@ public class ServerManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
-            await DB.Close();
+            await Database.Close();
         }
 #endif
     }
 
     private ConnectionData GetConnectionData(NetPacket packet)
     {
+        if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
+        {
+            return new ConnectionData().Deserialize(packet);
+        }
+
         ConnectionData connectionData = null;
 #if CNS_SYNC_SERVER_MULTIPLE
-        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
-        {
-            connectionData = TokenVerifier.VerifyToken(packet.ReadString());
-        }
-        else
-        {
-            connectionData = new ConnectionData().Deserialize(packet);
-        }
+        connectionData = TokenVerifier.VerifyToken(packet.ReadString());
 #elif CNS_SYNC_SERVER_SINGLE || CNS_SYNC_HOST
         connectionData = new ConnectionData().Deserialize(packet);
 #else
@@ -258,19 +245,15 @@ public class ServerManager : MonoBehaviour
 #endif
 
 #if CNS_SYNC_LOBBY_SINGLE
-        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+        if (connectionData.LobbyId == GameResources.Instance.DefaultLobbyId)
         {
-            if (connectionData != null && connectionData.LobbyId == GameResources.Instance.DefaultLobbyId)
-            {
-                connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
-            }
-            else
-            {
-                connectionData = null;
-            }
+            connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
+        }
+        else
+        {
+            connectionData = null;
         }
 #endif
-
         return connectionData;
     }
 
@@ -304,7 +287,7 @@ public class ServerManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
-            await DB.AddUserToServerLimboAsync(user.UserId, maxSecondsBeforeUnverifiedUserRemoval);
+            await Database.AddUserToServerLimboAsync(user.UserId, maxSecondsBeforeUnverifiedUserRemoval);
             TokenVerifier.AddUnverifiedUser(user);
         }
 #endif
@@ -332,9 +315,9 @@ public class ServerManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
-            await DB.DeleteUserAsync(user.GlobalGuid);
-            await DB.RemoveUserFromServerAsync(user.GlobalGuid);
-            await DB.RemoveUserFromServerLimboAsync(user.UserId);
+            await Database.DeleteUserAsync(user.GlobalGuid);
+            await Database.RemoveUserFromServerAsync(user.GlobalGuid);
+            await Database.RemoveUserFromServerLimboAsync(user.UserId);
             TokenVerifier.RemoveUnverifiedUser(user);
         }
 #endif
@@ -353,9 +336,9 @@ public class ServerManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
-            await DB.SaveLobbyMetadataAsync(lobby.LobbyData);
-            await DB.RemoveLobbyFromLimbo(lobby.LobbyData.LobbyId);
-            await DB.AddLobbyToServerAsync(lobby.LobbyData.LobbyId);
+            await Database.SaveLobbyMetadataAsync(lobby.LobbyData);
+            await Database.RemoveLobbyFromLimbo(lobby.LobbyData.LobbyId);
+            await Database.AddLobbyToServerAsync(lobby.LobbyData.LobbyId);
         }
 #endif
         return lobby;
@@ -370,8 +353,8 @@ public class ServerManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
-            await DB.RemoveLobbyFromServerAsync(lobby.LobbyData.LobbyId);
-            await DB.DeleteLobbyAsync(lobby.LobbyData.LobbyId);
+            await Database.RemoveLobbyFromServerAsync(lobby.LobbyData.LobbyId);
+            await Database.DeleteLobbyAsync(lobby.LobbyData.LobbyId);
         }
 #endif
         Destroy(lobby.gameObject);
@@ -390,10 +373,10 @@ public class ServerManager : MonoBehaviour
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             TokenVerifier.RemoveUnverifiedUser(user);
-            await DB.SaveUserMetadataAsync(user);
-            await DB.RemoveUserFromServerLimboAsync(user.UserId);
-            await DB.AddUserToServerAsync(user.GlobalGuid);
-            await DB.AddUserToLobbyAsync(data.LobbyId, user.GlobalGuid);
+            await Database.SaveUserMetadataAsync(user);
+            await Database.RemoveUserFromServerLimboAsync(user.UserId);
+            await Database.AddUserToServerAsync(user.GlobalGuid);
+            await Database.AddUserToLobbyAsync(data.LobbyId, user.GlobalGuid);
         }
 #endif
         lobby.UserJoined(user);
@@ -408,7 +391,7 @@ public class ServerManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
-            await DB.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
+            await Database.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
         }
 #endif
     }
@@ -431,7 +414,7 @@ public class ServerManager : MonoBehaviour
 #endif
 #if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
             case TransportType.SteamWorks:
-                transport = gameObject.AddComponent<SteamworksTransport>();
+                transport = gameObject.AddComponent<SteamRelayTransport>();
                 break;
 #endif
         }
@@ -480,6 +463,31 @@ public class ServerManager : MonoBehaviour
                 Debug.LogError($"<color=red><b>CNS</b></color>: Failed to fetch lobby data: {www.error}");
             }
         }
+    }
+
+    private async Task InitServer(string address)
+    {
+        ServerData.Settings.ServerId = Guid.NewGuid();
+        ServerData.Settings.ServerKey = GenerateSecretKey();
+        ServerData.Settings.ServerAddress = address;
+
+        await InitDatabase();
+        InitTokenVerifier();
+    }
+
+    private async Task InitDatabase()
+    {
+        Database = new ServerDatabaseHandler();
+        await Database.Connect(dbConnectionString, ServerData.Settings.ServerId);
+        await Database.SaveServerMetadataAsync(ServerData);
+        Database.StartHeartbeat(secondsBetweenHeartbeats);
+    }
+
+    private void InitTokenVerifier()
+    {
+        TokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
+        TokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
+        TokenVerifier.StartTokenCleanup(tokenValidityDurationMinutes);
     }
 
     private string GenerateSecretKey(int byteLength = 32)

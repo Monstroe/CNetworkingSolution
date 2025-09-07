@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class ServerItem : ServerInteractable
 {
-    public ItemType Type { get; set; } = ItemType.NONE;
+    public ItemType Type { get; set; } = ItemType.None;
 
     public ServerItem(ushort id) : base(id)
     {
@@ -51,6 +51,7 @@ public class ServerItem : ServerInteractable
 
 public enum ItemType
 {
-    NONE,
+    None,
+    Basic,
     // ADD MORE ITEM TYPES HERE
 }
