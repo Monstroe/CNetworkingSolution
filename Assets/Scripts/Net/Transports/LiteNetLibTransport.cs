@@ -1,5 +1,6 @@
 #if CNS_TRANSPORT_LITENETLIB
 using LiteNetLib;
+using Steamworks.Data;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -82,19 +83,22 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 #nullable enable
         if (deviceType == NetDeviceType.Client)
         {
-            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings) =>
-            {
-                address = serverSettings?.ServerAddress ?? address;
-                StartClient();
-            };
-
-            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings) =>
-            {
-                address = serverSettings?.ServerAddress ?? address;
-                StartClient();
-            };
+            ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
+            ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
         }
 #nullable disable
+    }
+
+    private void LobbyCreateRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    {
+        address = serverSettings?.ServerAddress ?? address;
+        StartClient();
+    }
+
+    private void LobbyJoinRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    {
+        address = serverSettings?.ServerAddress ?? address;
+        StartClient();
     }
 
     protected override bool StartClient()
@@ -204,6 +208,12 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
             {
                 Disconnect();
                 netManager.Stop();
+            }
+
+            if (deviceType == NetDeviceType.Client)
+            {
+                ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
+                ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
             }
 
             initialized = false;

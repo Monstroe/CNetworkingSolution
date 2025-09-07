@@ -58,6 +58,7 @@ public class ClientManager : MonoBehaviour
     public bool IsConnected { get; private set; } = false;
 
     [SerializeField] private NetTransport transport;
+    private LobbyConnectionType lobbyConnectionType;
 
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
     public string LobbyApiUrl
@@ -96,6 +97,17 @@ public class ClientManager : MonoBehaviour
         }
     }
 
+    void Oestroy()
+    {
+        if (transport)
+        {
+            transport.OnNetworkConnected -= HandleNetworkConnected;
+            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
+            transport.OnNetworkReceived -= HandleNetworkReceived;
+            transport.Shutdown();
+        }
+    }
+
     void FixedUpdate()
     {
         ClientTick++;
@@ -108,6 +120,7 @@ public class ClientManager : MonoBehaviour
             CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(new ConnectionData
             {
                 LobbyId = CurrentLobby.LobbyData.LobbyId,
+                LobbyConnectionType = lobbyConnectionType,
                 UserGuid = CurrentUser.GlobalGuid,
                 UserSettings = CurrentUser.Settings,
                 LobbySettings = CurrentLobby.LobbyData.Settings
@@ -121,6 +134,7 @@ public class ClientManager : MonoBehaviour
         CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(new ConnectionData
         {
             LobbyId = CurrentLobby.LobbyData.LobbyId,
+            LobbyConnectionType = lobbyConnectionType,
             UserGuid = CurrentUser.GlobalGuid,
             UserSettings = CurrentUser.Settings,
             LobbySettings = CurrentLobby.LobbyData.Settings
@@ -130,6 +144,8 @@ public class ClientManager : MonoBehaviour
 
     private void HandleNetworkDisconnected(NetTransport transport, DisconnectedArgs args)
     {
+        Debug.Log("<color=green><b>CNS</b></color>: Client disconnected");
+        transport.Shutdown();
         IsConnected = false;
     }
 
@@ -149,6 +165,7 @@ public class ClientManager : MonoBehaviour
                 bool accepted = packet.ReadBool();
                 if (accepted)
                 {
+                    Debug.Log("<color=green><b>CNS</b></color>: Client connected");
                     IsConnected = true;
                     CurrentUser.LobbyId = CurrentLobby.LobbyData.LobbyId;
                     OnLobbyConnectionEstablished?.Invoke(CurrentLobby.LobbyData.LobbyId);
@@ -163,16 +180,6 @@ public class ClientManager : MonoBehaviour
                 Debug.LogWarning($"<color=red><b>CNS</b></color>: Received packet with unknown service type {serviceType} and command type {commandType} while not in a lobby.");
             }
         }
-    }
-
-    public void Disconnect()
-    {
-        transport.Disconnect();
-    }
-
-    public void Shutdown()
-    {
-        transport.Shutdown();
     }
 
     public void CreateNewUser(UserSettings userSettings = null, bool invokeEvent = true)
@@ -313,11 +320,7 @@ public class ClientManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
         StartCoroutine(CreateLobbyCoroutine(lobbySettings, invokeEvent));
 #elif CNS_SYNC_SERVER_SINGLE
-#if CNS_LOBBY_MULTIPLE
-        CreateLobby(GenerateLobbyId(), lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
-#elif CNS_LOBBY_SINGLE
         CreateLobby(GameResources.Instance.DefaultLobbyId, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
-#endif
 #endif
     }
 
@@ -361,6 +364,7 @@ public class ClientManager : MonoBehaviour
 #nullable enable
     private void CreateLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
     {
+        lobbyConnectionType = LobbyConnectionType.CREATE;
         CurrentLobby.Init(lobbyId, transport);
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
@@ -492,6 +496,7 @@ public class ClientManager : MonoBehaviour
 #nullable enable
     private void JoinLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
     {
+        lobbyConnectionType = LobbyConnectionType.JOIN;
         CurrentLobby.Init(lobbyId, transport);
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
@@ -550,11 +555,4 @@ public class ClientManager : MonoBehaviour
         }
         transport = null;
     }
-
-#if CNS_LOBBY_MULTIPLE
-    private int GenerateLobbyId()
-    {
-        return UnityEngine.Random.Range(100000, 999999);
-    }
-#endif
 }

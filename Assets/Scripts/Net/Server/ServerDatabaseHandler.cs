@@ -99,7 +99,7 @@ public class ServerDatabaseHandler
     {
         string usersKey = $"game_server:{serverId}:connected_users";
         await db.SetAddAsync(usersKey, userGlobalId.ToString());
-        Debug.Log($"<color=green><b>CNS</b></color>: Added user {userGlobalId} to server {serverId}.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Added user {userGlobalId} to server.");
     }
 
     public async Task AddUserToServerLimboAsync(ulong userId, int maxSecondsBeforeUnverifiedUserRemoval)
@@ -107,7 +107,7 @@ public class ServerDatabaseHandler
         string limboKey = $"game_server:{serverId}:user_limbo";
         await db.SetAddAsync(limboKey, userId.ToString());
         await db.KeyExpireAsync(limboKey, TimeSpan.FromSeconds(maxSecondsBeforeUnverifiedUserRemoval));
-        Debug.Log($"<color=green><b>CNS</b></color>: Added user {userId} to server {serverId} limbo.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Added user {userId} to server limbo.");
     }
 
     public async Task RemoveUserFromServerAsync(Guid userGlobalId)
@@ -116,7 +116,7 @@ public class ServerDatabaseHandler
         bool removed = await db.SetRemoveAsync(usersKey, userGlobalId.ToString());
         if (removed)
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: Removed user {userGlobalId} from server {serverId}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Removed user {userGlobalId} from server.");
         }
     }
 
@@ -126,7 +126,7 @@ public class ServerDatabaseHandler
         bool removed = await db.SetRemoveAsync(limboKey, userId.ToString());
         if (removed)
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: Removed user {userId} from server {serverId} limbo.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Removed user {userId} from server limbo.");
         }
     }
 
@@ -134,14 +134,14 @@ public class ServerDatabaseHandler
     {
         string lobbiesKey = $"game_server:{serverId}:active_lobbies";
         await db.SetAddAsync(lobbiesKey, lobbyId.ToString());
-        Debug.Log($"<color=green><b>CNS</b></color>: Added lobby {lobbyId} to server {serverId}.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Added lobby {lobbyId} to server.");
     }
 
     public async Task RemoveLobbyFromServerAsync(int lobbyId)
     {
         string lobbiesKey = $"game_server:{serverId}:active_lobbies";
         await db.SetRemoveAsync(lobbiesKey, lobbyId.ToString());
-        Debug.Log($"<color=green><b>CNS</b></color>: Removed lobby {lobbyId} from server {serverId}.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Removed lobby {lobbyId} from server.");
     }
 
     public async Task SetServerHeartbeatAsync(double heartbeatIntervalSeconds)

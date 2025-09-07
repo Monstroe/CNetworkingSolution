@@ -72,7 +72,7 @@ public class Menu : MonoBehaviour
         ServerManager.Instance.ClearTransports();
         ServerManager.Instance.AddTransport(TransportType.Local);
         ClientManager.Instance.CreateNewUser();
-        ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
+        ClientManager.Instance.CreateNewLobby();
     }
 
     public void StartMultiPlayer()

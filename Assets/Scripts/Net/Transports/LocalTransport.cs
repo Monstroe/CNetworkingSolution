@@ -1,4 +1,5 @@
 #if CNS_TRANSPORT_LOCAL
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,17 +24,20 @@ public class LocalTransport : NetTransport
 #nullable enable
         if (deviceType == NetDeviceType.Client)
         {
-            ClientManager.Instance.OnLobbyCreateRequested += (lobbyId, lobbySettings, serverSettings) =>
-            {
-                StartClient();
-            };
-
-            ClientManager.Instance.OnLobbyJoinRequested += (lobbyId, lobbySettings, serverSettings) =>
-            {
-                StartClient();
-            };
+            ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
+            ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
         }
 #nullable disable
+    }
+
+    private void LobbyCreateRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    {
+        StartClient();
+    }
+
+    private void LobbyJoinRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    {
+        StartClient();
     }
 
     void PollEvents()
@@ -166,6 +170,13 @@ public class LocalTransport : NetTransport
         Disconnect();
         instances[instanceIndex] = null;
         instanceIndex = -1;
+
+        if (deviceType == NetDeviceType.Client)
+        {
+            ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
+            ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
+        }
+
         initialized = false;
     }
 
