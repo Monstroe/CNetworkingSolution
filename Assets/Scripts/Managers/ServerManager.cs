@@ -176,7 +176,7 @@ public class ServerManager : MonoBehaviour
                     else
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {args.RemoteId} cannot join.");
-                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
+                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
