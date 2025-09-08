@@ -20,7 +20,8 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnNewUserCreated += NewUserCreated;
         ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
         ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinedRequested;
-        ClientManager.Instance.OnLobbyConnectionEstablished += LobbyConnectionEstablished;
+        ClientManager.Instance.OnLobbyConnectionAccepted += LobbyConnectionAccepted;
+        ClientManager.Instance.OnLobbyConnectionRejected += LobbyConnectionRejected;
     }
 
     void OnDestroy()
@@ -28,7 +29,8 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.OnNewUserCreated -= NewUserCreated;
         ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
         ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinedRequested;
-        ClientManager.Instance.OnLobbyConnectionEstablished -= LobbyConnectionEstablished;
+        ClientManager.Instance.OnLobbyConnectionAccepted -= LobbyConnectionAccepted;
+        ClientManager.Instance.OnLobbyConnectionRejected -= LobbyConnectionRejected;
     }
 
     private void NewUserCreated(Guid userId)
@@ -36,17 +38,17 @@ public class Menu : MonoBehaviour
         Debug.Log($"New user created with ID: {userId}");
     }
 
-    private void LobbyCreateRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    private void LobbyCreateRequested(ServerSettings serverSettings)
     {
-        Debug.Log($"Creating lobby {lobbyId}...");
+        Debug.Log($"Creating lobby...");
     }
 
-    private void LobbyJoinedRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    private void LobbyJoinedRequested(int lobbyId, ServerSettings serverSettings)
     {
         Debug.Log($"Joining lobby {lobbyId}...");
     }
 
-    private void LobbyConnectionEstablished(int lobbyId)
+    private void LobbyConnectionAccepted(int lobbyId)
     {
         Debug.Log($"Connected to lobby {lobbyId}.");
 
@@ -62,6 +64,11 @@ public class Menu : MonoBehaviour
                 SceneManager.LoadScene(GameResources.Instance.GameSceneName);
             }
         });
+    }
+
+    private void LobbyConnectionRejected(int lobbyId, LobbyRejectionType errorType)
+    {
+        Debug.Log($"Failed to connect to lobby {lobbyId}. Reason: {errorType}");
     }
 
     public void StartSinglePlayer()

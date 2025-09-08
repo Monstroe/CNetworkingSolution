@@ -35,7 +35,7 @@ public class ClientManager : MonoBehaviour
     public event CurrentUserUpdatedEventHandler OnCurrentUserUpdated;
 
 #nullable enable
-    public delegate void LobbyCreateRequestedEventHandler(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings);
+    public delegate void LobbyCreateRequestedEventHandler(ServerSettings? serverSettings);
 #nullable disable
     public event LobbyCreateRequestedEventHandler OnLobbyCreateRequested;
 
@@ -43,12 +43,15 @@ public class ClientManager : MonoBehaviour
     public event CurrentLobbyUpdatedEventHandler OnCurrentLobbyUpdated;
 
 #nullable enable
-    public delegate void LobbyJoinRequestedEventHandler(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings);
+    public delegate void LobbyJoinRequestedEventHandler(int lobbyId, ServerSettings? serverSettings);
 #nullable disable
     public event LobbyJoinRequestedEventHandler OnLobbyJoinRequested;
 
-    public delegate void OnLobbyConnectionEstablishedEventHandler(int lobbyId);
-    public event OnLobbyConnectionEstablishedEventHandler OnLobbyConnectionEstablished;
+    public delegate void OnLobbyConnectionAcceptedEventHandler(int lobbyId);
+    public event OnLobbyConnectionAcceptedEventHandler OnLobbyConnectionAccepted;
+
+    public delegate void OnLobbyConnectionRejectedEventHandler(int lobbyId, LobbyRejectionType errorType);
+    public event OnLobbyConnectionRejectedEventHandler OnLobbyConnectionRejected;
 
     public static ClientManager Instance { get; private set; }
 
@@ -166,18 +169,22 @@ public class ClientManager : MonoBehaviour
                 if (accepted)
                 {
                     Debug.Log("<color=green><b>CNS</b></color>: Client connected");
+                    int lobbyId = packet.ReadInt();
+                    CurrentLobby.LobbyData.LobbyId = lobbyId;
+                    CurrentUser.LobbyId = lobbyId;
                     IsConnected = true;
-                    CurrentUser.LobbyId = CurrentLobby.LobbyData.LobbyId;
-                    OnLobbyConnectionEstablished?.Invoke(CurrentLobby.LobbyData.LobbyId);
+                    OnLobbyConnectionAccepted?.Invoke(CurrentLobby.LobbyData.LobbyId);
                 }
                 else
                 {
-                    Debug.LogWarning($"<color=red><b>CNS</b></color>: Connection to lobby {CurrentLobby.LobbyData.LobbyId} was rejected by the server.");
+                    Debug.LogWarning("<color=yellow><b>CNS</b></color>: Client rejected");
+                    LobbyRejectionType errorType = (LobbyRejectionType)packet.ReadByte();
+                    OnLobbyConnectionRejected?.Invoke(CurrentLobby.LobbyData.LobbyId, errorType);
                 }
             }
             else
             {
-                Debug.LogWarning($"<color=red><b>CNS</b></color>: Received packet with unknown service type {serviceType} and command type {commandType} while not in a lobby.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received packet with unknown service type {serviceType} and command type {commandType} while not in a lobby.");
             }
         }
     }
@@ -320,7 +327,7 @@ public class ClientManager : MonoBehaviour
 #if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
         StartCoroutine(CreateLobbyCoroutine(lobbySettings, invokeEvent));
 #elif CNS_SYNC_SERVER_SINGLE
-        CreateLobby(GameResources.Instance.DefaultLobbyId, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
+        CreateLobby(-1, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
 #endif
     }
 
@@ -369,7 +376,7 @@ public class ClientManager : MonoBehaviour
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
         {
-            OnLobbyCreateRequested?.Invoke(lobbyId, CurrentLobby.LobbyData.Settings, serverSettings);
+            OnLobbyCreateRequested?.Invoke(serverSettings);
         }
     }
 #nullable disable
@@ -501,7 +508,7 @@ public class ClientManager : MonoBehaviour
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
         {
-            OnLobbyJoinRequested?.Invoke(lobbyId, CurrentLobby.LobbyData.Settings, serverSettings);
+            OnLobbyJoinRequested?.Invoke(lobbyId, serverSettings);
         }
     }
 #nullable disable

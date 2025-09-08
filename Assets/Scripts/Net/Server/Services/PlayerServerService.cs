@@ -45,6 +45,17 @@ public class PlayerServerService : ServerService
 
     public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
-        // Nothing
+        if (lobby.GameData.ServerPlayers.TryGetValue(leftUser, out ServerPlayer player))
+        {
+            lobby.GameData.ServerPlayers.Remove(leftUser);
+            lobby.GameData.ServerObjects.Remove(player.Id);
+
+            if (player.CurrentInteractable != null)
+            {
+                player.CurrentInteractable.Drop(player, lobby, leftUser, null, TransportMethod.Reliable);
+                lobby.SendToGame(PacketBuilder.ObjectCommunication(player.CurrentInteractable, PacketBuilder.PlayerDrop(player.User.PlayerId)), TransportMethod.Reliable);
+            }
+            lobby.SendToGame(PacketBuilder.PlayerDestroy(leftUser), TransportMethod.Reliable);
+        }
     }
 }

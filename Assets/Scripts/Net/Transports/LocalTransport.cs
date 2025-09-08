@@ -30,12 +30,12 @@ public class LocalTransport : NetTransport
 #nullable disable
     }
 
-    private void LobbyCreateRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    private void LobbyCreateRequested(ServerSettings serverSettings)
     {
         StartClient();
     }
 
-    private void LobbyJoinRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    private void LobbyJoinRequested(int lobbyId, ServerSettings serverSettings)
     {
         StartClient();
     }

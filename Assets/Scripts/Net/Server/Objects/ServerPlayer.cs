@@ -73,16 +73,6 @@ public class ServerPlayer : ServerObject
 
     public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
-        if (User == leftUser)
-        {
-            lobby.GameData.ServerPlayers.Remove(User);
-            lobby.GameData.ServerObjects.Remove(Id);
-            if (CurrentInteractable != null)
-            {
-                CurrentInteractable.Drop(this, lobby, leftUser, null, TransportMethod.Reliable);
-                lobby.SendToGame(PacketBuilder.ObjectCommunication(CurrentInteractable, PacketBuilder.PlayerDrop(User.PlayerId)), TransportMethod.Reliable);
-            }
-            lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerDestroy()), TransportMethod.Reliable);
-        }
+        // Nothing
     }
 }

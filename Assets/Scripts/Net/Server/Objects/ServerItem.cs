@@ -4,6 +4,9 @@ public class ServerItem : ServerInteractable
 {
     public ItemType Type { get; set; } = ItemType.None;
 
+    public Vector3 Position { get; set; }
+    public Quaternion Rotation { get; set; }
+
     public ServerItem(ushort id) : base(id)
     {
     }

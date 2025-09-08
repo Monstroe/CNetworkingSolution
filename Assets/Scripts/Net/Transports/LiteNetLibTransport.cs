@@ -89,13 +89,13 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 #nullable disable
     }
 
-    private void LobbyCreateRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    private void LobbyCreateRequested(ServerSettings serverSettings)
     {
         address = serverSettings?.ServerAddress ?? address;
         StartClient();
     }
 
-    private void LobbyJoinRequested(int lobbyId, LobbySettings lobbySettings, ServerSettings serverSettings)
+    private void LobbyJoinRequested(int lobbyId, ServerSettings serverSettings)
     {
         address = serverSettings?.ServerAddress ?? address;
         StartClient();

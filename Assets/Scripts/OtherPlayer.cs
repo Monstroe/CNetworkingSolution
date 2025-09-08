@@ -48,13 +48,6 @@ public class OtherPlayer : ClientPlayer
                     Grabbed = packet.ReadBool();
                     break;
                 }
-            case CommandType.PLAYER_DESTROY:
-                {
-                    ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.Remove(User);
-                    ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Remove(Id);
-                    Destroy(gameObject);
-                    break;
-                }
         }
     }
 }

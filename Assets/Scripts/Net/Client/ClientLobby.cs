@@ -55,7 +55,7 @@ public class ClientLobby : MonoBehaviour
         if (services.ContainsKey(serviceType))
         {
             services.Remove(serviceType);
-            Debug.Log($"<color=red><b>CNS</b></color>: Unregistered ClientService {serviceType}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ClientService {serviceType}.");
         }
         else
         {
@@ -71,7 +71,7 @@ public class ClientLobby : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"<color=red><b>CNS</b></color>: ClientService {serviceType} not found.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {serviceType} not found.");
             return null;
         }
     }

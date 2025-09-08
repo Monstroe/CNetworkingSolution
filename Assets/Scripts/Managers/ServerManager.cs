@@ -88,10 +88,7 @@ public class ServerManager : MonoBehaviour
             UserData userData = ServerData.ConnectedUsers[user.UserId];
             await RemoveUser(userData);
         }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {user.UserId} was not connected.");
-        }
+
         var (userId, transportIndex) = GetUserIdAndTransportIndex(user);
         transports[transportIndex].DisconnectRemote(userId);
     }
@@ -131,10 +128,6 @@ public class ServerManager : MonoBehaviour
             {
                 UserData userData = ServerData.ConnectedUsers[args.RemoteId];
                 await RemoveUser(userData);
-            }
-            else
-            {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {args.RemoteId} was not connected.");
             }
         }
         catch (Exception ex)
@@ -183,18 +176,20 @@ public class ServerManager : MonoBehaviour
                     else
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {args.RemoteId} cannot join.");
+                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
 
                     if (lobby != null && lobby.LobbyData.UserCount < lobby.LobbyData.Settings.MaxUsers)
                     {
-                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true), TransportMethod.Reliable);
+                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
                         await AddUserToLobby(remoteUser, lobby, connectionData);
                     }
                     else
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
+                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
                         KickUser(remoteUser);
                     }
                 }
@@ -234,6 +229,14 @@ public class ServerManager : MonoBehaviour
     async void OnDestroy()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
+        foreach (NetTransport transport in transports)
+        {
+            transport.OnNetworkConnected -= HandleNetworkConnected;
+            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
+            transport.OnNetworkReceived -= HandleNetworkReceived;
+            transport.Shutdown();
+        }
+
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
@@ -301,13 +304,14 @@ public class ServerManager : MonoBehaviour
             TokenVerifier.AddUnverifiedUser(user);
         }
 #endif
-        Debug.Log($"<color=green><b>CNS</b></color>: New user {user.UserId} registered.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Server registered new user {user.UserId}.");
         return user;
     }
 
     private async Task RemoveUser(UserData user)
     {
         ServerData.ConnectedUsers.Remove(user.UserId);
+
         if (ServerData.ActiveLobbies.ContainsKey(user.LobbyId))
         {
             ServerLobby lobby = ServerData.ActiveLobbies[user.LobbyId];
@@ -332,7 +336,7 @@ public class ServerManager : MonoBehaviour
             TokenVerifier.RemoveUnverifiedUser(user);
         }
 #endif
-        Debug.Log($"<color=green><b>CNS</b></color>: User {user.UserId} removed.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Server removed user {user.UserId}.");
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -353,7 +357,7 @@ public class ServerManager : MonoBehaviour
             await Database.AddLobbyToServerAsync(lobby.LobbyData.LobbyId);
         } 
 #endif
-        Debug.Log($"<color=green><b>CNS</b></color>: New lobby {lobby.LobbyData.LobbyId} registered.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Server registered new lobby {lobby.LobbyData.LobbyId}.");
         return lobby;
     }
 
@@ -371,7 +375,7 @@ public class ServerManager : MonoBehaviour
             await Database.DeleteLobbyAsync(lobby.LobbyData.LobbyId);
         }
 #endif
-        Debug.Log($"<color=green><b>CNS</b></color>: Lobby {lobby.LobbyData.LobbyId} removed.");
+        Debug.Log($"<color=green><b>CNS</b></color>: Server removed lobby {lobby.LobbyData.LobbyId}.");
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously

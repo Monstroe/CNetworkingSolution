@@ -62,6 +62,26 @@ public class PlayerInteract : MonoBehaviour
         {
             ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance.CurrentInteractable, PacketBuilder.PlayerInteract((byte)Player.Instance.Id)), TransportMethod.Reliable);
         }
+
+        // DEBUG SPAWN ITEMS
+        if (Input.GetKeyDown(KeyCode.X))
+        {
+            ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ItemSpawn(null, ItemType.Basic, transform.position, transform.rotation), TransportMethod.Reliable);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, interactionDistance, GameResources.Instance.InteractionMask))
+            {
+                if (hit.collider.TryGetComponent(out ClientItem item))
+                {
+                    if (item.InteractingPlayer != null && item.InteractingPlayer.Id == Player.Instance.Id)
+                    {
+                        ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ItemDestroy(item.Id), TransportMethod.Reliable);
+                    }
+                }
+            }
+        }
     }
 
     void Animate()

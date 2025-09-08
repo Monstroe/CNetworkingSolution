@@ -39,6 +39,31 @@ public class PlayerClientService : ClientService
                     }
                     break;
                 }
+            case CommandType.PLAYER_DESTROY:
+                {
+                    byte playerId = packet.ReadByte();
+                    if (ClientManager.Instance.CurrentUser.PlayerId == playerId)
+                    {
+                        Debug.LogWarning("Received PLAYER_DESTROY for the local player. Ignoring.");
+                        // Can add logic here to handle local player destruction if needed
+                        break;
+                    }
+                    else
+                    {
+                        UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                        if (ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.ContainsKey(user) && ClientManager.Instance.CurrentLobby.GameData.ClientObjects.ContainsKey(user.PlayerId))
+                        {
+                            ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.Remove(user);
+                            ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Remove(user.PlayerId);
+                            Destroy(gameObject);
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"No player with Id {playerId} found. Destroy request ignored.");
+                        }
+                    }
+                    break;
+                }
         }
     }
 }

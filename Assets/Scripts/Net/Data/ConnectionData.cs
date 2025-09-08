@@ -44,3 +44,9 @@ public enum LobbyConnectionType
     CREATE,
     JOIN,
 }
+
+public enum LobbyRejectionType
+{
+    LOBBY_FULL,
+    LOBBY_NOT_FOUND,
+}

@@ -84,26 +84,14 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
 #nullable enable
         if (deviceType == NetDeviceType.Client)
         {
-            ClientManager.Instance.OnLobbyCreateRequested += async (lobbyData, lobbySettings, serverSettings) =>
+            ClientManager.Instance.OnLobbyCreateRequested += async (serverSettings) =>
             {
-                if (lobbySettings == null)
-                {
-                    Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
-                    return;
-                }
-
-                await CreateSteamLobby(lobbySettings);
+                await CreateSteamLobby(ClientManager.Instance.CurrentLobby.Settings);
             };
 
-            ClientManager.Instance.OnLobbyJoinRequested += async (lobbyData, lobbySettings, serverSettings) =>
+            ClientManager.Instance.OnLobbyJoinRequested += async (lobbyId, serverSettings) =>
             {
-                if (lobbySettings == null)
-                {
-                    Debug.LogError("<color=red><b>CNS</b></color>: Lobby settings are null.");
-                    return;
-                }
-
-                await JoinSteamLobby(lobbySettings.SteamCode);
+                await JoinSteamLobby(ClientManager.Instance.CurrentLobby.Settings.SteamCode);
             };
         }
 #nullable disable

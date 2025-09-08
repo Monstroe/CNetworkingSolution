@@ -53,12 +53,15 @@ public static class PacketBuilder
     }
 
 
-    public static NetPacket ConnectionResponse(bool accepted)
+    public static NetPacket ConnectionResponse(bool accepted, int lobbyId, LobbyRejectionType? errorType = null)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.CONNECTION);
         packet.Write((byte)CommandType.CONNECTION_RESPONSE);
         packet.Write(accepted);
+        packet.Write(lobbyId);
+        if (errorType != null)
+            packet.Write((byte)errorType);
         return packet;
     }
 
@@ -142,11 +145,12 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket PlayerDestroy()
+    public static NetPacket PlayerDestroy(UserData user)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYER_DESTROY);
+        packet.Write(user.PlayerId);
         return packet;
     }
 
@@ -247,21 +251,25 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket ItemSpawn(ushort itemId, ItemType itemType)
+    public static NetPacket ItemSpawn(ushort? itemId, ItemType itemType, Vector3 pos, Quaternion rot)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.ITEM);
         packet.Write((byte)CommandType.ITEM_SPAWN);
-        packet.Write(itemId);
+        if (itemId != null)
+            packet.Write(itemId.Value);
         packet.Write((byte)itemType);
+        packet.Write(pos);
+        packet.Write(rot);
         return packet;
     }
 
-    public static NetPacket ItemDestroy()
+    public static NetPacket ItemDestroy(ushort itemId)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.ITEM);
         packet.Write((byte)CommandType.ITEM_DESTROY);
+        packet.Write(itemId);
         return packet;
     }
 

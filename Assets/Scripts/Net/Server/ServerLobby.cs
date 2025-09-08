@@ -95,7 +95,7 @@ public class ServerLobby : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"<color=red><b>CNS</b></color>: No service found for type {serviceType}. Command {commandType} will not be processed.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for type {serviceType}. Command {commandType} will not be processed.");
         }
     }
 
@@ -143,7 +143,7 @@ public class ServerLobby : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning($"<color=red><b>CNS</b></color>: ServerService {serviceType} not found.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} not found.");
             return null;
         }
     }
