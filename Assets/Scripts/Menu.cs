@@ -85,9 +85,9 @@ public class Menu : MonoBehaviour
     public void StartMultiPlayer()
     {
         ClientManager.Instance.CreateNewUser();
-#if CNS_LOBBY_MULTIPLE
+#if CNS_SYNC_SERVER_MULTIPLE || CNS_LOBBY_MULTIPLE
         ToMultiplayerMenu();
-#elif CNS_LOBBY_SINGLE
+#elif CNS_SYNC_SERVER_SINGLE && CNS_LOBBY_SINGLE
         ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
 #endif
     }
