@@ -93,6 +93,7 @@ public class ServerTokenVerifier
             {
                 TokenId = GetTokenIdFromToken(payload),
                 LobbyId = GetLobbyIdFromToken(payload),
+                LobbyConnectionType = GetLobbyConnectionTypeFromToken(payload),
                 UserGuid = GetUserGuidFromToken(payload),
                 UserSettings = GetUserSettingsFromToken(payload),
                 LobbySettings = GetLobbySettingsFromToken(payload)
@@ -126,6 +127,11 @@ public class ServerTokenVerifier
     private int GetLobbyIdFromToken(Dictionary<string, object> payload)
     {
         return Convert.ToInt32(payload["lobby_id"]);
+    }
+
+    private LobbyConnectionType GetLobbyConnectionTypeFromToken(Dictionary<string, object> payload)
+    {
+        return Enum.Parse<LobbyConnectionType>(payload["lobby_connection_type"].ToString());
     }
 
     private Guid GetUserGuidFromToken(Dictionary<string, object> payload)
