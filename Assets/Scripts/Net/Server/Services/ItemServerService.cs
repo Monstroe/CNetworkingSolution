@@ -5,7 +5,8 @@ using UnityEngine;
 public class ItemServerService : ServerService
 {
     private bool startingItemsInitialized = false;
-    private List<ushort> startingItemIds = new List<ushort>();
+    private List<ushort> spawnedStartingItemIds = new List<ushort>();
+    private List<ushort> destroyedStartingItemIds = new List<ushort>();
 
     public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
@@ -14,16 +15,9 @@ public class ItemServerService : ServerService
             case CommandType.ITEM_SPAWN:
                 {
                     ItemType itemType = (ItemType)packet.ReadByte();
-                    Vector3 pos = packet.ReadVector3();
+                    Vector3 position = packet.ReadVector3();
                     Quaternion rotation = packet.ReadQuaternion();
-                    ushort newId = lobby.GenerateObjectId();
-                    ServerItem serverItem = new ServerItem(newId);
-                    serverItem.Type = itemType;
-                    serverItem.Position = pos;
-                    serverItem.Rotation = rotation;
-                    lobby.GameData.ServerObjects.Add(newId, serverItem);
-                    lobby.GameData.ServerItems.Add(newId, serverItem);
-                    lobby.SendToGame(PacketBuilder.ItemSpawn(newId, itemType, pos, rotation), transportMethod ?? TransportMethod.Reliable);
+                    SpawnItem(itemType, position, rotation, lobby, transportMethod);
                     break;
                 }
             case CommandType.ITEM_DESTROY:
@@ -36,13 +30,7 @@ public class ItemServerService : ServerService
                             Debug.LogWarning($"User {user.UserId} attempted to destroy item {itemId} they are not interacting with.");
                             return;
                         }
-
-                        if (startingItemIds.Contains(serverItem.Id))
-                            startingItemIds.Remove(serverItem.Id);
-                        serverItem.Drop(serverItem.InteractingPlayer, lobby, user, null, transportMethod);
-                        lobby.GameData.ServerObjects.Remove(serverItem.Id);
-                        lobby.GameData.ServerItems.Remove(serverItem.Id);
-                        lobby.SendToGame(PacketBuilder.ItemDestroy(serverItem.Id), transportMethod ?? TransportMethod.Reliable);
+                        DestroyItem(serverItem, lobby, transportMethod);
                     }
                     break;
                 }
@@ -65,26 +53,23 @@ public class ItemServerService : ServerService
         {
             foreach (ClientItem obj in lobby.Map.GetComponentsInChildren<ClientItem>(true))
             {
-                ushort newId = lobby.GenerateObjectId();
-                ServerItem serverItem = new ServerItem(newId);
-                serverItem.Type = obj.Type;
-                serverItem.Position = obj.transform.position;
-                serverItem.Rotation = obj.transform.rotation;
-                lobby.GameData.ServerObjects.Add(newId, serverItem);
-                lobby.GameData.ServerItems.Add(newId, serverItem);
-                startingItemIds.Add(newId);
+                SpawnItem(obj.Type, obj.transform.position, obj.transform.rotation, lobby, null, true);
             }
 
             startingItemsInitialized = true;
         }
 
-        if (startingItemsInitialized)
+        // Initialize starting items (AKA items already placed on map prefab) for the joining user
+        lobby.SendToUser(joinedUser, PacketBuilder.ItemsInit(spawnedStartingItemIds.ToArray()), TransportMethod.Reliable);
+        // Destroy any starting items that have already been destroyed by other players
+        foreach (ushort destroyedItemId in destroyedStartingItemIds)
         {
-            lobby.SendToUser(joinedUser, PacketBuilder.ItemsInit(startingItemIds.ToArray()), TransportMethod.Reliable);
+            lobby.SendToUser(joinedUser, PacketBuilder.ItemDestroy(destroyedItemId), TransportMethod.Reliable);
         }
 
+        // Spawn the rest of the items for the joining user
         // Spawning happens first in the Server Service
-        foreach (ServerItem item in lobby.GameData.ServerItems.Values.Where(i => !startingItemIds.Contains(i.Id)))
+        foreach (ServerItem item in lobby.GameData.ServerItems.Values.Where(i => !spawnedStartingItemIds.Contains(i.Id)))
         {
             lobby.SendToUser(joinedUser, PacketBuilder.ItemSpawn(item.Id, item.Type, item.Position, item.Rotation), TransportMethod.Reliable);
         }
@@ -93,5 +78,42 @@ public class ItemServerService : ServerService
     public override void UserLeft(ServerLobby lobby, UserData leftUser)
     {
         // Nothing
+    }
+
+    public void SpawnItem(ItemType itemType, Vector3 position, Quaternion rotation, ServerLobby lobby, TransportMethod? transportMethod, bool isStartingItem = false)
+    {
+        ushort newId = lobby.GenerateObjectId();
+        ServerItem serverItem = new ServerItem(newId);
+        serverItem.Type = itemType;
+        serverItem.Position = position;
+        serverItem.Rotation = rotation;
+        lobby.GameData.ServerObjects.Add(newId, serverItem);
+        lobby.GameData.ServerItems.Add(newId, serverItem);
+
+        if (isStartingItem)
+        {
+            spawnedStartingItemIds.Add(newId);
+        }
+        else
+        {
+            lobby.SendToGame(PacketBuilder.ItemSpawn(newId, itemType, position, rotation), transportMethod ?? TransportMethod.Reliable);
+        }
+    }
+
+    public void DestroyItem(ServerItem item, ServerLobby lobby, TransportMethod? transportMethod)
+    {
+        if (spawnedStartingItemIds.Contains(item.Id))
+        {
+            spawnedStartingItemIds.Remove(item.Id);
+            destroyedStartingItemIds.Add(item.Id);
+        }
+
+        if (item.InteractingPlayer != null)
+        {
+            item.Drop(item.InteractingPlayer, lobby, item.InteractingPlayer.User, null, transportMethod);
+        }
+        lobby.GameData.ServerObjects.Remove(item.Id);
+        lobby.GameData.ServerItems.Remove(item.Id);
+        lobby.SendToGame(PacketBuilder.ItemDestroy(item.Id), transportMethod ?? TransportMethod.Reliable);
     }
 }
