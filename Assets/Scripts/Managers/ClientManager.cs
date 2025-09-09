@@ -120,7 +120,7 @@ public class ClientManager : MonoBehaviour
     {
         if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
         {
-            CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(new ConnectionData
+            transport.SendToAll(PacketBuilder.ConnectionRequest(new ConnectionData
             {
                 LobbyId = CurrentLobby.LobbyData.LobbyId,
                 LobbyConnectionType = lobbyConnectionType,
@@ -132,9 +132,9 @@ public class ClientManager : MonoBehaviour
         }
 
 #if CNS_SYNC_SERVER_MULTIPLE
-        CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(serverToken), TransportMethod.Reliable);
+        transport.SendToAll(PacketBuilder.ConnectionRequest(serverToken), TransportMethod.Reliable);
 #elif CNS_SYNC_SERVER_SINGLE || CNS_SYNC_HOST
-        CurrentLobby.SendToServer(PacketBuilder.ConnectionRequest(new ConnectionData
+        transport.SendToAll(PacketBuilder.ConnectionRequest(new ConnectionData
         {
             LobbyId = CurrentLobby.LobbyData.LobbyId,
             LobbyConnectionType = lobbyConnectionType,

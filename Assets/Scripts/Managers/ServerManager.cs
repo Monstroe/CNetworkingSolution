@@ -163,6 +163,7 @@ public class ServerManager : MonoBehaviour
                         KickUser(remoteUser);
                         return;
                     }
+                    var (userId, transportIndex) = GetUserIdAndTransportIndex(remoteUser);
 
                     ServerLobby lobby = null;
                     if (connectionData.LobbyConnectionType == LobbyConnectionType.JOIN && ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
@@ -176,20 +177,20 @@ public class ServerManager : MonoBehaviour
                     else
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {args.RemoteId} cannot join.");
-                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
+                        transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
 
                     if (lobby != null && lobby.LobbyData.UserCount < lobby.LobbyData.Settings.MaxUsers)
                     {
-                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
+                        transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
                         await AddUserToLobby(remoteUser, lobby, connectionData);
                     }
                     else
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
-                        lobby.SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
+                        transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
                         KickUser(remoteUser);
                     }
                 }

@@ -7,7 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 
-public class LiteNetLibTransport : NetTransport, INetEventListener
+public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEventListener
 {
     [Tooltip("The port to listen on (if server) or connect to (if client)")]
     [SerializeField] private ushort port = 7777;
@@ -34,6 +34,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 
     private NetManager netManager;
     private readonly Dictionary<uint, NetPeer> connectedPeers = new Dictionary<uint, NetPeer>();
+    private readonly Dictionary<uint, byte[]> peerMessageBuffers = new Dictionary<uint, byte[]>();
 
     public override uint ServerClientId => 0;
     public override List<uint> ConnectedClientIds => new List<uint>(connectedPeers.Keys);
@@ -150,25 +151,23 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {
-        if (!connectedPeers.ContainsKey(remoteId))
+        if (connectedPeers.TryGetValue(remoteId, out NetPeer peer))
+        {
+            SendInternal(peer, packet.ByteArray, protocol);
+        }
+        else
         {
             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to send to a peer that is not connected: {remoteId}");
-            return;
         }
-
-        var deliveryMethod = ConvertProtocol(protocol);
-        connectedPeers[remoteId].Send(packet.ByteArray, deliveryMethod);
     }
 
     public override void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod protocol)
     {
-        var deliveryMethod = ConvertProtocol(protocol);
-
         foreach (var remoteId in remoteIds)
         {
             if (connectedPeers.TryGetValue(remoteId, out NetPeer peer))
             {
-                peer.Send(packet.ByteArray, deliveryMethod);
+                SendInternal(peer, packet.ByteArray, protocol);
             }
             else
             {
@@ -183,6 +182,13 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         netManager.SendToAll(packet.ByteArray, deliveryMethod);
     }
 
+    private void SendInternal(NetPeer peer, byte[] data, TransportMethod protocol)
+    {
+        var deliveryMethod = ConvertProtocol(protocol);
+        peerMessageBuffers[(uint)peer.Id] = data;
+        peer.SendWithDeliveryEvent(data, 0, deliveryMethod, null);
+    }
+
     public override void Disconnect()
     {
         netManager.DisconnectAll();
@@ -190,9 +196,16 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
 
     public override void DisconnectRemote(uint remoteId)
     {
-        if (connectedPeers.ContainsKey(remoteId))
+        if (connectedPeers.TryGetValue(remoteId, out NetPeer peer))
         {
-            connectedPeers[remoteId].Disconnect();
+            if (peerMessageBuffers.TryGetValue(remoteId, out byte[] lastData))
+            {
+                peer.Disconnect(lastData);
+            }
+            else
+            {
+                peer.Disconnect();
+            }
         }
         else
         {
@@ -278,6 +291,11 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
         }
     }
 
+    void IDeliveryEventListener.OnMessageDelivered(NetPeer peer, object userData)
+    {
+        peerMessageBuffers.Remove((uint)peer.Id);
+    }
+
     void INetEventListener.OnPeerConnected(NetPeer peer)
     {
         var peerId = (uint)peer.Id;
@@ -297,6 +315,11 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
     {
         var peerId = (uint)peer.Id;
 
+        if (disconnectInfo.AdditionalData.AvailableBytes > 0)
+        {
+            ReceiveInternal(peerId, disconnectInfo.AdditionalData, DeliveryMethod.ReliableOrdered);
+        }
+
         if (connectedPeers.Remove(peerId))
         {
             RaiseNetworkDisconnected(peerId);
@@ -315,14 +338,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
     {
         var peerId = (uint)peer.Id;
-
-        byte[] receivedBytes = new byte[reader.AvailableBytes];
-        reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
-        NetPacket receivedPacket = new NetPacket(receivedBytes);
-
-        RaiseNetworkReceived(peerId, receivedPacket, ConvertProtocolBack(deliveryMethod));
-
-        reader.Recycle();
+        ReceiveInternal(peerId, reader, deliveryMethod);
     }
 
     void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -338,6 +354,17 @@ public class LiteNetLibTransport : NetTransport, INetEventListener
     void INetEventListener.OnConnectionRequest(ConnectionRequest request)
     {
         request.AcceptIfKey(connectionKey);
+    }
+
+    private void ReceiveInternal(uint peerId, NetPacketReader reader, DeliveryMethod deliveryMethod)
+    {
+        byte[] receivedBytes = new byte[reader.AvailableBytes];
+        reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
+        NetPacket receivedPacket = new NetPacket(receivedBytes);
+
+        RaiseNetworkReceived(peerId, receivedPacket, ConvertProtocolBack(deliveryMethod));
+
+        reader.Recycle();
     }
 
     private static int SecondsToMilliseconds(float seconds)
