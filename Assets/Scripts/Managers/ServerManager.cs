@@ -179,6 +179,7 @@ public class ServerManager : MonoBehaviour
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
                         transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
                         KickUser(remoteUser);
+                        return;
                     }
 
                     transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
