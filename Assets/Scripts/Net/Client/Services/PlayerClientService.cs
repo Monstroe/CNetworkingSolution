@@ -51,11 +51,11 @@ public class PlayerClientService : ClientService
                     else
                     {
                         UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                        if (ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.ContainsKey(user) && ClientManager.Instance.CurrentLobby.GameData.ClientObjects.ContainsKey(user.PlayerId))
+                        if (ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.TryGetValue(user, out ClientPlayer player) && ClientManager.Instance.CurrentLobby.GameData.ClientObjects.ContainsKey(user.PlayerId))
                         {
                             ClientManager.Instance.CurrentLobby.GameData.ClientPlayers.Remove(user);
                             ClientManager.Instance.CurrentLobby.GameData.ClientObjects.Remove(user.PlayerId);
-                            Destroy(gameObject);
+                            Destroy(player.gameObject);
                         }
                         else
                         {
