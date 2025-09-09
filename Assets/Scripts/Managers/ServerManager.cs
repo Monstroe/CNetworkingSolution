@@ -255,7 +255,7 @@ public class ServerManager : MonoBehaviour
 
 #if CNS_SYNC_SERVER_SINGLE && CNS_LOBBY_MULTIPLE
         connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.CREATE ? GenerateLobbyId() : connectionData.LobbyId;
-#elif CNS_LOBBY_SINGLE
+#elif CNS_SYNC_SERVER_SINGLE && CNS_LOBBY_SINGLE
         connectionData.LobbyId = GameResources.Instance.DefaultLobbyId;
         connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
 #endif

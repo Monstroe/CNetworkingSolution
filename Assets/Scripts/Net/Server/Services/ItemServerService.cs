@@ -104,7 +104,6 @@ public class ItemServerService : ServerService
     {
         if (spawnedStartingItemIds.Contains(item.Id))
         {
-            spawnedStartingItemIds.Remove(item.Id);
             destroyedStartingItemIds.Add(item.Id);
         }
 
