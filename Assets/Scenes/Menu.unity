@@ -342,7 +342,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transport: {fileID: 161184808}
-  lobbyApiUrl: http://localhost:5107/api
+  lobbyApiUrl: https://monstroe.live/api
 --- !u!114 &161184808
 MonoBehaviour:
   m_ObjectHideFlags: 0

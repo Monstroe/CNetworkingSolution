@@ -23,7 +23,7 @@ MonoBehaviour:
   - m_enabled: 1
     m_path: Assets/Scenes/Server.unity
   m_ScriptingDefines:
-  - CNS_SYNC_SERVER_SINGLE
+  - CNS_SYNC_SERVER_MULTIPLE
   - CNS_LOBBY_MULTIPLE
   - CNS_TRANSPORT_LOCAL
   - CNS_TRANSPORT_LITENETLIB
