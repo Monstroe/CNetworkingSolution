@@ -52,8 +52,8 @@ public class PlayerServerService : ServerService
 
             if (player.CurrentInteractable != null)
             {
-                player.CurrentInteractable.Drop(player, lobby, leftUser, null, TransportMethod.Reliable);
                 lobby.SendToGame(PacketBuilder.ObjectCommunication(player.CurrentInteractable, PacketBuilder.PlayerDrop(player.User.PlayerId)), TransportMethod.Reliable);
+                player.CurrentInteractable.Drop(player, lobby, leftUser, null, TransportMethod.Reliable);
             }
             lobby.SendToGame(PacketBuilder.PlayerDestroy(leftUser), TransportMethod.Reliable);
         }
