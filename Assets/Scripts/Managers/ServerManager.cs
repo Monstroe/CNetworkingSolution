@@ -165,16 +165,8 @@ public class ServerManager : MonoBehaviour
                     }
                     var (userId, transportIndex) = GetUserIdAndTransportIndex(remoteUser);
 
-                    ServerLobby lobby = null;
-                    if (connectionData.LobbyConnectionType == LobbyConnectionType.JOIN && ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
-                    {
-                        lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
-                    }
-                    else if (connectionData.LobbyConnectionType == LobbyConnectionType.CREATE)
-                    {
-                        lobby = await RegisterLobby(connectionData);
-                    }
-                    else
+                    ServerLobby lobby = await GetLobbyData(connectionData);
+                    if (lobby == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {args.RemoteId} cannot join.");
                         transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
@@ -182,17 +174,15 @@ public class ServerManager : MonoBehaviour
                         return;
                     }
 
-                    if (lobby != null && lobby.LobbyData.UserCount < lobby.LobbyData.Settings.MaxUsers)
-                    {
-                        transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
-                        await AddUserToLobby(remoteUser, lobby, connectionData);
-                    }
-                    else
+                    if (lobby.LobbyData.UserCount >= lobby.LobbyData.Settings.MaxUsers)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
                         transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
                         KickUser(remoteUser);
                     }
+
+                    transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
+                    await AddUserToLobby(remoteUser, lobby, connectionData);
                 }
                 else
                 {
@@ -269,6 +259,31 @@ public class ServerManager : MonoBehaviour
         connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
 #endif
         return connectionData;
+    }
+
+    private async Task<ServerLobby> GetLobbyData(ConnectionData connectionData)
+    {
+        ServerLobby lobby = null;
+#if CNS_LOBBY_SINGLE
+        if (ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
+        {
+            lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
+        }
+        else
+        {
+            lobby = await RegisterLobby(connectionData);
+        }
+#elif CNS_LOBBY_MULTIPLE
+        if (connectionData.LobbyConnectionType == LobbyConnectionType.JOIN && ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
+        {
+            lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
+        }
+        else if (connectionData.LobbyConnectionType == LobbyConnectionType.CREATE)
+        {
+            lobby = await RegisterLobby(connectionData);
+        }
+#endif
+        return lobby;
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
