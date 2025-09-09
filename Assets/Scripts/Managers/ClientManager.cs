@@ -166,10 +166,10 @@ public class ClientManager : MonoBehaviour
             if (serviceType == ServiceType.CONNECTION && commandType == CommandType.CONNECTION_RESPONSE)
             {
                 bool accepted = packet.ReadBool();
+                int lobbyId = packet.ReadInt();
                 if (accepted)
                 {
                     Debug.Log("<color=green><b>CNS</b></color>: Client connected");
-                    int lobbyId = packet.ReadInt();
                     CurrentLobby.LobbyData.LobbyId = lobbyId;
                     CurrentUser.LobbyId = lobbyId;
                     IsConnected = true;
