@@ -179,14 +179,22 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     public override void SendToAll(NetPacket packet, TransportMethod protocol)
     {
         var deliveryMethod = ConvertProtocol(protocol);
-        netManager.SendToAll(packet.ByteArray, deliveryMethod);
+        netManager.SendToAll(packet.ByteArray, 0, deliveryMethod);
     }
 
     private void SendInternal(NetPeer peer, byte[] data, TransportMethod protocol)
     {
         var deliveryMethod = ConvertProtocol(protocol);
         peerMessageBuffers[(uint)peer.Id] = data;
-        peer.SendWithDeliveryEvent(data, 0, deliveryMethod, null);
+        if (deliveryMethod == DeliveryMethod.ReliableOrdered || deliveryMethod == DeliveryMethod.ReliableUnordered)
+        {
+            peer.SendWithDeliveryEvent(data, 0, deliveryMethod, null);
+        }
+        else
+        {
+            peer.Send(data, 0, deliveryMethod);
+        }
+
     }
 
     public override void Disconnect()
