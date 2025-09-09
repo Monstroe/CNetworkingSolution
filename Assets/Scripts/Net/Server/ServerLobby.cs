@@ -18,7 +18,6 @@ public class ServerLobby : MonoBehaviour
         this.transports = transports;
 
         // Init Server Services (ADD NEW SERVICES HERE)
-        services.Add(ServiceType.LOBBY, new GameObject("LobbyServerService").AddComponent<LobbyServerService>());
         services.Add(ServiceType.GAME, new GameObject("GameServerService").AddComponent<GameServerService>());
         services.Add(ServiceType.PLAYER, new GameObject("PlayerServerService").AddComponent<PlayerServerService>());
         services.Add(ServiceType.FX, new GameObject("FXServerService").AddComponent<FXServerService>());
@@ -26,9 +25,12 @@ public class ServerLobby : MonoBehaviour
         services.Add(ServiceType.ITEM, new GameObject("ItemServerService").AddComponent<ItemServerService>());
         services.Add(ServiceType.CHAT, new GameObject("ChatServerService").AddComponent<ChatServerService>());
         // The object server service is special because it handles all networked object communication
-        // Server services should run first, then server objects
+        // Server services should run first (with the exception of the lobby service), then server objects
         // Therefore THIS SERVER SERVICE SHOULD ALWAYS BE ADDED LAST, DON'T ADD ANYTHING AFTER THIS
         services.Add(ServiceType.OBJECT, new GameObject("ObjectServerService").AddComponent<ObjectServerService>());
+        // The lobby service is also special because it handles lobby and user management
+        // It needs to run last because the clients shouldn't clean up their UserData until all other services have processed the user leaving
+        services.Add(ServiceType.LOBBY, new GameObject("LobbyServerService").AddComponent<LobbyServerService>());
 
         foreach (var service in services.Values)
         {
