@@ -21,10 +21,6 @@ public class ObjectClientService : ClientService
                     {
                         clientObject.ReceiveData(packet, objectServiceType, objectCommand, transportMethod);
                     }
-                    else
-                    {
-                        Debug.LogWarning($"ClientObject with ID {objectId} not found.");
-                    }
                     break;
                 }
         }
