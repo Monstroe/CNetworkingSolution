@@ -151,11 +151,17 @@ public class LocalTransport : NetTransport
         if (deviceType == NetDeviceType.Server)
         {
             isDisconnecting = true;
-            instances[1 - instanceIndex].isDisconnecting = true;
+            if (instances[1 - instanceIndex] != null)
+            {
+                instances[1 - instanceIndex].isDisconnecting = true;
+            }
         }
         else if (deviceType == NetDeviceType.Client)
         {
-            instances[1 - instanceIndex].isDisconnecting = true;
+            if (instances[1 - instanceIndex] != null)
+            {
+                instances[1 - instanceIndex].isDisconnecting = true;
+            }
             isDisconnecting = true;
         }
     }

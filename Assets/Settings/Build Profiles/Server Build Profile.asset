@@ -23,7 +23,7 @@ MonoBehaviour:
   - m_enabled: 1
     m_path: Assets/Scenes/Server.unity
   m_ScriptingDefines:
-  - CNS_SYNC_SERVER_MULTIPLE
+  - CNS_SYNC_SERVER_SINGLE
   - CNS_LOBBY_MULTIPLE
   - CNS_TRANSPORT_LOCAL
   - CNS_TRANSPORT_LITENETLIB
@@ -847,7 +847,7 @@ MonoBehaviour:
     - line: '|   webWasm2023: 0'
     - line: '|   scriptingDefineSymbols:'
     - line: '|     Android: '
-    - line: '|     Server: CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH;CNS_TRANSPORT_LOCAL;CNS_TRANSPORT_LITENETLIB'
+    - line: '|     Server: CNS_SYNC_SERVER_SINGLE;CNS_LOBBY_MULTIPLE;CNS_TRANSPORT_LOCAL;CNS_TRANSPORT_LITENETLIB'
     - line: '|     Standalone: CNS_DEDICATED_SERVER_MULTI_LOBBY_AUTH;CNS_TRANSPORT_LOCAL;CNS_TRANSPORT_LITENETLIB'
     - line: '|   additionalCompilerArguments: {}'
     - line: '|   platformArchitecture: {}'
