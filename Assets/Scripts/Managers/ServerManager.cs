@@ -93,14 +93,6 @@ public class ServerManager : MonoBehaviour
         transports[transportIndex].DisconnectRemote(userId);
     }
 
-    public void Shutdown()
-    {
-        foreach (NetTransport transport in transports)
-        {
-            transport.Shutdown();
-        }
-    }
-
     private async void HandleNetworkConnected(NetTransport transport, ConnectedArgs args)
     {
         try

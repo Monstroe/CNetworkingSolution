@@ -47,11 +47,14 @@ public class ClientManager : MonoBehaviour
 #nullable disable
     public event LobbyJoinRequestedEventHandler OnLobbyJoinRequested;
 
-    public delegate void OnLobbyConnectionAcceptedEventHandler(int lobbyId);
-    public event OnLobbyConnectionAcceptedEventHandler OnLobbyConnectionAccepted;
+    public delegate void LobbyConnectionAcceptedEventHandler(int lobbyId);
+    public event LobbyConnectionAcceptedEventHandler OnLobbyConnectionAccepted;
 
-    public delegate void OnLobbyConnectionRejectedEventHandler(int lobbyId, LobbyRejectionType errorType);
-    public event OnLobbyConnectionRejectedEventHandler OnLobbyConnectionRejected;
+    public delegate void LobbyConnectionRejectedEventHandler(int lobbyId, LobbyRejectionType errorType);
+    public event LobbyConnectionRejectedEventHandler OnLobbyConnectionRejected;
+
+    public delegate void LobbyConnectionLost();
+    public event LobbyConnectionLost OnLobbyConnectionLost;
 
     public static ClientManager Instance { get; private set; }
 
@@ -100,7 +103,7 @@ public class ClientManager : MonoBehaviour
         }
     }
 
-    void Oestroy()
+    void OnDestroy()
     {
         if (transport)
         {
@@ -150,6 +153,7 @@ public class ClientManager : MonoBehaviour
         Debug.Log("<color=green><b>CNS</b></color>: Client disconnected");
         transport.Shutdown();
         IsConnected = false;
+        OnLobbyConnectionLost?.Invoke();
     }
 
     private void HandleNetworkReceived(NetTransport transport, ReceivedArgs args)
