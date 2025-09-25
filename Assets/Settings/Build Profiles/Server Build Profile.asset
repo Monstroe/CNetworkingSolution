@@ -24,8 +24,9 @@ MonoBehaviour:
     m_path: Assets/Scenes/Server.unity
   m_ScriptingDefines:
   - CNS_SYNC_SERVER_SINGLE
-  - CNS_LOBBY_MULTIPLE
+  - CNS_LOBBY_SINGLE
   - CNS_TRANSPORT_LOCAL
+  - CNS_TRANSPORT_CNET
   - CNS_TRANSPORT_LITENETLIB
   m_PlayerSettingsYaml:
     m_Settings:

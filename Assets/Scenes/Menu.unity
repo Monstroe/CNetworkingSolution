@@ -342,7 +342,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   transport: {fileID: 161184808}
-  lobbyApiUrl: https://monstroe.live/api
 --- !u!114 &161184808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -352,20 +351,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 161184803}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 47fe48b099acd0441b62b7527ea3b8c3, type: 3}
+  m_Script: {fileID: 11500000, guid: 3a7330aad9b45fb419fc88cc05a4d1e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   port: 7777
-  address: 159.65.186.84
+  address: 192.168.1.129
   connectionKey: Bruh-Wizz-Arcgis
-  pingInterval: 1
-  disconnectTimeout: 5
-  reconnectDelay: 0.5
-  maxConnectAttempts: 10
-  messageBufferSize: 5120
-  simulatePacketLossChance: 0
-  simulateMinLatency: 0
-  simulateMaxLatency: 0
+  maxPendingConnections: 100
+  connectionDataReceiveTimeout: 10000
+  invalidTokenRemovalRate: 2
+  udpSendRate: 4
+  tcpHeartbeatInterval: 5000
+  tcpConnectionTimeout: 10000
+  tcpSocketReceiveBufferSize: 0
+  tcpSocketSendBufferSize: 0
+  tcpMaxPacketSize: 1024
+  udpHeartbeatInterval: 1000
+  udpConnectionTimeout: 10000
+  udpSocketReceiveBufferSize: 0
+  udpSocketSendBufferSize: 0
+  udpMaxPacketSize: 1024
 --- !u!1 &203844586
 GameObject:
   m_ObjectHideFlags: 0
