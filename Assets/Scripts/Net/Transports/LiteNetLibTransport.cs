@@ -1,6 +1,5 @@
 #if CNS_TRANSPORT_LITENETLIB
 using LiteNetLib;
-using Steamworks.Data;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -49,14 +48,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         simulatePacketLossChance = Math.Min(100, Math.Max(0, simulatePacketLossChance));
         simulateMinLatency = Math.Max(0, simulateMinLatency);
         simulateMaxLatency = Math.Max(simulateMinLatency, simulateMaxLatency);
-    }
-
-    void OnDestroy()
-    {
-        if (!initialized)
-        {
-            Shutdown();
-        }
     }
 
     void FixedUpdate()
@@ -223,26 +214,19 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     public override void Shutdown()
     {
-        try
+        if (netManager != null)
         {
-            if (netManager != null)
-            {
-                Disconnect();
-                netManager.Stop();
-            }
-
-            if (deviceType == NetDeviceType.Client)
-            {
-                ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
-                ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
-            }
-
-            initialized = false;
+            Disconnect();
+            netManager.Stop();
         }
-        catch (Exception e)
+
+        if (deviceType == NetDeviceType.Client)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: Exception occurred while shutting down: " + e.Message);
+            ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
+            ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
         }
+
+        initialized = false;
     }
 
     private DeliveryMethod ConvertProtocol(TransportMethod protocol)

@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 public class ConnectionData : INetSerializable<ConnectionData>
 {
@@ -16,7 +17,7 @@ public class ConnectionData : INetSerializable<ConnectionData>
         return new ConnectionData()
         {
 #if CNS_SYNC_SERVER_MULTIPLE
-            TokenId = Guid.Parse(packet.ReadString()),
+                TokenId = Guid.Parse(packet.ReadString()),
 #endif
             LobbyId = packet.ReadInt(),
             LobbyConnectionType = (LobbyConnectionType)packet.ReadByte(),

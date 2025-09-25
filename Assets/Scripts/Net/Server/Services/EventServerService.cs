@@ -17,7 +17,7 @@ public class EventServerService : ServerService
                         // Then, invoke the event with the modified args
                         lobby.EventManager.OnGroundHit.Invoke(args);
                         // This can be moved to a separate method (subscribed to this event) for better organization, but I'm sending an SFX as an example
-                        lobby.SendToGame(PacketBuilder.PlaySFX("Collide", 1f, args.position), TransportMethod.ReliableUnordered);
+                        lobby.SendToGame(PacketBuilder.PlaySFX("Collide", 1f, args.position), TransportMethod.Reliable);
                     }
                     break;
                 }

@@ -192,8 +192,8 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
                 }
             case TransportMethod.UnreliableSequenced:
                 {
-                    Debug.LogWarning("<color=yellow><b>CNS</b></color>: UnreliableSequenced is not supported by Steamworks. Falling back to Unreliable.");
-                    return SendType.Unreliable;
+                    Debug.LogWarning("<color=yellow><b>CNS</b></color>: UnreliableSequenced is not supported by Steamworks. Falling back to Reliable.");
+                    return SendType.Reliable;
                 }
             case TransportMethod.Reliable:
                 {
@@ -206,7 +206,7 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
                 }
             default:
                 {
-                    throw new ArgumentOutOfRangeException("<color=red><b>CNS</b></color>: Unknown method: " + method);
+                    throw new ArgumentOutOfRangeException("<color=red><b>CNS</b></color>: Unknown protocol: " + method);
                 }
         }
     }
@@ -225,7 +225,7 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
                 }
             default:
                 {
-                    throw new ArgumentOutOfRangeException("<color=red><b>CNS</b></color>: Unknown method: " + method);
+                    throw new ArgumentOutOfRangeException("<color=red><b>CNS</b></color>: Unknown protocol: " + method);
                 }
         }
     }

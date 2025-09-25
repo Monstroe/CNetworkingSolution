@@ -111,6 +111,9 @@ public enum TransportType
 #if CNS_TRANSPORT_LOCAL
     Local,
 #endif
+#if CNS_TRANSPORT_CNET
+    CNet,
+#endif
 #if CNS_TRANSPORT_LITENETLIB
     LiteNetLib,
 #endif

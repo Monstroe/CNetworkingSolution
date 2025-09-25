@@ -436,6 +436,11 @@ public class ServerManager : MonoBehaviour
                 transport = gameObject.AddComponent<LocalTransport>();
                 break;
 #endif
+#if CNS_TRANSPORT_CNET
+            case TransportType.CNet:
+                transport = gameObject.AddComponent<CNetTransport>();
+                break;
+#endif
 #if CNS_TRANSPORT_LITENETLIB
             case TransportType.LiteNetLib:
                 transport = gameObject.AddComponent<LiteNetLibTransport>();

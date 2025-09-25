@@ -54,7 +54,7 @@ public class FXManager : MonoBehaviour
 
         if (sync)
         {
-            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlaySFX(clip.name, volume, pos), TransportMethod.ReliableUnordered);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlaySFX(clip.name, volume, pos), TransportMethod.Reliable);
         }
 
         return sfx;
@@ -89,7 +89,7 @@ public class FXManager : MonoBehaviour
 
         if (sync)
         {
-            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlayVFX(asset.name, position, scale), TransportMethod.ReliableUnordered);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.PlayVFX(asset.name, position, scale), TransportMethod.Reliable);
         }
 
         return vfx;

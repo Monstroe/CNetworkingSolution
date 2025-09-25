@@ -1,5 +1,4 @@
 #if CNS_TRANSPORT_LOCAL
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
