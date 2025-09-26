@@ -38,18 +38,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     public override uint ServerClientId => 0;
     public override List<uint> ConnectedClientIds => new List<uint>(connectedPeers.Keys);
 
-    void OnValidate()
-    {
-        pingInterval = Math.Max(0, pingInterval);
-        disconnectTimeout = Math.Max(0, disconnectTimeout);
-        reconnectDelay = Math.Max(0, reconnectDelay);
-        maxConnectAttempts = Math.Max(0, maxConnectAttempts);
-        messageBufferSize = Math.Max(0, messageBufferSize);
-        simulatePacketLossChance = Math.Min(100, Math.Max(0, simulatePacketLossChance));
-        simulateMinLatency = Math.Max(0, simulateMinLatency);
-        simulateMaxLatency = Math.Max(simulateMinLatency, simulateMaxLatency);
-    }
-
     void FixedUpdate()
     {
         netManager?.PollEvents();

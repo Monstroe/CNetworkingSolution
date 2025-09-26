@@ -74,10 +74,10 @@ public class Menu : MonoBehaviour
     public void StartSinglePlayer()
     {
         GameResources.Instance.GameMode = GameMode.SINGLEPLAYER;
-        ClientManager.Instance.SetTransport(TransportType.CNet);
+        ClientManager.Instance.SetTransport(TransportType.Local);
         Instantiate(localServerPrefab);
         ServerManager.Instance.ClearTransports();
-        ServerManager.Instance.AddTransport(TransportType.CNet);
+        ServerManager.Instance.AddTransport(TransportType.Local);
         ClientManager.Instance.CreateNewUser();
         ClientManager.Instance.CreateNewLobby();
     }
