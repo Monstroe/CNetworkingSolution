@@ -37,7 +37,7 @@ public class NetPacket
         }
     }
 
-    public int CurrentIndex { get; set; }
+    public int CurrentIndex { get; set; } = 0;
 
     private List<byte> byteList;
 
@@ -45,20 +45,20 @@ public class NetPacket
     {
     }
 
-    public NetPacket(List<byte> byteList)
-    {
-        CurrentIndex = 0;
-        this.byteList = byteList;
-    }
-
-    public NetPacket(byte[] data) : this()
+    public NetPacket(byte[] data) : this(new List<byte>())
     {
         byteList.AddRange(data);
     }
 
-    public NetPacket(ArraySegment<byte> data) : this()
+    public NetPacket(ArraySegment<byte> data) : this(new List<byte>())
     {
-        byteList.AddRange(data.Array);
+        byteList.AddRange(data);
+    }
+
+    public NetPacket(List<byte> data)
+    {
+        CurrentIndex = 0;
+        this.byteList = data;
     }
 
     public void CopyTo(int packetIndex, byte[] buffer, int arrayIndex, int count)
@@ -89,37 +89,42 @@ public class NetPacket
         byteList.InsertRange(byteOffset + sizeof(int), value);
     }
 
+    public void Insert(int byteOffset, sbyte value)
+    {
+        byteList.Insert(byteOffset, (byte)value);
+    }
+
+    public void Insert(int byteOffset, sbyte[] value)
+    {
+        Insert(byteOffset, value.Length);
+        byteList.InsertRange(byteOffset + sizeof(int), Array.ConvertAll(value, b => (byte)b));
+    }
+
     public void Insert(int byteOffset, bool value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.Insert(byteOffset, (byte)(value ? 1 : 0));
     }
 
     public void Insert(int byteOffset, bool[] value)
     {
         Insert(byteOffset, value.Length);
-        for (int i = 0; i < value.Length * sizeof(bool); i += sizeof(bool))
-        {
-            Insert(byteOffset + sizeof(int) + i, value[i]);
-        }
+        byteList.InsertRange(byteOffset + sizeof(int), Array.ConvertAll(value, b => (byte)(b ? 1 : 0)));
     }
 
     public void Insert(int byteOffset, char value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.Insert(byteOffset, (byte)value);
     }
 
     public void Insert(int byteOffset, char[] value)
     {
         Insert(byteOffset, value.Length);
-        for (int i = 0; i < value.Length * sizeof(char); i += sizeof(char))
-        {
-            Insert(byteOffset + sizeof(int) + i, value[i]);
-        }
+        byteList.InsertRange(byteOffset + sizeof(int), Array.ConvertAll(value, b => (byte)b));
     }
 
     public void Insert(int byteOffset, double value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, double[] value)
@@ -133,7 +138,7 @@ public class NetPacket
 
     public void Insert(int byteOffset, float value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, float[] value)
@@ -147,7 +152,7 @@ public class NetPacket
 
     public void Insert(int byteOffset, int value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, int[] value)
@@ -161,7 +166,7 @@ public class NetPacket
 
     public void Insert(int byteOffset, long value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, long[] value)
@@ -175,7 +180,7 @@ public class NetPacket
 
     public void Insert(int byteOffset, short value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, short[] value)
@@ -189,7 +194,7 @@ public class NetPacket
 
     public void Insert(int byteOffset, uint value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, uint[] value)
@@ -203,7 +208,7 @@ public class NetPacket
 
     public void Insert(int byteOffset, ulong value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, ulong[] value)
@@ -217,7 +222,7 @@ public class NetPacket
 
     public void Insert(int byteOffset, ushort value)
     {
-        byteList.InsertRange(byteOffset, ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.InsertRange(byteOffset, BitConverter.GetBytes(value));
     }
 
     public void Insert(int byteOffset, ushort[] value)
@@ -232,7 +237,7 @@ public class NetPacket
     public void Insert(int byteOffset, string value)
     {
         Insert(byteOffset, value.Length);
-        byteList.InsertRange(byteOffset + sizeof(int), Encoding.UTF8.GetBytes(value));
+        byteList.InsertRange(byteOffset + sizeof(int), Encoding.ASCII.GetBytes(value));
     }
 
     public void Insert(int byteOffset, string[] value)
@@ -247,7 +252,6 @@ public class NetPacket
     }
 
     // Unity Structs
-
     public void Insert(int byteOffset, Vector2 value)
     {
         Insert(byteOffset, value.x);
@@ -307,37 +311,42 @@ public class NetPacket
         byteList.AddRange(value);
     }
 
+    public void Write(sbyte value)
+    {
+        byteList.Add((byte)value);
+    }
+
+    public void Write(sbyte[] value)
+    {
+        Write(value.Length);
+        byteList.AddRange(Array.ConvertAll(value, b => (byte)b));
+    }
+
     public void Write(bool value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.Add((byte)(value ? 1 : 0));
     }
 
     public void Write(bool[] value)
     {
         Write(value.Length);
-        foreach (var item in value)
-        {
-            Write(item);
-        }
+        byteList.AddRange(Array.ConvertAll(value, b => (byte)(b ? 1 : 0)));
     }
 
     public void Write(char value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.Add((byte)value);
     }
 
     public void Write(char[] value)
     {
         Write(value.Length);
-        foreach (var item in value)
-        {
-            Write(item);
-        }
+        byteList.AddRange(Array.ConvertAll(value, b => (byte)b));
     }
 
     public void Write(double value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(double[] value)
@@ -351,7 +360,7 @@ public class NetPacket
 
     public void Write(float value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(float[] value)
@@ -365,7 +374,7 @@ public class NetPacket
 
     public void Write(int value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(int[] value)
@@ -379,7 +388,7 @@ public class NetPacket
 
     public void Write(long value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(long[] value)
@@ -393,7 +402,7 @@ public class NetPacket
 
     public void Write(short value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(short[] value)
@@ -407,7 +416,7 @@ public class NetPacket
 
     public void Write(uint value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(uint[] value)
@@ -421,7 +430,7 @@ public class NetPacket
 
     public void Write(ulong value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(ulong[] value)
@@ -435,7 +444,7 @@ public class NetPacket
 
     public void Write(ushort value)
     {
-        byteList.AddRange(ToProperEndian(BitConverter.GetBytes(value)));
+        byteList.AddRange(BitConverter.GetBytes(value));
     }
 
     public void Write(ushort[] value)
@@ -450,7 +459,7 @@ public class NetPacket
     public void Write(string value)
     {
         Write(value.Length);
-        byteList.AddRange(Encoding.UTF8.GetBytes(value));
+        byteList.AddRange(Encoding.ASCII.GetBytes(value));
     }
 
     public void Write(string[] value)
@@ -513,62 +522,72 @@ public class NetPacket
 
     public byte ReadByte(bool moveIndexPosition = true)
     {
-        int typeSize = 1;
+        int typeSize = sizeof(byte);
         var value = byteList[CurrentIndex];
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
 
-    public byte[] ReadBytes(int length, bool moveIndexPosition = true)
+    public byte[] ReadBytes(bool moveIndexPosition = true)
     {
-        int typeSize = length;
-        var value = byteList.GetRange(CurrentIndex, length).ToArray();
+        int length = ReadInt(false);
+        var value = byteList.GetRange(CurrentIndex + sizeof(int), length).ToArray();
+        CurrentIndex += moveIndexPosition ? length + sizeof(int) : 0;
+        return value;
+    }
+
+    public sbyte ReadSByte(bool moveIndexPosition = true)
+    {
+        int typeSize = sizeof(sbyte);
+        var value = (sbyte)byteList[CurrentIndex];
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public sbyte[] ReadSBytes(bool moveIndexPosition = true)
+    {
+        int length = ReadInt(false);
+        var value = Array.ConvertAll(byteList.GetRange(CurrentIndex + sizeof(int), length).ToArray(), b => (sbyte)b);
+        CurrentIndex += moveIndexPosition ? length + sizeof(int) : 0;
         return value;
     }
 
     public bool ReadBool(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(bool);
-        var value = BitConverter.ToBoolean(new byte[] { byteList[CurrentIndex] }, 0);
+        var value = byteList[CurrentIndex] != 0;
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
 
     public bool[] ReadBools(bool moveIndexPosition = true)
     {
-        int length = ReadInt();
-        int typeSize = length * sizeof(bool) + sizeof(int);
-        var value = new bool[length];
-        for (int i = 0; i < length; i++)
-            value[i] = ReadBool();
-        CurrentIndex -= moveIndexPosition ? 0 : typeSize;
+        int length = ReadInt(false);
+        var value = Array.ConvertAll(byteList.GetRange(CurrentIndex + sizeof(int), length).ToArray(), b => b != 0);
+        CurrentIndex += moveIndexPosition ? length + sizeof(int) : 0;
         return value;
     }
 
     public char ReadChar(bool moveIndexPosition = true)
     {
-        int typeSize = sizeof(char);
-        var value = BitConverter.ToChar(new byte[] { byteList[CurrentIndex] }, 0);
+        int typeSize = 1;
+        var value = (char)byteList[CurrentIndex];
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
 
     public char[] ReadChars(bool moveIndexPosition = true)
     {
-        int length = ReadInt();
-        int typeSize = length * sizeof(char) + sizeof(int);
-        var value = new char[length];
-        for (int i = 0; i < length; i++)
-            value[i] = ReadChar();
-        CurrentIndex -= moveIndexPosition ? 0 : typeSize;
+        int length = ReadInt(false);
+        var value = Array.ConvertAll(byteList.GetRange(CurrentIndex + sizeof(int), length).ToArray(), b => (char)b);
+        CurrentIndex += moveIndexPosition ? length + sizeof(int) : 0;
         return value;
     }
 
     public double ReadDouble(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(double);
-        var value = BitConverter.ToDouble(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToDouble(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -587,7 +606,7 @@ public class NetPacket
     public float ReadFloat(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(float);
-        var value = BitConverter.ToSingle(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToSingle(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -606,7 +625,7 @@ public class NetPacket
     public int ReadInt(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(int);
-        var value = BitConverter.ToInt32(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToInt32(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -625,7 +644,7 @@ public class NetPacket
     public long ReadLong(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(long);
-        var value = BitConverter.ToInt64(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToInt64(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -644,7 +663,7 @@ public class NetPacket
     public short ReadShort(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(short);
-        var value = BitConverter.ToInt16(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToInt16(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -663,7 +682,7 @@ public class NetPacket
     public uint ReadUInt(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(uint);
-        var value = BitConverter.ToUInt32(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToUInt32(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -682,7 +701,7 @@ public class NetPacket
     public ulong ReadULong(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(ulong);
-        var value = BitConverter.ToUInt64(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToUInt64(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -701,7 +720,7 @@ public class NetPacket
     public ushort ReadUShort(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(short);
-        var value = BitConverter.ToUInt16(ToProperEndian(byteList.GetRange(CurrentIndex, typeSize).ToArray()), 0);
+        var value = BitConverter.ToUInt16(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
         return value;
     }
@@ -720,7 +739,7 @@ public class NetPacket
     public string ReadString(bool moveIndexPosition = true)
     {
         int strLen = ReadInt(false);
-        var value = Encoding.UTF8.GetString(byteList.GetRange(CurrentIndex + 4, strLen).ToArray());
+        var value = Encoding.ASCII.GetString(byteList.GetRange(CurrentIndex + 4, strLen).ToArray());
         CurrentIndex += moveIndexPosition ? strLen + 4 : 0;
         return value;
     }
@@ -737,7 +756,6 @@ public class NetPacket
     }
 
     // Unity Structs
-
     public Vector2 ReadVector2(bool moveIndexPosition = true)
     {
         float x = ReadFloat();
@@ -795,15 +813,6 @@ public class NetPacket
         for (int i = 0; i < length; i++)
             value[i] = ReadQuaternion();
         CurrentIndex -= moveIndexPosition ? 0 : typeSize;
-        return value;
-    }
-
-    private byte[] ToProperEndian(byte[] value)
-    {
-        if (BitConverter.IsLittleEndian)
-        {
-            Array.Reverse(value);
-        }
         return value;
     }
 }

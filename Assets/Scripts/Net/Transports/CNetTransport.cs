@@ -14,21 +14,14 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
     [SerializeField] private string address = "127.0.0.1";
     [Tooltip("The key used to successfully connect to the server")]
     [SerializeField] private string connectionKey = "Bruh-Wizz-Arcgis";
-    [Space]
     [Tooltip("The maximum number of pending connections the server can have")]
     [SerializeField] private int maxPendingConnections = 100;
-    [Tooltip("The max time (in milliseconds) at which to disconnect a client if they don't continue the handshake process")]
-    [SerializeField] private int connectionDataReceiveTimeout = 10000;
-    [Tooltip("The rate (in seconds) at which to remove invalid connection tokens (runs in background)")]
-    [SerializeField] private int invalidTokenRemovalRate = 2;
-    [Tooltip("The rate (in packets per second) at which to send connection handshake UDP packets")]
-    [SerializeField] private int udpSendRate = 4;
 
     [Header("TCP Settings")]
     [Tooltip("The interval (in milliseconds) at which to send heartbeat packets to keep the connection alive")]
-    [SerializeField] private int tcpHeartbeatInterval = 5000;
+    [SerializeField] private int tcpHeartbeatInterval = 2500;
     [Tooltip("The timeout (in milliseconds) after which a connection is considered lost if no heartbeat packets are received")]
-    [SerializeField] private int tcpConnectionTimeout = 10000;
+    [SerializeField] private int tcpConnectionTimeout = 5000;
     [Tooltip("The size of the socket receive buffer; 0 for default")]
     [SerializeField] private int tcpSocketReceiveBufferSize = 0;
     [Tooltip("The size of the socket send buffer; 0 for default")]
@@ -38,9 +31,9 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     [Header("UDP Settings")]
     [Tooltip("The interval (in milliseconds) at which to send heartbeat packets to keep the connection alive")]
-    [SerializeField] private int udpHeartbeatInterval = 1000;
+    [SerializeField] private int udpHeartbeatInterval = 500;
     [Tooltip("The timeout (in milliseconds) after which a connection is considered lost if no heartbeat packets are received")]
-    [SerializeField] private int udpConnectionTimeout = 10000;
+    [SerializeField] private int udpConnectionTimeout = 5000;
     [Tooltip("The size of the socket receive buffer; 0 for default")]
     [SerializeField] private int udpSocketReceiveBufferSize = 0;
     [Tooltip("The size of the socket send buffer; 0 for default")]
@@ -76,10 +69,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         netSystem.UDP.SOCKET_SEND_BUFFER_SIZE = udpSocketSendBufferSize;
         netSystem.UDP.MAX_PACKET_SIZE = udpMaxPacketSize;
 
-        netSystem.ConnectionSettings.MAX_PENDING_CONNECTIONS = maxPendingConnections;
-        netSystem.ConnectionSettings.DATA_RECEIVE_TIMEOUT = connectionDataReceiveTimeout;
-        netSystem.ConnectionSettings.INVALID_TOKEN_REMOVAL_RATE = invalidTokenRemovalRate;
-        netSystem.ConnectionSettings.UDP_SEND_RATE = udpSendRate;
+        netSystem.MaxPendingConnections = maxPendingConnections;
 
 #nullable enable
         if (deviceType == NetDeviceType.Client)
