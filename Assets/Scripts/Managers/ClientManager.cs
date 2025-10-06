@@ -105,13 +105,7 @@ public class ClientManager : MonoBehaviour
 
     void OnDestroy()
     {
-        if (transport)
-        {
-            transport.OnNetworkConnected -= HandleNetworkConnected;
-            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
-            transport.OnNetworkReceived -= HandleNetworkReceived;
-            transport.Shutdown();
-        }
+        LeaveCurrentLobby();
     }
 
     void FixedUpdate()
@@ -516,6 +510,17 @@ public class ClientManager : MonoBehaviour
         }
     }
 #nullable disable
+
+    public void LeaveCurrentLobby()
+    {
+        if (transport)
+        {
+            transport.OnNetworkConnected -= HandleNetworkConnected;
+            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
+            transport.OnNetworkReceived -= HandleNetworkReceived;
+            transport.Shutdown();
+        }
+    }
 
     public void SetClientTick(ulong tick)
     {

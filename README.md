@@ -62,4 +62,4 @@ Networked games have differrent ways of syncing their users. I have tried to cov
 1. `CNS_TRANSPORT_LOCAL`: The local singleplayer transport, most projects will require this one
 2. `CNS_TRANSPORT_LITENETLIB`: [LiteNetLib](https://github.com/RevenantX/LiteNetLib) transport
 3. `CNS_TRANSPORT_STEAMRELAY`: [Steamworks](https://github.com/Facepunch/Facepunch.Steamworks) transport
-4. `CNS_TRANSPORT_CNET`: [CNet](https://github.com/Monstroe/CNet) transport (THIS ONE IS COMING SOON!)
+4. `CNS_TRANSPORT_CNET`: [CNet](https://github.com/Monstroe/CNet) transport

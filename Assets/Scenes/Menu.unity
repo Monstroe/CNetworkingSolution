@@ -355,19 +355,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   port: 7777
-  address: 159.65.186.84
+  address: 127.0.0.1
   connectionKey: Bruh-Wizz-Arcgis
   maxPendingConnections: 100
-  connectionDataReceiveTimeout: 10000
-  invalidTokenRemovalRate: 2
-  udpSendRate: 4
-  tcpHeartbeatInterval: 5000
-  tcpConnectionTimeout: 10000
+  tcpHeartbeatInterval: 2500
+  tcpConnectionTimeout: 5000
   tcpSocketReceiveBufferSize: 0
   tcpSocketSendBufferSize: 0
   tcpMaxPacketSize: 1024
-  udpHeartbeatInterval: 1000
-  udpConnectionTimeout: 10000
+  udpHeartbeatInterval: 500
+  udpConnectionTimeout: 5000
   udpSocketReceiveBufferSize: 0
   udpSocketSendBufferSize: 0
   udpMaxPacketSize: 1024
