@@ -93,6 +93,8 @@ public class ServerDatabaseHandler
                 await db.SetAddAsync(lobbiesKey, lobby.LobbyData.LobbyId.ToString());
             }
         }
+
+        Debug.Log($"<color=green><b>CNS</b></color>: Saved server {serverData.Settings.ServerId}.");
     }
 
     public async Task AddUserToServerAsync(Guid userGlobalId)

@@ -42,7 +42,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
     [SerializeField] private int udpMaxPacketSize = 1024;
 
     private NetSystem netSystem;
-    private readonly Dictionary<uint, NetEndPoint> connectedEPs = new Dictionary<uint, NetEndPoint>();
+    protected readonly Dictionary<uint, NetEndPoint> connectedEPs = new Dictionary<uint, NetEndPoint>();
 
     public override uint ServerClientId => 0;
     public override List<uint> ConnectedClientIds => new List<uint>(connectedEPs.Keys);
@@ -228,7 +228,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    private TransportMethod ConvertProtocolBack(TransportProtocol method)
+    protected TransportMethod ConvertProtocolBack(TransportProtocol method)
     {
         switch (method)
         {
@@ -247,7 +247,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    private void ConnectRemoteEP(NetEndPoint remoteEP)
+    protected virtual void ConnectRemoteEP(NetEndPoint remoteEP)
     {
         var remoteEPId = remoteEP.ID;
 
@@ -262,7 +262,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    private void DisconnectRemoteEP(NetEndPoint remoteEP, NetDisconnect disconnect)
+    protected virtual void DisconnectRemoteEP(NetEndPoint remoteEP, NetDisconnect disconnect)
     {
         var remoteEPId = remoteEP.ID;
 
@@ -276,7 +276,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    private void ReceivePacket(NetEndPoint remoteEP, CNet.NetPacket packet, TransportProtocol protocol)
+    protected virtual void ReceivePacket(NetEndPoint remoteEP, CNet.NetPacket packet, TransportProtocol protocol)
     {
         byte[] data = new byte[packet.Length];
         Buffer.BlockCopy(packet.ByteSegment.Array, packet.ByteSegment.Offset, data, 0, packet.Length);
