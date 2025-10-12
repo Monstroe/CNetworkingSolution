@@ -31,7 +31,7 @@ public class ServerManager : MonoBehaviour
     [SerializeField] private int secondsBetweenHeartbeats = 30;
     [Space]
     [SerializeField] private int maxSecondsBeforeUnverifiedUserRemoval = 15;
-    [SerializeField] private int tokenValidityDurationMinutes = 2;
+    [SerializeField] private int tokenValidityDurationSeconds = 120;
     public ServerDatabaseHandler Database { get; private set; }
     public ServerTokenVerifier TokenVerifier { get; private set; }
 #endif
@@ -59,18 +59,18 @@ public class ServerManager : MonoBehaviour
             transport.OnNetworkReceived += HandleNetworkReceived;
         }
 
-        Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
-
 #if CNS_SYNC_SERVER_MULTIPLE
         if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
         {
             OnPublicIpAddressFetched += async (ip) =>
             {
-                await InitServer(ip);
+                await InitServerAsync(ip);
             };
             StartCoroutine(GetPublicIpAddress());
         }
 #endif
+
+        Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
     }
 
     public void BroadcastMessage(NetPacket packet, TransportMethod method)
@@ -506,22 +506,22 @@ public class ServerManager : MonoBehaviour
             }
             else
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: Failed to fetch lobby data: {www.error}");
+                Debug.LogError($"<color=red><b>CNS</b></color>: Failed to fetch public IP Address: {www.error}");
             }
         }
     }
 
-    private async Task InitServer(string address)
+    private async Task InitServerAsync(string address)
     {
         ServerData.Settings.ServerId = Guid.NewGuid();
         ServerData.Settings.ServerKey = GenerateSecretKey();
         ServerData.Settings.ServerAddress = address;
 
-        await InitDatabase();
-        InitTokenVerifier();
+        await InitDatabaseAsync();
+        InitTokenVerifierAsync();
     }
 
-    private async Task InitDatabase()
+    private async Task InitDatabaseAsync()
     {
         Database = new ServerDatabaseHandler();
         await Database.Connect(dbConnectionString, ServerData.Settings.ServerId);
@@ -529,11 +529,11 @@ public class ServerManager : MonoBehaviour
         Database.StartHeartbeat(secondsBetweenHeartbeats);
     }
 
-    private void InitTokenVerifier()
+    private void InitTokenVerifierAsync()
     {
         TokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
         TokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
-        TokenVerifier.StartTokenCleanup(tokenValidityDurationMinutes);
+        TokenVerifier.StartTokenCleanup(tokenValidityDurationSeconds, 10);
     }
 
     private string GenerateSecretKey(int byteLength = 32)

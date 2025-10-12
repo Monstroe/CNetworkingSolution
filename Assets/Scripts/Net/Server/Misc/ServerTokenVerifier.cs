@@ -43,19 +43,19 @@ public class ServerTokenVerifier
         });
     }
 
-    public void StartTokenCleanup(int tokenValidityDurationMinutes)
+    public void StartTokenCleanup(int tokenValidityDurationSeconds, int checkIntervalSeconds)
     {
         Debug.Log("<color=green><b>CNS</b></color>: Starting token cleanup.");
         Task.Run(async () =>
         {
             while (true)
             {
-                await Task.Delay(TimeSpan.FromSeconds(10));
+                await Task.Delay(TimeSpan.FromSeconds(checkIntervalSeconds));
                 var now = DateTime.UtcNow;
 
                 foreach ((Guid tokenId, DateTime expirationTime) in verifiedUserWithNonExpiredTokens)
                 {
-                    if ((now - expirationTime) > TimeSpan.FromMinutes(tokenValidityDurationMinutes))
+                    if ((now - expirationTime) > TimeSpan.FromSeconds(tokenValidityDurationSeconds))
                     {
                         verifiedUserWithNonExpiredTokens.Remove(tokenId);
                     }
@@ -113,7 +113,7 @@ public class ServerTokenVerifier
         catch (SignatureVerificationException) { }
         catch (Exception ex)
         {
-            Debug.LogError($"<color=red><b>CNS</b></color>: JWT verification error: {ex.Message}");
+            Debug.LogError($"<color=red><b>CNS</b></color>: Token verification error: {ex.Message}");
         }
 
         return null;
