@@ -10,9 +10,11 @@ public class ServerData
 #endif
 }
 
+#if CNS_SYNC_SERVER_MULTIPLE
 public class ServerSettings
 {
     public Guid ServerId { get; set; }
     public string ServerKey { get; set; }
     public string ServerAddress { get; set; }
 }
+#endif

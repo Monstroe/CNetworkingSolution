@@ -166,7 +166,7 @@ public class ServerManager : MonoBehaviour
                         return;
                     }
 
-                    if (lobby.LobbyData.UserCount >= lobby.LobbyData.Settings.MaxUsers)
+                    if (lobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
                         transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
@@ -349,12 +349,12 @@ public class ServerManager : MonoBehaviour
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-    private async Task<ServerLobby> RegisterLobby(ConnectionData data)
+    private async Task<ServerLobby> RegisterLobby(ConnectionData connectionData)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
-        ServerLobby lobby = new GameObject($"Lobby_{data.LobbyId}").AddComponent<ServerLobby>();
-        lobby.Init(data.LobbyId, transports);
-        lobby.LobbyData.Settings = data.LobbySettings;
+        ServerLobby lobby = new GameObject($"Lobby_{connectionData.LobbyId}").AddComponent<ServerLobby>();
+        lobby.Init(connectionData.LobbyId, transports);
+        lobby.LobbyData.Settings = connectionData.LobbySettings;
         lobby.transform.SetParent(gameObject.transform);
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
 
@@ -388,12 +388,12 @@ public class ServerManager : MonoBehaviour
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-    private async Task AddUserToLobby(UserData user, ServerLobby lobby, ConnectionData data)
+    private async Task AddUserToLobby(UserData user, ServerLobby lobby, ConnectionData connectionData)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
-        user.LobbyId = data.LobbyId;
-        user.GlobalGuid = data.UserGuid;
-        user.Settings = data.UserSettings;
+        user.LobbyId = connectionData.LobbyId;
+        user.GlobalGuid = connectionData.UserGuid;
+        user.Settings = connectionData.UserSettings;
         lobby.LobbyData.LobbyUsers.Add(user);
 
 #if CNS_SYNC_SERVER_MULTIPLE
@@ -403,7 +403,7 @@ public class ServerManager : MonoBehaviour
             await Database.SaveUserMetadataAsync(user);
             await Database.RemoveUserFromServerLimboAsync(user.UserId);
             await Database.AddUserToServerAsync(user.GlobalGuid);
-            await Database.AddUserToLobbyAsync(data.LobbyId, user.GlobalGuid);
+            await Database.AddUserToLobbyAsync(connectionData.LobbyId, user.GlobalGuid);
         }
 #endif
         Debug.Log($"<color=green><b>CNS</b></color>: User {user.UserId} joined lobby {lobby.LobbyData.LobbyId}.");
@@ -478,7 +478,7 @@ public class ServerManager : MonoBehaviour
         return ((uint)user.UserId, (int)(user.UserId >> 32));
     }
 
-#if CNS_LOBBY_MULTIPLE
+#if CNS_SYNC_SERVER_SINGLE && CNS_LOBBY_MULTIPLE
     private int GenerateLobbyId()
     {
         int newLobbyId;
@@ -518,7 +518,7 @@ public class ServerManager : MonoBehaviour
         ServerData.Settings.ServerAddress = address;
 
         await InitDatabaseAsync();
-        InitTokenVerifierAsync();
+        InitTokenVerifier();
     }
 
     private async Task InitDatabaseAsync()
@@ -529,7 +529,7 @@ public class ServerManager : MonoBehaviour
         Database.StartHeartbeat(secondsBetweenHeartbeats);
     }
 
-    private void InitTokenVerifierAsync()
+    private void InitTokenVerifier()
     {
         TokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
         TokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);

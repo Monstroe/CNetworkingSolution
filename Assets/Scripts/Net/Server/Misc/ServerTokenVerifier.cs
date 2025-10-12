@@ -121,43 +121,99 @@ public class ServerTokenVerifier
 
     private Guid GetTokenIdFromToken(Dictionary<string, object> payload)
     {
-        return Guid.Parse(payload["token_id"].ToString());
+        if (payload.TryGetValue("token_id", out object tokenIdObj))
+        {
+            return Guid.Parse(tokenIdObj.ToString());
+        }
+        throw new Exception("Token does not contain 'token_id' field.");
     }
 
     private int GetLobbyIdFromToken(Dictionary<string, object> payload)
     {
-        return Convert.ToInt32(payload["lobby_id"]);
+        if (payload.TryGetValue("lobby_id", out object lobbyIdObj))
+        {
+            return Convert.ToInt32(lobbyIdObj);
+        }
+        throw new Exception("Token does not contain 'lobby_id' field.");
     }
 
     private LobbyConnectionType GetLobbyConnectionTypeFromToken(Dictionary<string, object> payload)
     {
-        return Enum.Parse<LobbyConnectionType>(payload["lobby_connection_type"].ToString());
+        if (payload.TryGetValue("lobby_connection_type", out object lobbyConnectionTypeObj))
+        {
+            return Enum.Parse<LobbyConnectionType>(lobbyConnectionTypeObj.ToString());
+        }
+        throw new Exception("Token does not contain 'lobby_connection_type' field.");
     }
 
     private Guid GetUserGuidFromToken(Dictionary<string, object> payload)
     {
-        return Guid.Parse(payload["user_guid"].ToString());
+        if (payload.TryGetValue("user_guid", out object userGuidObj))
+        {
+            return Guid.Parse(userGuidObj.ToString());
+        }
+        throw new Exception("Token does not contain 'user_guid' field.");
     }
 
     private UserSettings GetUserSettingsFromToken(Dictionary<string, object> payload)
     {
-        return new UserSettings
+        UserSettings settings = new UserSettings();
+
+        if (payload.TryGetValue("user_name", out object userNameObj))
         {
-            UserName = payload["user_name"].ToString()
-        };
+            settings.UserName = userNameObj.ToString();
+        }
+        else
+        {
+            throw new Exception("Token does not contain 'user_name' field.");
+        }
+
+        return settings;
     }
 
     private LobbySettings GetLobbySettingsFromToken(Dictionary<string, object> payload)
     {
-        return new LobbySettings
-        {
+        LobbySettings settings = new LobbySettings();
+
 #if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
-            SteamCode = Convert.ToUInt64(payload["steam_code"]),
+        if (payload.TryGetValue("steam_code", out object steamCodeObj))
+        {
+            settings.SteamCode = Convert.ToUInt64(steamCodeObj);
+        }
+        else
+        {
+            throw new Exception("Token does not contain 'steam_code' field.");
+        }
 #endif
-            MaxUsers = Convert.ToInt32(payload["max_users"]),
-            LobbyVisibility = Enum.Parse<LobbyVisibility>(payload["lobby_visibility"].ToString()),
-            LobbyName = payload["lobby_name"].ToString()
-        };
+
+        if (payload.TryGetValue("max_users", out object maxUsersObj))
+        {
+            settings.MaxUsers = Convert.ToInt32(maxUsersObj);
+        }
+        else
+        {
+            throw new Exception("Token does not contain 'max_users' field.");
+        }
+
+        if (payload.TryGetValue("lobby_visibility", out object lobbyVisibilityObj))
+        {
+            settings.LobbyVisibility = Enum.Parse<LobbyVisibility>(lobbyVisibilityObj.ToString());
+        }
+        else
+        {
+            throw new Exception("Token does not contain 'lobby_visibility' field.");
+        }
+
+        if (payload.TryGetValue("lobby_name", out object lobbyNameObj))
+        {
+            settings.LobbyName = lobbyNameObj.ToString();
+        }
+        else
+        {
+            throw new Exception("Token does not contain 'lobby_name' field.");
+        }
+
+        return settings;
     }
 }
 #endif
