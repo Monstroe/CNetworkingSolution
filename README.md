@@ -50,8 +50,8 @@ To install the package, you can choose one of the following ways:
 Networked games have differrent ways of syncing their users. I have tried to cover ALL these ways with Scripting Define Symbols. Please see what they all mean:
 
 #### Server
-1. `CNS_SYNC_SERVER_SINGLE`: One dedicated server that handles every user/lobby for your game
-2. `CNS_SYNC_SERVER_MULTIPLE`: Multiple dedicated servers that all handle different users/lobbies for your game (this one will most likely require a [web server](https://github.com/Monstroe/CNSWebServer) lobby brokerage system/load balancer)
+1. `CNS_SERVER_SINGLE`: One dedicated server that handles every user/lobby for your game
+2. `CNS_SERVER_MULTIPLE`: Multiple dedicated servers that all handle different users/lobbies for your game (this one will most likely require a [web server](https://github.com/Monstroe/CNSWebServer) lobby brokerage system/load balancer)
 3. `CNS_SYNC_HOST`: Clients run their own lobbies where everyone connects to one user called the 'host' (this one will also likely require a web server)
 
 #### Lobby

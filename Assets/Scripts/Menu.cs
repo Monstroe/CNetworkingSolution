@@ -54,15 +54,7 @@ public class Menu : MonoBehaviour
 
         FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
-            if (SceneManager.GetSceneByName(GameResources.Instance.ServerSceneName).isLoaded)
-            {
-                SceneManager.UnloadSceneAsync(GameResources.Instance.MenuSceneName);
-                SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName, LoadSceneMode.Additive);
-            }
-            else
-            {
-                SceneManager.LoadScene(GameResources.Instance.GameSceneName);
-            }
+            SceneManager.LoadSceneAsync(GameResources.Instance.GameSceneName);
         });
     }
 
@@ -73,7 +65,7 @@ public class Menu : MonoBehaviour
 
     public void StartSinglePlayer()
     {
-        GameResources.Instance.GameMode = GameMode.SINGLEPLAYER;
+        GameResources.Instance.GameMode = GameMode.Singleplayer;
         ClientManager.Instance.SetTransport(TransportType.CNet);
         Instantiate(localServerPrefab);
         ServerManager.Instance.ClearTransports();
@@ -85,9 +77,17 @@ public class Menu : MonoBehaviour
     public void StartMultiPlayer()
     {
         ClientManager.Instance.CreateNewUser();
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_LOBBY_MULTIPLE
+#if CNS_SERVER_MULTIPLE || CNS_LOBBY_MULTIPLE
         ToMultiplayerMenu();
-#elif CNS_SYNC_SERVER_SINGLE && CNS_LOBBY_SINGLE
+#elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
+
+#if CNS_SYNC_HOST
+        ClientManager.Instance.SetTransport(TransportType.Local);
+        Instantiate(localServerPrefab);
+        ServerManager.Instance.ClearTransports();
+        ServerManager.Instance.AddTransport(TransportType.Local);
+        ServerManager.Instance.AddTransport(TransportType.CNetRelay);
+#endif
         ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
 #endif
     }

@@ -20,13 +20,11 @@ public class LocalTransport : NetTransport
     {
         this.deviceType = deviceType;
 
-#nullable enable
         if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
             ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
         }
-#nullable disable
     }
 
     private void LobbyCreateRequested(ServerSettings serverSettings)
@@ -57,23 +55,6 @@ public class LocalTransport : NetTransport
         {
             var (remoteId, packet, method) = queuedPackets.Dequeue();
             RaiseNetworkReceived(remoteId, packet, method);
-        }
-    }
-
-    public override bool StartDevice()
-    {
-        if (deviceType == NetDeviceType.Client)
-        {
-            return StartClient();
-        }
-        else if (deviceType == NetDeviceType.Server)
-        {
-            return StartServer();
-        }
-        else
-        {
-            Debug.LogError("<color=red><b>CNS</b></color>: Device type not set. Cannot start Local transport.");
-            return false;
         }
     }
 

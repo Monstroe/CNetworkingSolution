@@ -1,4 +1,5 @@
 using System.Collections;
+using Steamworks.Data;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -40,6 +41,7 @@ public class GameManager : MonoBehaviour
         // NOTE: These two calls aren't necessary, I'm just showcasing features here
         ClientManager.Instance.OnCurrentUserUpdated += CurrentUserUpdated;
         ClientManager.Instance.OnCurrentLobbyUpdated += CurrentLobbyUpdated;
+        ClientManager.Instance.OnLobbyConnectionLost += LobbyConnectionLost;
     }
 
     private void CurrentUserUpdated(UserSettings userSettings)
@@ -50,6 +52,21 @@ public class GameManager : MonoBehaviour
     private void CurrentLobbyUpdated(LobbySettings lobbySettings)
     {
         Debug.Log($"Successfully updated lobby settings: MaxUsers - {lobbySettings.MaxUsers}, LobbyVisibility - {lobbySettings.LobbyVisibility}, LobbyName - {lobbySettings.LobbyName}");
+    }
+
+    private void LobbyConnectionLost()
+    {
+        Debug.LogWarning("Lost connection to lobby. Returning to main menu...");
+
+        /*if (ServerManager.Instance != null)
+        {
+            Destroy(ServerManager.Instance.gameObject);
+        }
+
+        FadeScreen.Instance.Display(true, fadeDuration, () =>
+        {
+            SceneManager.LoadSceneAsync(GameResources.Instance.MenuSceneName);
+        });*/
     }
 
     // Update is called once per frame

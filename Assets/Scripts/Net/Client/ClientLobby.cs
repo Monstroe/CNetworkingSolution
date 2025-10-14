@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ClientLobby : MonoBehaviour
 {
-    public LobbyData LobbyData { get; protected set; } = new LobbyData();
+    public LobbyData LobbyData { get; private set; } = new LobbyData();
     public ClientLobbyGameData GameData { get; private set; } = new ClientLobbyGameData();
 
     private NetTransport transport;

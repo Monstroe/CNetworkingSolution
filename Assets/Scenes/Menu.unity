@@ -287,7 +287,6 @@ GameObject:
   - component: {fileID: 161184804}
   - component: {fileID: 161184807}
   - component: {fileID: 161184806}
-  - component: {fileID: 161184808}
   m_Layer: 0
   m_Name: ClientManager
   m_TagString: Untagged
@@ -341,33 +340,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: edbda87333163c44280ae7ab4784a45c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transport: {fileID: 161184808}
---- !u!114 &161184808
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 161184803}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a7330aad9b45fb419fc88cc05a4d1e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  port: 7777
-  address: 127.0.0.1
-  connectionKey: Bruh-Wizz-Arcgis
-  maxPendingConnections: 100
-  tcpHeartbeatInterval: 2500
-  tcpConnectionTimeout: 5000
-  tcpSocketReceiveBufferSize: 0
-  tcpSocketSendBufferSize: 0
-  tcpMaxPacketSize: 1024
-  udpHeartbeatInterval: 500
-  udpConnectionTimeout: 5000
-  udpSocketReceiveBufferSize: 0
-  udpSocketSendBufferSize: 0
-  udpMaxPacketSize: 1024
+  transport: {fileID: 0}
 --- !u!1 &203844586
 GameObject:
   m_ObjectHideFlags: 0

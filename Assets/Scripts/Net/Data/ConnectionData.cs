@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class ConnectionData : INetSerializable<ConnectionData>
 {
-#if CNS_SYNC_SERVER_MULTIPLE
+#if CNS_SERVER_MULTIPLE
     public Guid TokenId { get; set; }
 #endif
     public int LobbyId { get; set; }
@@ -16,8 +16,8 @@ public class ConnectionData : INetSerializable<ConnectionData>
     {
         return new ConnectionData()
         {
-#if CNS_SYNC_SERVER_MULTIPLE
-                TokenId = Guid.Parse(packet.ReadString()),
+#if CNS_SERVER_MULTIPLE
+            TokenId = Guid.Parse(packet.ReadString()),
 #endif
             LobbyId = packet.ReadInt(),
             LobbyConnectionType = (LobbyConnectionType)packet.ReadByte(),
@@ -29,7 +29,7 @@ public class ConnectionData : INetSerializable<ConnectionData>
 
     public void Serialize(NetPacket packet)
     {
-#if CNS_SYNC_SERVER_MULTIPLE
+#if CNS_SERVER_MULTIPLE
         packet.Write(TokenId.ToString());
 #endif
         packet.Write(LobbyId);

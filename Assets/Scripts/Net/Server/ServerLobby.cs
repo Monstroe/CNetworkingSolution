@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class ServerLobby : MonoBehaviour
 {
-    public LobbyData LobbyData { get; protected set; } = new LobbyData();
+    public LobbyData LobbyData { get; private set; } = new LobbyData();
     public ServerLobbyGameData GameData { get; private set; } = new ServerLobbyGameData();
     public EventManager EventManager { get; private set; }
     public Map Map { get; private set; }
 
-    protected List<NetTransport> transports;
+    private List<NetTransport> transports;
     private Dictionary<ServiceType, ServerService> services = new Dictionary<ServiceType, ServerService>();
 
     public void Init(int lobbyId, List<NetTransport> transports)

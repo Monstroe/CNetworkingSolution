@@ -20,7 +20,7 @@ public class GameResources : MonoBehaviour
     public GameMode GameMode { get => gameMode; set => gameMode = value; }
 
     [Header("Game Settings")]
-    [SerializeField] private GameMode gameMode = GameMode.MULTIPLAYER;
+    [SerializeField] private GameMode gameMode = GameMode.Multiplayer;
 
     [Header("Layer Masks")]
     [SerializeField] private LayerMask groundMask;
@@ -163,6 +163,6 @@ public class GameResources : MonoBehaviour
 
 public enum GameMode
 {
-    SINGLEPLAYER,
-    MULTIPLAYER
+    Singleplayer,
+    Multiplayer,
 }

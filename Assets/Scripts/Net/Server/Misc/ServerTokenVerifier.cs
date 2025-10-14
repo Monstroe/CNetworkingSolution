@@ -1,4 +1,4 @@
-#if CNS_SYNC_SERVER_MULTIPLE
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
 using JWT;
 using JWT.Algorithms;
 using JWT.Serializers;

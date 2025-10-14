@@ -86,12 +86,12 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
         {
             ClientManager.Instance.OnLobbyCreateRequested += async (serverSettings) =>
             {
-                await CreateSteamLobby(ClientManager.Instance.CurrentLobby.Settings);
+                await CreateSteamLobby(ClientManager.Instance.CurrentLobby.LobbyData.Settings);
             };
 
             ClientManager.Instance.OnLobbyJoinRequested += async (lobbyId, serverSettings) =>
             {
-                await JoinSteamLobby(ClientManager.Instance.CurrentLobby.Settings.SteamCode);
+                await JoinSteamLobby(ClientManager.Instance.CurrentLobby.LobbyData.Settings.SteamCode);
             };
         }
 #nullable disable
@@ -114,9 +114,9 @@ public class SteamRelayTransport : NetTransport, IConnectionManager, ISocketMana
         StartServer();
     }
 
-    private async Task JoinSteamLobby(ulong lobbyCode)
+    private async Task JoinSteamLobby(ulong steamLobbyCode)
     {
-        Lobby? lobby = await SteamMatchmaking.JoinLobbyAsync(lobbyCode);
+        Lobby? lobby = await SteamMatchmaking.JoinLobbyAsync(steamLobbyCode);
         targetSteamId = lobby?.Owner.Id ?? 0;
         if (targetSteamId == 0)
         {

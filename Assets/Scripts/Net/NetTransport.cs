@@ -114,8 +114,14 @@ public enum TransportType
 #if CNS_TRANSPORT_CNET
     CNet,
 #endif
+#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_SYNC_HOST
+    CNetRelay,
+#endif
 #if CNS_TRANSPORT_LITENETLIB
     LiteNetLib,
+#endif
+#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_SYNC_HOST
+    LiteNetLibRelay,
 #endif
 #if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
     SteamRelay,

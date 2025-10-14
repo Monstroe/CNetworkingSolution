@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 [RequireComponent(typeof(ClientLobby))]
 public class ClientManager : MonoBehaviour
 {
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
     class UserResponse
     {
         public Guid GlobalGuid { get; set; }
@@ -62,11 +62,14 @@ public class ClientManager : MonoBehaviour
     public UserData CurrentUser { get; private set; }
     public ClientLobby CurrentLobby { get; private set; }
     public bool IsConnected { get; private set; } = false;
+    public ConnectionData ConnectionData { get; private set; }
 
     [SerializeField] private NetTransport transport;
-    private LobbyConnectionType lobbyConnectionType;
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
+    public ServerSettings CurrentServerSettings { get; set; }
+    public string ConnectionToken { get; private set; }
+
     public string LobbyApiUrl
     {
         get => lobbyApiUrl;
@@ -74,11 +77,8 @@ public class ClientManager : MonoBehaviour
     }
     [Tooltip("The URL of the lobby API. PLEASE DON'T PUT A SLASH AT THE END.")]
     [SerializeField] private string lobbyApiUrl = "http://localhost:5107/api";
-#endif
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
     private string webToken;
-    private string serverToken;
 #endif
 
     void Awake()
@@ -105,7 +105,7 @@ public class ClientManager : MonoBehaviour
 
     void OnDestroy()
     {
-        LeaveCurrentLobby();
+        ClearTransport();
     }
 
     void FixedUpdate()
@@ -115,37 +115,32 @@ public class ClientManager : MonoBehaviour
 
     private void HandleNetworkConnected(NetTransport transport, ConnectedArgs args)
     {
-        if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
+        if (GameResources.Instance.GameMode == GameMode.Singleplayer)
         {
-            transport.SendToAll(PacketBuilder.ConnectionRequest(new ConnectionData
-            {
-                LobbyId = CurrentLobby.LobbyData.LobbyId,
-                LobbyConnectionType = lobbyConnectionType,
-                UserGuid = CurrentUser.GlobalGuid,
-                UserSettings = CurrentUser.Settings,
-                LobbySettings = CurrentLobby.LobbyData.Settings
-            }), TransportMethod.Reliable);
+            transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
             return;
         }
 
-#if CNS_SYNC_SERVER_MULTIPLE
-        transport.SendToAll(PacketBuilder.ConnectionRequest(serverToken), TransportMethod.Reliable);
-#elif CNS_SYNC_SERVER_SINGLE || CNS_SYNC_HOST
-        transport.SendToAll(PacketBuilder.ConnectionRequest(new ConnectionData
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
+        transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionToken), TransportMethod.Reliable);
+#elif CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
+        if (lobbyConnectionType == LobbyConnectionType.CREATE)
         {
-            LobbyId = CurrentLobby.LobbyData.LobbyId,
-            LobbyConnectionType = lobbyConnectionType,
-            UserGuid = CurrentUser.GlobalGuid,
-            UserSettings = CurrentUser.Settings,
-            LobbySettings = CurrentLobby.LobbyData.Settings
-        }), TransportMethod.Reliable);
+            transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
+        }
+        else if (lobbyConnectionType == LobbyConnectionType.JOIN)
+        {
+            transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionToken), TransportMethod.Reliable);
+        }
+#elif CNS_SERVER_SINGLE
+        transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
 #endif
     }
 
     private void HandleNetworkDisconnected(NetTransport transport, DisconnectedArgs args)
     {
         Debug.Log("<color=green><b>CNS</b></color>: Client disconnected");
-        transport.Shutdown();
+        LeaveCurrentLobby();
         IsConnected = false;
         OnLobbyConnectionLost?.Invoke();
     }
@@ -189,20 +184,20 @@ public class ClientManager : MonoBehaviour
 
     public void CreateNewUser(UserSettings userSettings = null, bool invokeEvent = true)
     {
-        if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
+        if (GameResources.Instance.GameMode == GameMode.Singleplayer)
         {
             CreateUser(Guid.NewGuid(), userSettings ?? GameResources.Instance.DefaultUserSettings, invokeEvent);
             return;
         }
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
         StartCoroutine(CreateUserCoroutine(userSettings, invokeEvent));
-#elif CNS_SYNC_SERVER_SINGLE
+#elif CNS_SERVER_SINGLE
         CreateUser(Guid.NewGuid(), userSettings ?? GameResources.Instance.DefaultUserSettings, invokeEvent);
 #endif
     }
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
     private IEnumerator CreateUserCoroutine(UserSettings userSettings, bool invokeEvent)
     {
         string json = JsonConvert.SerializeObject(userSettings);
@@ -255,22 +250,22 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbyUserSettings(CurrentUser, userSettings), TransportMethod.Reliable);
         }
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_SERVER_SINGLE
+#if CNS_SYNC_DEDICATED || (CNS_SERVER_SINGLE && CNS_SYNC_HOST)
         else
         {
             UpdateUser(userSettings, invokeEvent);
         }
 #endif
 
-#if CNS_SYNC_HOST
-        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
+        if (GameResources.Instance.GameMode != GameMode.Singleplayer)
         {
             StartCoroutine(UpdateUserCoroutine(userSettings, !IsConnected && invokeEvent));
         }
 #endif
     }
 
-#if CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
     private IEnumerator UpdateUserCoroutine(UserSettings userSettings, bool invokeEvent)
     {
         string json = JsonConvert.SerializeObject(userSettings);
@@ -316,20 +311,20 @@ public class ClientManager : MonoBehaviour
 
     public void CreateNewLobby(LobbySettings lobbySettings = null, bool invokeEvent = true)
     {
-        if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
+        if (GameResources.Instance.GameMode == GameMode.Singleplayer)
         {
             CreateLobby(GameResources.Instance.DefaultLobbyId, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
             return;
         }
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
         StartCoroutine(CreateLobbyCoroutine(lobbySettings, invokeEvent));
-#elif CNS_SYNC_SERVER_SINGLE
+#elif CNS_SERVER_SINGLE
         CreateLobby(-1, lobbySettings ?? GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
 #endif
     }
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
     private IEnumerator CreateLobbyCoroutine(LobbySettings lobbySettings, bool invokeEvent)
     {
         string json = JsonConvert.SerializeObject(lobbySettings);
@@ -346,7 +341,8 @@ public class ClientManager : MonoBehaviour
             if (www.result == UnityWebRequest.Result.Success)
             {
                 var lobbyResponse = JsonConvert.DeserializeObject<LobbyResponse>(www.downloadHandler.text);
-                serverToken = lobbyResponse.ServerToken;
+                CurrentServerSettings = lobbyResponse.ServerSettings;
+                ConnectionToken = lobbyResponse.ServerToken;
                 CreateLobby(lobbyResponse.LobbyId, lobbyResponse.LobbySettings, lobbyResponse.ServerSettings, invokeEvent);
             }
             else
@@ -369,7 +365,14 @@ public class ClientManager : MonoBehaviour
 #nullable enable
     private void CreateLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
     {
-        lobbyConnectionType = LobbyConnectionType.CREATE;
+        ConnectionData = new ConnectionData
+        {
+            LobbyId = lobbyId,
+            LobbyConnectionType = LobbyConnectionType.CREATE,
+            UserGuid = CurrentUser.GlobalGuid,
+            UserSettings = CurrentUser.Settings,
+            LobbySettings = lobbySettings
+        };
         CurrentLobby.Init(lobbyId, transport);
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
@@ -391,22 +394,22 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbySettings(lobbySettings), TransportMethod.Reliable);
         }
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_SERVER_SINGLE
+#if CNS_SYNC_DEDICATED || (CNS_SERVER_SINGLE && CNS_SYNC_HOST)
         else
         {
             UpdateLobby(lobbySettings, invokeEvent);
         }
 #endif
 
-#if CNS_SYNC_HOST
-        if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
+        if (GameResources.Instance.GameMode != GameMode.Singleplayer)
         {
             StartCoroutine(UpdateLobbyCoroutine(lobbySettings, !IsConnected && invokeEvent));
         }
 #endif
     }
 
-#if CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
     private IEnumerator UpdateLobbyCoroutine(LobbySettings lobbySettings, bool invokeEvent)
     {
         string json = JsonConvert.SerializeObject(lobbySettings);
@@ -452,20 +455,20 @@ public class ClientManager : MonoBehaviour
 
     public void JoinExistingLobby(int lobbyId, bool invokeEvent = true)
     {
-        if (GameResources.Instance.GameMode == GameMode.SINGLEPLAYER)
+        if (GameResources.Instance.GameMode == GameMode.Singleplayer)
         {
             JoinLobby(lobbyId, GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
             return;
         }
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
         StartCoroutine(JoinLobbyCoroutine(lobbyId, invokeEvent));
-#elif CNS_SYNC_SERVER_SINGLE
+#elif CNS_SERVER_SINGLE
         JoinLobby(lobbyId, GameResources.Instance.DefaultLobbySettings, null, invokeEvent);
 #endif
     }
 
-#if CNS_SYNC_SERVER_MULTIPLE || CNS_SYNC_HOST
+#if CNS_SERVER_MULTIPLE
     private IEnumerator JoinLobbyCoroutine(int lobbyId, bool invokeEvent)
     {
         using (var www = new UnityWebRequest($"{LobbyApiUrl}/lobby/join/{lobbyId}", "GET"))
@@ -476,9 +479,9 @@ public class ClientManager : MonoBehaviour
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                // TODO: Come back to this
                 var lobbyResponse = JsonConvert.DeserializeObject<LobbyResponse>(www.downloadHandler.text);
-                serverToken = lobbyResponse.ServerToken;
+                CurrentServerSettings = lobbyResponse.ServerSettings;
+                ConnectionToken = lobbyResponse.ServerToken;
                 JoinLobby(lobbyResponse.LobbyId, lobbyResponse.LobbySettings, lobbyResponse.ServerSettings, invokeEvent);
             }
             else
@@ -501,7 +504,14 @@ public class ClientManager : MonoBehaviour
 #nullable enable
     private void JoinLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
     {
-        lobbyConnectionType = LobbyConnectionType.JOIN;
+        ConnectionData = new ConnectionData
+        {
+            LobbyId = lobbyId,
+            LobbyConnectionType = LobbyConnectionType.CREATE,
+            UserGuid = CurrentUser.GlobalGuid,
+            UserSettings = CurrentUser.Settings,
+            LobbySettings = lobbySettings
+        };
         CurrentLobby.Init(lobbyId, transport);
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
@@ -513,11 +523,8 @@ public class ClientManager : MonoBehaviour
 
     public void LeaveCurrentLobby()
     {
-        if (transport)
+        if (transport != null)
         {
-            transport.OnNetworkConnected -= HandleNetworkConnected;
-            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
-            transport.OnNetworkReceived -= HandleNetworkReceived;
             transport.Shutdown();
         }
     }
@@ -536,30 +543,42 @@ public class ClientManager : MonoBehaviour
     {
         ClearTransport();
 
+        string transportName = null;
         switch (transportType)
         {
 #if CNS_TRANSPORT_LOCAL
             case TransportType.Local:
-                transport = gameObject.AddComponent<LocalTransport>();
+                transportName = "LocalTransport";
                 break;
 #endif
 #if CNS_TRANSPORT_CNET
             case TransportType.CNet:
-                transport = gameObject.AddComponent<CNetTransport>();
+                transportName = "CNetTransport";
+                break;
+#endif
+#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_SYNC_HOST
+            case TransportType.CNetRelay:
+                transportName = "CNetRelayTransport";
                 break;
 #endif
 #if CNS_TRANSPORT_LITENETLIB
             case TransportType.LiteNetLib:
-                transport = gameObject.AddComponent<LiteNetLibTransport>();
+                transportName = "LiteNetLibTransport";
+                break;
+#endif
+#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_SYNC_HOST
+            case TransportType.LiteNetLibRelay:
+                transportName = "LiteNetLibRelayTransport";
                 break;
 #endif
 #if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
-            case TransportType.SteamWorks:
-                transport = gameObject.AddComponent<SteamRelayTransport>();
+            case TransportType.SteamRelay:
+                transportName = "SteamRelayTransport";
                 break;
 #endif
         }
 
+        transport = Instantiate(Resources.Load<NetTransport>($"Prefabs/Transports/{transportName}"), this.transform);
         transport.OnNetworkConnected += HandleNetworkConnected;
         transport.OnNetworkDisconnected += HandleNetworkDisconnected;
         transport.OnNetworkReceived += HandleNetworkReceived;
@@ -572,7 +591,8 @@ public class ClientManager : MonoBehaviour
             transport.OnNetworkConnected -= HandleNetworkConnected;
             transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
             transport.OnNetworkReceived -= HandleNetworkReceived;
-            Destroy(transport);
+            transport.Shutdown();
+            Destroy(transport.gameObject);
         }
         transport = null;
     }

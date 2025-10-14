@@ -11,7 +11,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
     [Tooltip("The port to listen on (if server) or connect to (if client)")]
     [SerializeField] private ushort port = 7777;
     [Tooltip("The address to connect to as client; ignored if server")]
-    [SerializeField] private string address = "127.0.0.1";
+    [SerializeField] protected string address = "127.0.0.1";
     [Tooltip("The key used to successfully connect to the server")]
     [SerializeField] private string connectionKey = "Bruh-Wizz-Arcgis";
     [Tooltip("The maximum number of pending connections the server can have")]
@@ -71,13 +71,11 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
         netSystem.MaxPendingConnections = maxPendingConnections;
 
-#nullable enable
         if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
             ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
         }
-#nullable disable
     }
 
     private void LobbyCreateRequested(ServerSettings serverSettings)
@@ -129,7 +127,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to send to a peer that is not connected: {remoteId}");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to send to an endpoint that is not connected: {remoteId}");
         }
     }
 
@@ -144,7 +142,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
             }
             else
             {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to send to a peer that is not connected: {remoteId}");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to send to an endpoint that is not connected: {remoteId}");
             }
         }
     }
@@ -179,7 +177,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to disconnect a peer that is not connected: {remoteId}");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to disconnect an endpoint that is not connected: {remoteId}");
         }
     }
 
@@ -286,6 +284,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     void IEventNetClient.OnConnected(NetEndPoint remoteEP)
     {
+        Debug.Log($"<color=green><b>CNS</b></color>: Connected to {remoteEP}");
         ConnectRemoteEP(remoteEP);
     }
 
@@ -301,7 +300,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     void IEventNetClient.OnNetworkError(NetEndPoint remoteEP, SocketError error)
     {
-        Debug.LogError($"<color=red><b>CNS</b></color>: Network error from {remoteEP?.ToString() ?? "unknown endpoint"}: {error}");
+        Debug.LogError($"<color=red><b>CNS</b></color>: Network error from {remoteEP?.TCPEndPoint.ToString() ?? "unknown endpoint"}: {error}");
     }
 
     void IEventNetListener.OnClientConnected(NetEndPoint remoteEP)

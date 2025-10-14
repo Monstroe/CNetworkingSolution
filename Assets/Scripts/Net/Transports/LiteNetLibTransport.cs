@@ -60,13 +60,11 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
             SimulationMaxLatency = simulateMaxLatency
         };
 
-#nullable enable
         if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
             ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
         }
-#nullable disable
     }
 
     private void LobbyCreateRequested(ServerSettings serverSettings)

@@ -18,8 +18,8 @@ public class LobbyServerService : ServerService
                     LobbySettings lobbySettings = new LobbySettings().Deserialize(packet);
                     lobby.LobbyData.Settings = lobbySettings;
                     lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
-#if CNS_SYNC_SERVER_MULTIPLE
-                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
+                    if (GameResources.Instance.GameMode != GameMode.Singleplayer)
                     {
                         ServerManager.Instance.Database.UpdateLobbyMetadataAsync(lobby.LobbyData);
                     }
@@ -39,8 +39,8 @@ public class LobbyServerService : ServerService
                     UserSettings userSettings = new UserSettings().Deserialize(packet);
                     user.Settings = userSettings;
                     lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable);
-#if CNS_SYNC_SERVER_MULTIPLE
-                    if (GameResources.Instance.GameMode != GameMode.SINGLEPLAYER)
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
+                    if (GameResources.Instance.GameMode != GameMode.Singleplayer)
                     {
                         ServerManager.Instance.Database.UpdateUserMetadataAsync(user);
                     }

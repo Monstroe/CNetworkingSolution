@@ -33,7 +33,7 @@ public enum CommandType
 public static class PacketBuilder
 {
     /* CONNECTION */
-#if CNS_SYNC_SERVER_MULTIPLE
+#if CNS_SERVER_MULTIPLE
     public static NetPacket ConnectionRequest(string token)
     {
         NetPacket packet = new NetPacket();
