@@ -58,7 +58,7 @@ public class GameManager : MonoBehaviour
     {
         Debug.LogWarning("Lost connection to lobby. Returning to main menu...");
 
-        /*if (ServerManager.Instance != null)
+        if (ServerManager.Instance != null)
         {
             Destroy(ServerManager.Instance.gameObject);
         }
@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour
         FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
             SceneManager.LoadSceneAsync(GameResources.Instance.MenuSceneName);
-        });*/
+        });
     }
 
     // Update is called once per frame

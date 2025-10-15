@@ -19,7 +19,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     [Header("TCP Settings")]
     [Tooltip("The interval (in milliseconds) at which to send heartbeat packets to keep the connection alive")]
-    [SerializeField] private int tcpHeartbeatInterval = 2500;
+    [SerializeField] private int tcpHeartbeatInterval = 1000;
     [Tooltip("The timeout (in milliseconds) after which a connection is considered lost if no heartbeat packets are received")]
     [SerializeField] private int tcpConnectionTimeout = 5000;
     [Tooltip("The size of the socket receive buffer; 0 for default")]
@@ -284,7 +284,6 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     void IEventNetClient.OnConnected(NetEndPoint remoteEP)
     {
-        Debug.Log($"<color=green><b>CNS</b></color>: Connected to {remoteEP}");
         ConnectRemoteEP(remoteEP);
     }
 

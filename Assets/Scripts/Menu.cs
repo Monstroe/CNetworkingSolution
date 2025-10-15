@@ -13,6 +13,11 @@ public class Menu : MonoBehaviour
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject multiplayerMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
+    void OnEnable()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -80,8 +85,9 @@ public class Menu : MonoBehaviour
 #if CNS_SERVER_MULTIPLE || CNS_LOBBY_MULTIPLE
         ToMultiplayerMenu();
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
-
-#if CNS_SYNC_HOST
+#if CNS_SYNC_DEDICATED
+        ClientManager.Instance.SetTransport(TransportType.CNet);
+#elif CNS_SYNC_HOST
         ClientManager.Instance.SetTransport(TransportType.Local);
         Instantiate(localServerPrefab);
         ServerManager.Instance.ClearTransports();
