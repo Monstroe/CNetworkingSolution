@@ -187,11 +187,6 @@ public class ServerManager : MonoBehaviour
             }
 #endif
         }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received data from unknown user ID {userId}.");
-            KickUser(new UserData { UserId = userId });
-        }
     }
 
     void FixedUpdate()
