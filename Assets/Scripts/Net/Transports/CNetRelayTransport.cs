@@ -120,8 +120,8 @@ public class CNetRelayTransport : CNetTransport
                         Debug.Log($"<color=green><b>CNS</b></color>: Connection to relay server accepted: " + lobbyId);
                         ClientManager.Instance.ConnectionData.LobbyId = lobbyId;
                         Instantiate(GameResources.Instance.ServerPrefab);
-                        ServerManager.Instance.RegisterTransport(TransportType.Local);
                         ClientManager.Instance.BridgeTransport();
+                        ServerManager.Instance.RegisterTransport(TransportType.Local);
                         ClientManager.Instance.RegisterTransport(TransportType.Local);
                     }
                     else

@@ -11,6 +11,8 @@ public class LocalTransport : NetTransport
     private bool isConnecting = false;
     private bool isDisconnecting = false;
 
+    public override uint ServerClientId => 0;
+
     void FixedUpdate()
     {
         PollEvents();
@@ -26,14 +28,14 @@ public class LocalTransport : NetTransport
         if (isConnecting)
         {
             isConnecting = false;
-            RaiseNetworkConnected(0);
+            RaiseNetworkConnected(ServerClientId);
         }
 
         if (isDisconnecting)
         {
             isDisconnecting = false;
             instances[instanceIndex] = null;
-            RaiseNetworkDisconnected(0);
+            RaiseNetworkDisconnected(ServerClientId);
         }
 
         while (queuedPackets.Count > 0)
@@ -102,12 +104,12 @@ public class LocalTransport : NetTransport
 
     public override void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method)
     {
-        Send(0, packet, method);
+        Send(ServerClientId, packet, method);
     }
 
     public override void SendToAll(NetPacket packet, TransportMethod method)
     {
-        Send(0, packet, method);
+        Send(ServerClientId, packet, method);
     }
 
     public override void Disconnect()

@@ -44,7 +44,6 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
     private NetSystem netSystem;
     protected readonly Dictionary<uint, NetEndPoint> connectedEPs = new Dictionary<uint, NetEndPoint>();
 
-    public override uint ServerClientId => 0;
     public override List<uint> ConnectedClientIds => new List<uint>(connectedEPs.Keys);
 
     void FixedUpdate()

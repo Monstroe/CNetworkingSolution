@@ -63,8 +63,8 @@ public class ServerLobby : MonoBehaviour
 
     public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
     {
-        var (userId, transportIndex) = ServerManager.Instance.GetUserIdAndTransportIndex(user);
-        transports[transportIndex].Send(userId, packet, method);
+        var (remoteId, transportIndex) = ServerManager.Instance.GetRemoteIdAndTransportIndex(user);
+        transports[transportIndex].Send(remoteId, packet, method);
     }
 
     public void SendToUsers(List<UserData> users, NetPacket packet, TransportMethod method)
@@ -72,17 +72,17 @@ public class ServerLobby : MonoBehaviour
         Dictionary<NetTransport, List<uint>> userDict = new Dictionary<NetTransport, List<uint>>();
         foreach (var user in users)
         {
-            var (userId, transportIndex) = ServerManager.Instance.GetUserIdAndTransportIndex(user);
+            var (remoteId, transportIndex) = ServerManager.Instance.GetRemoteIdAndTransportIndex(user);
             if (!userDict.ContainsKey(transports[transportIndex]))
             {
                 userDict[transports[transportIndex]] = new List<uint>();
             }
-            userDict[transports[transportIndex]].Add(userId);
+            userDict[transports[transportIndex]].Add(remoteId);
         }
 
-        foreach (var (transport, userIds) in userDict)
+        foreach (var (transport, remoteIds) in userDict)
         {
-            transport.SendToList(userIds, packet, method);
+            transport.SendToList(remoteIds, packet, method);
         }
     }
 

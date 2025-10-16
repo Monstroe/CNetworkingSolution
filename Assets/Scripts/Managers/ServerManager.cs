@@ -81,48 +81,51 @@ public class ServerManager : MonoBehaviour
             await RemoveUser(userData);
         }
 
-        var (userId, transportIndex) = GetUserIdAndTransportIndex(user);
-        transports[transportIndex].DisconnectRemote(userId);
+        var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(user);
+        transports[transportIndex].DisconnectRemote(remoteId);
     }
 
     private async void HandleNetworkConnected(NetTransport transport, ConnectedArgs args)
     {
+        ulong userId = CreateCombinedId(args.RemoteId, transport);
         try
         {
-            if (!ServerData.ConnectedUsers.ContainsKey(args.RemoteId))
+            if (!ServerData.ConnectedUsers.ContainsKey(userId))
             {
-                await RegisterUser(transport, args.RemoteId);
+                await RegisterUser(transport, userId);
             }
             else
             {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {args.RemoteId} attempted to connect again.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {userId} attempted to connect again.");
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {args.RemoteId}: {ex.Message}");
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {userId}: {ex.Message}");
         }
     }
 
     private async void HandleNetworkDisconnected(NetTransport transport, DisconnectedArgs args)
     {
+        ulong userId = CreateCombinedId(args.RemoteId, transport);
         try
         {
-            if (ServerData.ConnectedUsers.ContainsKey(args.RemoteId))
+            if (ServerData.ConnectedUsers.ContainsKey(userId))
             {
-                UserData userData = ServerData.ConnectedUsers[args.RemoteId];
+                UserData userData = ServerData.ConnectedUsers[userId];
                 await RemoveUser(userData);
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {args.RemoteId}: {ex.Message}");
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {userId}: {ex.Message}");
         }
     }
 
     private async void HandleNetworkReceived(NetTransport transport, ReceivedArgs args)
     {
-        if (ServerData.ConnectedUsers.TryGetValue(args.RemoteId, out UserData remoteUser))
+        ulong userId = CreateCombinedId(args.RemoteId, transport);
+        if (ServerData.ConnectedUsers.TryGetValue(userId, out UserData remoteUser))
         {
 #if !UNITY_EDITOR
             try
@@ -143,35 +146,35 @@ public class ServerManager : MonoBehaviour
                     ConnectionData connectionData = GetConnectionData(packet);
                     if (connectionData == null)
                     {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {args.RemoteId}.");
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {userId}.");
                         KickUser(remoteUser);
                         return;
                     }
-                    var (userId, transportIndex) = GetUserIdAndTransportIndex(remoteUser);
+                    var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(remoteUser);
 
                     ServerLobby lobby = await GetLobbyData(connectionData);
                     if (lobby == null)
                     {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {args.RemoteId} cannot join.");
-                        transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {userId} cannot join.");
+                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
 
                     if (lobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
                     {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {args.RemoteId} cannot join.");
-                        transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {userId} cannot join.");
+                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
 
-                    transports[transportIndex].Send(userId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
+                    transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
                     await AddUserToLobby(remoteUser, lobby, connectionData);
                 }
                 else
                 {
-                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {args.RemoteId} is not in any active lobby.");
+                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {userId} is not in any active lobby.");
                     KickUser(remoteUser);
                 }
             }
@@ -179,15 +182,15 @@ public class ServerManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {args.RemoteId}: {ex.Message}");
+                Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {userId}: {ex.Message}");
                 KickUser(remoteUser);
             }
 #endif
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received data from unknown user ID {args.RemoteId}.");
-            KickUser(new UserData { UserId = args.RemoteId });
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received data from unknown user ID {userId}.");
+            KickUser(new UserData { UserId = userId });
         }
     }
 
@@ -267,20 +270,9 @@ public class ServerManager : MonoBehaviour
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-    private async Task<UserData> RegisterUser(NetTransport transport, uint remoteId)
+    private async Task<UserData> RegisterUser(NetTransport transport, ulong userId)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
-        int transportIndex = -1;
-        for (int i = 0; i < transports.Count; i++)
-        {
-            if (transports[i] == transport)
-            {
-                transportIndex = i;
-                break;
-            }
-        }
-        ulong userId = (ulong)transportIndex << 32 | remoteId;
-
         UserData user = new UserData
         {
             GlobalGuid = Guid.Empty,
@@ -490,9 +482,14 @@ public class ServerManager : MonoBehaviour
         transports.Clear();
     }
 
-    public (uint, int) GetUserIdAndTransportIndex(UserData user)
+    public (uint, int) GetRemoteIdAndTransportIndex(UserData user)
     {
         return ((uint)user.UserId, (int)(user.UserId >> 32));
+    }
+
+    public ulong CreateCombinedId(uint userId, NetTransport transport)
+    {
+        return (ulong)transports.IndexOf(transport) << 32 | userId;
     }
 
 #if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
