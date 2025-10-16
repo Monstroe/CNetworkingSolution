@@ -64,10 +64,13 @@ public class GameManager : MonoBehaviour
             Destroy(ServerManager.Instance.gameObject);
         }
 
-        FadeScreen.Instance.Display(true, fadeDuration, () =>
+        if (SceneManager.GetActiveScene().name != GameResources.Instance.MenuSceneName)
         {
-            SceneManager.LoadSceneAsync(GameResources.Instance.MenuSceneName);
-        });
+            FadeScreen.Instance.Display(true, fadeDuration, () =>
+            {
+                SceneManager.LoadSceneAsync(GameResources.Instance.MenuSceneName);
+            });
+        }
     }
 
     // Update is called once per frame
