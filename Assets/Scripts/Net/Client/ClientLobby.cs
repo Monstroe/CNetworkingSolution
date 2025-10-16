@@ -26,6 +26,8 @@ public class ClientLobby : MonoBehaviour
         ServiceType serviceType = (ServiceType)packet.ReadByte();
         CommandType commandType = (CommandType)packet.ReadByte();
 
+        Debug.Log("Packet " + serviceType + ", " + commandType);
+
         if (services.TryGetValue(serviceType, out ClientService service))
         {
             service.ReceiveData(packet, serviceType, commandType, transportMethod);
