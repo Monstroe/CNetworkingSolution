@@ -1,10 +1,10 @@
 #if CNS_TRANSPORT_LITENETLIB
-using LiteNetLib;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
+using LiteNetLib;
 
 public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEventListener
 {
@@ -59,24 +59,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
             SimulationMinLatency = simulateMinLatency,
             SimulationMaxLatency = simulateMaxLatency
         };
-
-        if (deviceType == NetDeviceType.Client)
-        {
-            ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
-            ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
-        }
-    }
-
-    private void LobbyCreateRequested(ServerSettings serverSettings)
-    {
-        address = serverSettings?.ServerAddress ?? address;
-        StartClient();
-    }
-
-    private void LobbyJoinRequested(int lobbyId, ServerSettings serverSettings)
-    {
-        address = serverSettings?.ServerAddress ?? address;
-        StartClient();
     }
 
     protected override bool StartClient()
@@ -95,6 +77,10 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
             Debug.LogError("<color=red><b>CNS</b></color>: Failed to start LiteNetLib transport.");
             return false;
         }
+
+#if CNS_SERVER_MULTIPLE
+        address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
+#endif
 
         NetPeer peer = netManager.Connect(address, port, connectionKey);
 
@@ -206,12 +192,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
             netManager.Stop();
         }
 
-        if (deviceType == NetDeviceType.Client)
-        {
-            ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
-            ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
-        }
-
         initialized = false;
     }
 
@@ -274,7 +254,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         peerMessageBuffers.Remove((uint)peer.Id);
     }
 
-    void INetEventListener.OnPeerConnected(NetPeer peer)
+    protected virtual void ConnectPeer(NetPeer peer)
     {
         var peerId = (uint)peer.Id;
 
@@ -289,13 +269,13 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
     }
 
-    void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
+    protected virtual void DisconnectPeer(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         var peerId = (uint)peer.Id;
 
         if (disconnectInfo.AdditionalData.AvailableBytes > 0)
         {
-            ReceiveInternal(peerId, disconnectInfo.AdditionalData, DeliveryMethod.ReliableOrdered);
+            ReceiveData(peerId, disconnectInfo.AdditionalData, DeliveryMethod.ReliableOrdered);
         }
 
         if (connectedPeers.Remove(peerId))
@@ -308,6 +288,25 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
     }
 
+    protected virtual void ReceiveData(uint peerId, NetPacketReader reader, DeliveryMethod deliveryMethod)
+    {
+        byte[] receivedBytes = new byte[reader.AvailableBytes];
+        reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
+        NetPacket receivedPacket = new NetPacket(receivedBytes);
+        RaiseNetworkReceived(peerId, receivedPacket, ConvertProtocolBack(deliveryMethod));
+        reader.Recycle();
+    }
+
+    void INetEventListener.OnPeerConnected(NetPeer peer)
+    {
+        ConnectPeer(peer);
+    }
+
+    void INetEventListener.OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
+    {
+        DisconnectPeer(peer, disconnectInfo);
+    }
+
     void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketError)
     {
         Debug.LogError($"<color=red><b>CNS</b></color>: Network error at {endPoint}: {socketError}");
@@ -316,7 +315,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
     {
         var peerId = (uint)peer.Id;
-        ReceiveInternal(peerId, reader, deliveryMethod);
+        ReceiveData(peerId, reader, deliveryMethod);
     }
 
     void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -332,17 +331,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     void INetEventListener.OnConnectionRequest(ConnectionRequest request)
     {
         request.AcceptIfKey(connectionKey);
-    }
-
-    private void ReceiveInternal(uint peerId, NetPacketReader reader, DeliveryMethod deliveryMethod)
-    {
-        byte[] receivedBytes = new byte[reader.AvailableBytes];
-        reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
-        NetPacket receivedPacket = new NetPacket(receivedBytes);
-
-        RaiseNetworkReceived(peerId, receivedPacket, ConvertProtocolBack(deliveryMethod));
-
-        reader.Recycle();
     }
 
     private static int SecondsToMilliseconds(float seconds)

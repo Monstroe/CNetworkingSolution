@@ -49,14 +49,19 @@ public class Menu : MonoBehaviour
         if (GameResources.Instance.GameMode == GameMode.Singleplayer)
         {
             Instantiate(GameResources.Instance.ServerPrefab);
-            ClientManager.Instance.RegisterTransport(TransportType.Local);
             ServerManager.Instance.RegisterTransport(TransportType.Local);
+            ClientManager.Instance.RegisterTransport(TransportType.Local);
             return;
         }
 
 #if CNS_SYNC_DEDICATED
         ClientManager.Instance.RegisterTransport(TransportType.CNet);
-#elif CNS_SYNC_HOST
+#elif CNS_SYNC_HOST && CNS_LOBBY_SINGLE
+        Instantiate(GameResources.Instance.ServerPrefab);
+        ServerManager.Instance.RegisterTransport(TransportType.Local);
+        ServerManager.Instance.RegisterTransport(TransportType.CNet);
+        ClientManager.Instance.RegisterTransport(TransportType.Local);
+#elif CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
         ClientManager.Instance.RegisterTransport(TransportType.CNetRelay);
 #endif
     }

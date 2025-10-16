@@ -70,24 +70,6 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         netSystem.UDP.MAX_PACKET_SIZE = udpMaxPacketSize;
 
         netSystem.MaxPendingConnections = maxPendingConnections;
-
-        /*if (deviceType == NetDeviceType.Client)
-        {
-            ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
-            ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
-        }*/
-    }
-
-    private void LobbyCreateRequested(ServerSettings serverSettings)
-    {
-        address = serverSettings?.ServerAddress ?? address;
-        StartClient();
-    }
-
-    private void LobbyJoinRequested(int lobbyId, ServerSettings serverSettings)
-    {
-        address = serverSettings?.ServerAddress ?? address;
-        StartClient();
     }
 
     protected override bool StartClient()
@@ -99,6 +81,11 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
         initialized = true;
         netSystem.RegisterInterface((IEventNetClient)this);
+
+#if CNS_SERVER_MULTIPLE
+        address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
+#endif
+
         netSystem.Connect(address, port, connectionKey);
         Debug.Log($"<color=green><b>CNS</b></color>: Client connecting to {address}:{port}");
         return true;
@@ -187,12 +174,6 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         {
             netSystem.Dispose();
         }
-
-        /*if (deviceType == NetDeviceType.Client)
-        {
-            ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
-            ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
-        }*/
 
         initialized = false;
     }

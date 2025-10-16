@@ -1,4 +1,4 @@
-#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_SYNC_HOST
+#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
 using System;
 using System.Collections.Generic;
 using CNet;
@@ -48,7 +48,7 @@ public class CNetRelayTransport : CNetTransport
     public override void DisconnectRemote(uint remoteId)
     {
         NetPacket packet = new NetPacket();
-        packet.Write((byte)RelayMessageType.DisconnectUser);
+        packet.Write((byte)RelayMessageType.DisconnectedUser);
         packet.Write(remoteId);
         base.SendToAll(packet, TransportMethod.Reliable);
     }
@@ -63,18 +63,11 @@ public class CNetRelayTransport : CNetTransport
             connectedEPs[remoteEPId] = remoteEP;
             Debug.Log($"<color=green><b>CNS</b></color>: Connected to relay endpoint: {remoteEP.TCPEndPoint}");
 
-            if (ClientManager.Instance != null)
-            {
 #if CNS_SERVER_MULTIPLE
-                base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.ConnectionToken), TransportMethod.Reliable);
+            base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.ConnectionToken), TransportMethod.Reliable);
 #elif CNS_SERVER_SINGLE
-                base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.ConnectionData), TransportMethod.Reliable);
+            base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.ConnectionData), TransportMethod.Reliable);
 #endif
-            }
-            else
-            {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientManager instance not found in scene. Cannot send connection request to relay server.");
-            }
         }
         else
         {
@@ -90,15 +83,7 @@ public class CNetRelayTransport : CNetTransport
         if (connectedEPs.Remove(remoteEPId))
         {
             Debug.Log($"<color=green><b>CNS</b></color>: Disconnected from relay endpoint: {remoteEP.TCPEndPoint}");
-
-            if (ClientManager.Instance != null && ServerManager.Instance != null)
-            {
-                ServerManager.Instance.KickUser(ClientManager.Instance.CurrentUser);
-            }
-            else
-            {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientManager or ServerManager instance not found in scene. Cannot kick host user on relay disconnect.");
-            }
+            ServerManager.Instance.KickUser(ClientManager.Instance.CurrentUser);
         }
         else
         {
@@ -128,9 +113,9 @@ public class CNetRelayTransport : CNetTransport
                         Debug.Log($"<color=green><b>CNS</b></color>: Connection to relay server accepted.");
                         ClientManager.Instance.ConnectionData.LobbyId = lobbyId;
                         Instantiate(GameResources.Instance.ServerPrefab);
+                        ServerManager.Instance.RegisterTransport(TransportType.Local);
                         ClientManager.Instance.BridgeTransport();
                         ClientManager.Instance.RegisterTransport(TransportType.Local);
-                        ServerManager.Instance.RegisterTransport(TransportType.Local);
                     }
                     else
                     {
@@ -139,12 +124,12 @@ public class CNetRelayTransport : CNetTransport
                     }
                     break;
                 }
-            case RelayMessageType.ConnectUser:
+            case RelayMessageType.ConnectedUser:
                 {
                     RaiseNetworkConnected(remoteId);
                     break;
                 }
-            case RelayMessageType.DisconnectUser:
+            case RelayMessageType.DisconnectedUser:
                 {
                     RaiseNetworkDisconnected(remoteId);
                     break;
@@ -172,11 +157,11 @@ public class CNetRelayTransport : CNetTransport
         All
     }
 
-    enum RelayMessageType
+    public enum RelayMessageType
     {
         ConnectionResponse,
-        ConnectUser,
-        DisconnectUser,
+        ConnectedUser,
+        DisconnectedUser,
         Data
     }
 }

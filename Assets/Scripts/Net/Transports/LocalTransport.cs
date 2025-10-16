@@ -19,22 +19,6 @@ public class LocalTransport : NetTransport
     public override void Initialize(NetDeviceType deviceType)
     {
         this.deviceType = deviceType;
-
-        /*if (deviceType == NetDeviceType.Client)
-        {
-            ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
-            ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
-        }*/
-    }
-
-    private void LobbyCreateRequested(ServerSettings serverSettings)
-    {
-        StartClient();
-    }
-
-    private void LobbyJoinRequested(int lobbyId, ServerSettings serverSettings)
-    {
-        StartClient();
     }
 
     void PollEvents()
