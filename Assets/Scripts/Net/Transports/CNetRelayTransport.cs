@@ -144,10 +144,8 @@ public class CNetRelayTransport : CNetTransport
                 }
             case RelayMessageType.Data:
                 {
-                    byte[] newData = ArrayPool<byte>.Shared.Rent(packet.UnreadLength);
-                    receivedPacket.CopyTo(receivedPacket.CurrentIndex, newData, 0, receivedPacket.UnreadLength);
-                    NetPacket newPacket = new NetPacket(newData);
-                    RaiseNetworkReceived(remoteId, newPacket, ConvertProtocolBack(protocol));
+                    receivedPacket.Remove(0, 5); // Remove the first 5 bytes
+                    RaiseNetworkReceived(remoteId, receivedPacket, ConvertProtocolBack(protocol));
                     break;
                 }
             default:
