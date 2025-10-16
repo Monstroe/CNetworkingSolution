@@ -553,7 +553,7 @@ public class ClientManager : MonoBehaviour
                 transportName = "CNetTransport";
                 break;
 #endif
-#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_SYNC_HOST
+#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
             case TransportType.CNetRelay:
                 transportName = "CNetRelayTransport";
                 break;
@@ -563,7 +563,7 @@ public class ClientManager : MonoBehaviour
                 transportName = "LiteNetLibTransport";
                 break;
 #endif
-#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_SYNC_HOST
+#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
             case TransportType.LiteNetLibRelay:
                 transportName = "LiteNetLibRelayTransport";
                 break;
