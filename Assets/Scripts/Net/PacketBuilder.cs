@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public enum ServiceType
 {
-    CONNECTION, LOBBY, GAME, PLAYER, FX, EVENT, ITEM, CHAT, OBJECT
+    CONNECTION, LOBBY, PLAYER, GAME, FX, EVENT, ITEM, CHAT, OBJECT
 }
 
 public enum CommandType

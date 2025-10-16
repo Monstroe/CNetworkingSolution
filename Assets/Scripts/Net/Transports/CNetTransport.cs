@@ -251,7 +251,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to disconnect an endpoint that is not connected: {remoteEPId}");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unknown endpoint disconnected: {remoteEPId}");
         }
     }
 

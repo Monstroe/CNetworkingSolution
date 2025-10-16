@@ -91,7 +91,7 @@ public class CNetRelayTransport : CNetTransport
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to disconnect from relay endpoint that is not connected: {remoteEP.TCPEndPoint}");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unknown endpoint disconnected: {remoteEP.TCPEndPoint}");
         }
     }
 
