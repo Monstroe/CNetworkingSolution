@@ -10,6 +10,7 @@ public class Menu : MonoBehaviour
 
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject multiplayerMenu;
+    [SerializeField] private GameObject singleHostMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
     void OnEnable()
     {
@@ -56,8 +57,8 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.RegisterTransport(TransportType.CNet);
 #elif CNS_SYNC_HOST && CNS_LOBBY_SINGLE
         Instantiate(GameResources.Instance.ServerPrefab);
-        ServerManager.Instance.RegisterTransport(TransportType.Local);
         ServerManager.Instance.RegisterTransport(TransportType.CNet);
+        ServerManager.Instance.RegisterTransport(TransportType.Local);
         ClientManager.Instance.RegisterTransport(TransportType.Local);
 #elif CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
         ClientManager.Instance.RegisterTransport(TransportType.LiteNetLibRelay);
@@ -97,6 +98,8 @@ public class Menu : MonoBehaviour
         ClientManager.Instance.CreateNewUser();
 #if CNS_SERVER_MULTIPLE || CNS_LOBBY_MULTIPLE
         ToMultiplayerMenu();
+#elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE && CNS_SYNC_HOST
+        ToSingleHostMenu();
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
         ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
 #endif
@@ -108,9 +111,16 @@ public class Menu : MonoBehaviour
         multiplayerMenu.SetActive(true);
     }
 
+    public void ToSingleHostMenu()
+    {
+        mainMenu.SetActive(false);
+        singleHostMenu.SetActive(true);
+    }
+
     public void BackToMainMenu()
     {
         multiplayerMenu.SetActive(false);
+        singleHostMenu.SetActive(false);
         mainMenu.SetActive(true);
     }
 
@@ -121,11 +131,15 @@ public class Menu : MonoBehaviour
 
     public void JoinLobby()
     {
+#if CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE && CNS_SYNC_HOST
+        ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
+#else
         if (!int.TryParse(lobbyIdInputField.text, out int parsedId))
         {
             return;
         }
 
         ClientManager.Instance.JoinExistingLobby(parsedId);
+#endif
     }
 }
