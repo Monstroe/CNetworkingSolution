@@ -15,8 +15,6 @@ public class PlayerClientService : ClientService
                 {
                     byte playerId = packet.ReadByte();
 
-                    Debug.Log("Spawning: " + playerId);
-
                     if (ClientManager.Instance.CurrentUser.PlayerId == playerId)
                     {
                         Player.Instance.Init(ClientManager.Instance.CurrentUser.PlayerId);

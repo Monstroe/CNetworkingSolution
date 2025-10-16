@@ -1,5 +1,6 @@
 #if CNS_TRANSPORT_CNET
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using CNet;
@@ -256,9 +257,10 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     protected virtual void ReceivePacket(NetEndPoint remoteEP, CNet.NetPacket packet, TransportProtocol protocol)
     {
-        byte[] data = new byte[packet.Length];
+        byte[] data = ArrayPool<byte>.Shared.Rent(packet.Length);
         Buffer.BlockCopy(packet.ByteSegment.Array, packet.ByteSegment.Offset, data, 0, packet.Length);
         NetPacket receivedPacket = new NetPacket(data);
+        ArrayPool<byte>.Shared.Return(data);
         RaiseNetworkReceived(remoteEP.ID, receivedPacket, ConvertProtocolBack(protocol));
     }
 

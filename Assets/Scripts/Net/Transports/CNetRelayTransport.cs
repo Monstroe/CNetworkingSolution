@@ -1,5 +1,6 @@
 #if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using CNet;
 using UnityEngine;
@@ -102,9 +103,10 @@ public class CNetRelayTransport : CNetTransport
             return;
         }
 
-        byte[] data = new byte[packet.Length];
+        byte[] data = ArrayPool<byte>.Shared.Rent(packet.Length);
         Buffer.BlockCopy(packet.ByteSegment.Array, packet.ByteSegment.Offset, data, 0, packet.Length);
         NetPacket receivedPacket = new NetPacket(data);
+        ArrayPool<byte>.Shared.Return(data);
 
         RelayMessageType receiveType = (RelayMessageType)receivedPacket.ReadByte();
         uint remoteId = receivedPacket.ReadUInt();
@@ -142,7 +144,10 @@ public class CNetRelayTransport : CNetTransport
                 }
             case RelayMessageType.Data:
                 {
-                    RaiseNetworkReceived(remoteId, receivedPacket, ConvertProtocolBack(protocol));
+                    byte[] newData = ArrayPool<byte>.Shared.Rent(packet.UnreadLength);
+                    receivedPacket.CopyTo(receivedPacket.CurrentIndex, newData, 0, receivedPacket.UnreadLength);
+                    NetPacket newPacket = new NetPacket(newData);
+                    RaiseNetworkReceived(remoteId, newPacket, ConvertProtocolBack(protocol));
                     break;
                 }
             default:
@@ -153,19 +158,19 @@ public class CNetRelayTransport : CNetTransport
         }
     }
 
-    enum RelayUserSendType
-    {
-        Single,
-        List,
-        All
-    }
-
     public enum RelayMessageType
     {
         ConnectionResponse,
         ConnectedUser,
         DisconnectedUser,
         Data
+    }
+
+    enum RelayUserSendType
+    {
+        Single,
+        List,
+        All
     }
 }
 #endif
