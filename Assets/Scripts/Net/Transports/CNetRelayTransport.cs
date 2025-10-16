@@ -115,21 +115,13 @@ public class CNetRelayTransport : CNetTransport
         {
             case RelayMessageType.ConnectionResponse:
                 {
-                    bool accepted = receivedPacket.ReadBool();
                     int lobbyId = receivedPacket.ReadInt();
-                    if (accepted)
-                    {
-                        Debug.Log($"<color=green><b>CNS</b></color>: Connection to relay server accepted: " + lobbyId);
-                        ClientManager.Instance.ConnectionData.LobbyId = lobbyId;
-                        Instantiate(GameResources.Instance.ServerPrefab);
-                        ClientManager.Instance.BridgeTransport();
-                        ServerManager.Instance.RegisterTransport(TransportType.Local);
-                        ClientManager.Instance.RegisterTransport(TransportType.Local);
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Connection to relay server rejected.");
-                    }
+                    Debug.Log($"<color=green><b>CNS</b></color>: Connection to relay server accepted: " + lobbyId);
+                    ClientManager.Instance.ConnectionData.LobbyId = lobbyId;
+                    Instantiate(GameResources.Instance.ServerPrefab);
+                    ClientManager.Instance.BridgeTransport();
+                    ServerManager.Instance.RegisterTransport(TransportType.Local);
+                    ClientManager.Instance.RegisterTransport(TransportType.Local);
                     break;
                 }
             case RelayMessageType.ConnectedUser:
