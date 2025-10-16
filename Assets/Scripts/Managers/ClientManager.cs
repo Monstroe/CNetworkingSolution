@@ -594,7 +594,7 @@ public class ClientManager : MonoBehaviour
         AddTransportEvents();
     }
 
-#if CNS_SYNC_HOST
+#if CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
     public void BridgeTransport()
     {
         if (transport == null)

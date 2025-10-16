@@ -340,7 +340,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: edbda87333163c44280ae7ab4784a45c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transport: {fileID: 0}
 --- !u!1 &203844586
 GameObject:
   m_ObjectHideFlags: 0
@@ -1283,7 +1282,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fadeDuration: 3
-  localServerPrefab: {fileID: 1652916004789258094, guid: 07d78653b52283441a50c3d982f9680c, type: 3}
   mainMenu: {fileID: 492109544}
   multiplayerMenu: {fileID: 83929235}
   lobbyIdInputField: {fileID: 1135886610}

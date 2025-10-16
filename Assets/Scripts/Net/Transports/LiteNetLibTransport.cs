@@ -9,7 +9,7 @@ using LiteNetLib;
 public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEventListener
 {
     [Tooltip("The port to listen on (if server) or connect to (if client)")]
-    [SerializeField] private ushort port = 7777;
+    [SerializeField] private ushort port = 8888;
     [Tooltip("The address to connect to as client; ignored if server")]
     [SerializeField] private string address = "127.0.0.1";
     [Tooltip("The key used to successfully connect to the server")]
@@ -32,7 +32,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     [SerializeField] private int simulateMaxLatency = 0;
 
     private NetManager netManager;
-    private readonly Dictionary<uint, NetPeer> connectedPeers = new Dictionary<uint, NetPeer>();
+    protected readonly Dictionary<uint, NetPeer> connectedPeers = new Dictionary<uint, NetPeer>();
     private readonly Dictionary<uint, byte[]> peerMessageBuffers = new Dictionary<uint, byte[]>();
 
     public override uint ServerClientId => 0;
@@ -222,7 +222,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
     }
 
-    private TransportMethod ConvertProtocolBack(DeliveryMethod method)
+    protected TransportMethod ConvertProtocolBack(DeliveryMethod method)
     {
         switch (method)
         {
@@ -271,13 +271,12 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     protected virtual void DisconnectPeer(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        var peerId = (uint)peer.Id;
-
         if (disconnectInfo.AdditionalData.AvailableBytes > 0)
         {
-            ReceiveData(peerId, disconnectInfo.AdditionalData, DeliveryMethod.ReliableOrdered);
+            ReceiveData(peer, disconnectInfo.AdditionalData, DeliveryMethod.ReliableOrdered);
         }
 
+        var peerId = (uint)peer.Id;
         if (connectedPeers.Remove(peerId))
         {
             RaiseNetworkDisconnected(peerId);
@@ -288,8 +287,9 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
     }
 
-    protected virtual void ReceiveData(uint peerId, NetPacketReader reader, DeliveryMethod deliveryMethod)
+    protected virtual void ReceiveData(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
+        var peerId = (uint)peer.Id;
         byte[] receivedBytes = new byte[reader.AvailableBytes];
         reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
         NetPacket receivedPacket = new NetPacket(receivedBytes);
@@ -314,8 +314,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
     {
-        var peerId = (uint)peer.Id;
-        ReceiveData(peerId, reader, deliveryMethod);
+        ReceiveData(peer, reader, deliveryMethod);
     }
 
     void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)

@@ -60,7 +60,7 @@ public class Menu : MonoBehaviour
         ServerManager.Instance.RegisterTransport(TransportType.CNet);
         ClientManager.Instance.RegisterTransport(TransportType.Local);
 #elif CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-        ClientManager.Instance.RegisterTransport(TransportType.CNetRelay);
+        ClientManager.Instance.RegisterTransport(TransportType.LiteNetLibRelay);
 #endif
     }
 

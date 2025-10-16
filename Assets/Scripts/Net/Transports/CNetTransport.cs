@@ -87,7 +87,6 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 #endif
 
         netSystem.Connect(address, port, connectionKey);
-        Debug.Log($"<color=green><b>CNS</b></color>: Client connecting to {address}:{port}");
         return true;
     }
 
@@ -101,7 +100,6 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         initialized = true;
         netSystem.RegisterInterface((IEventNetListener)this);
         netSystem.Listen(port);
-        Debug.Log($"<color=green><b>CNS</b></color>: Server listening on port {port}");
         return true;
     }
 

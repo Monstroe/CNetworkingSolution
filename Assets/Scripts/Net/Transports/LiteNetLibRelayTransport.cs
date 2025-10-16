@@ -1,11 +1,10 @@
-#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
+#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using CNet;
+using LiteNetLib;
 using UnityEngine;
 
-public class CNetRelayTransport : CNetTransport
+public class LiteNetLibRelayTransport : LiteNetLibTransport
 {
     protected override bool StartServer()
     {
@@ -48,14 +47,14 @@ public class CNetRelayTransport : CNetTransport
     }
 
     // This function should only be called once when the client (acting as a server) connects to the relay server
-    protected override void ConnectRemoteEP(NetEndPoint remoteEP)
+    protected override void ConnectPeer(NetPeer peer)
     {
-        var remoteEPId = remoteEP.ID;
+        var peerId = (uint)peer.Id;
 
-        if (!connectedEPs.ContainsKey(remoteEPId))
+        if (!connectedPeers.ContainsKey(peerId))
         {
-            connectedEPs[remoteEPId] = remoteEP;
-            Debug.Log($"<color=green><b>CNS</b></color>: Connected to relay server: {remoteEP.TCPEndPoint}");
+            connectedPeers[peerId] = peer;
+            Debug.Log($"<color=green><b>CNS</b></color>: Connected to relay server: {peer.Address}");
 
 #if CNS_SERVER_MULTIPLE
             base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.ConnectionToken), TransportMethod.Reliable);
@@ -65,18 +64,22 @@ public class CNetRelayTransport : CNetTransport
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to connect to relay server that is already connected: {remoteEP.TCPEndPoint}");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to connect relay server that is already connected: {peer.Address}");
         }
     }
 
     // This function should only be called once when the client (acting as a server) disconnects from the relay server
-    protected override void DisconnectRemoteEP(NetEndPoint remoteEP, NetDisconnect disconnect)
+    protected override void DisconnectPeer(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        var remoteEPId = remoteEP.ID;
-
-        if (connectedEPs.Remove(remoteEPId))
+        if (disconnectInfo.AdditionalData.AvailableBytes > 0)
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: Disconnected from relay server: {remoteEP.TCPEndPoint}");
+            ReceiveData(peer, disconnectInfo.AdditionalData, DeliveryMethod.ReliableOrdered);
+        }
+
+        var peerId = (uint)peer.Id;
+        if (connectedPeers.Remove(peerId))
+        {
+            Debug.Log($"<color=green><b>CNS</b></color>: Disconnected from relay server: {peer.Address}");
             if (ServerManager.Instance != null)
             {
                 ServerManager.Instance.KickUser(ClientManager.Instance.CurrentUser);
@@ -84,22 +87,22 @@ public class CNetRelayTransport : CNetTransport
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unknown endpoint disconnected: {remoteEP.TCPEndPoint}");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to disconnect a peer that is not connected: {peerId}");
         }
     }
 
-    protected override void ReceivePacket(NetEndPoint remoteEP, CNet.NetPacket packet, TransportProtocol protocol)
+    protected override void ReceiveData(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
-        if (packet.Length < 5) // Minimum length: 1 byte for RelayMessageType + 4 bytes for userId
+        if (reader.AvailableBytes < 5) // Minimum length: 1 byte for RelayMessageType + 4 bytes for userId
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received packet that is too short from relay server: {remoteEP.TCPEndPoint}");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received packet that is too short from relay server: {peer.Address}");
             return;
         }
 
-        byte[] data = ArrayPool<byte>.Shared.Rent(packet.Length);
-        Buffer.BlockCopy(packet.ByteSegment.Array, packet.ByteSegment.Offset, data, 0, packet.Length);
-        NetPacket receivedPacket = new NetPacket(data);
-        ArrayPool<byte>.Shared.Return(data);
+        byte[] receivedBytes = new byte[reader.AvailableBytes];
+        reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
+        NetPacket receivedPacket = new NetPacket(receivedBytes);
+        reader.Recycle();
 
         RelayMessageType receiveType = (RelayMessageType)receivedPacket.ReadByte();
         uint remoteId = receivedPacket.ReadUInt();
@@ -130,7 +133,7 @@ public class CNetRelayTransport : CNetTransport
             case RelayMessageType.Data:
                 {
                     receivedPacket.Remove(0, 5); // Remove the first 5 bytes
-                    RaiseNetworkReceived(remoteId, receivedPacket, ConvertProtocolBack(protocol));
+                    RaiseNetworkReceived(remoteId, receivedPacket, ConvertProtocolBack(deliveryMethod));
                     break;
                 }
             default:
@@ -140,6 +143,10 @@ public class CNetRelayTransport : CNetTransport
                 }
         }
     }
+
+
+
+
 
     enum RelayMessageType
     {
