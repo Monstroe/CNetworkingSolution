@@ -7,8 +7,6 @@ public class Menu : MonoBehaviour
 {
     [Header("Fade Settings")]
     [SerializeField] private float fadeDuration = 3f;
-    [Space]
-    [SerializeField] private GameObject localServerPrefab;
 
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject multiplayerMenu;
