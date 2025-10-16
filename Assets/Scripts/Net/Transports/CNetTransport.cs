@@ -22,7 +22,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
     [Tooltip("The interval (in milliseconds) at which to send heartbeat packets to keep the connection alive")]
     [SerializeField] private int tcpHeartbeatInterval = 1000;
     [Tooltip("The timeout (in milliseconds) after which a connection is considered lost if no heartbeat packets are received")]
-    [SerializeField] private int tcpConnectionTimeout = 5000;
+    [SerializeField] private int tcpConnectionTimeout = 15000;
     [Tooltip("The size of the socket receive buffer; 0 for default")]
     [SerializeField] private int tcpSocketReceiveBufferSize = 0;
     [Tooltip("The size of the socket send buffer; 0 for default")]
@@ -34,7 +34,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
     [Tooltip("The interval (in milliseconds) at which to send heartbeat packets to keep the connection alive")]
     [SerializeField] private int udpHeartbeatInterval = 500;
     [Tooltip("The timeout (in milliseconds) after which a connection is considered lost if no heartbeat packets are received")]
-    [SerializeField] private int udpConnectionTimeout = 5000;
+    [SerializeField] private int udpConnectionTimeout = 15000;
     [Tooltip("The size of the socket receive buffer; 0 for default")]
     [SerializeField] private int udpSocketReceiveBufferSize = 0;
     [Tooltip("The size of the socket send buffer; 0 for default")]
