@@ -71,11 +71,11 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
         netSystem.MaxPendingConnections = maxPendingConnections;
 
-        if (deviceType == NetDeviceType.Client)
+        /*if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
             ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
-        }
+        }*/
     }
 
     private void LobbyCreateRequested(ServerSettings serverSettings)
@@ -188,11 +188,11 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
             netSystem.Dispose();
         }
 
-        if (deviceType == NetDeviceType.Client)
+        /*if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
             ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
-        }
+        }*/
 
         initialized = false;
     }

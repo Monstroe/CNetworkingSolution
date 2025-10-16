@@ -64,11 +64,9 @@ public class ClientManager : MonoBehaviour
     public bool IsConnected { get; private set; } = false;
     public ConnectionData ConnectionData { get; private set; }
 
-    [SerializeField] private NetTransport transport;
-
 #if CNS_SERVER_MULTIPLE
-    public ServerSettings CurrentServerSettings { get; set; }
     public string ConnectionToken { get; private set; }
+    public ServerSettings CurrentServerSettings { get; set; }
 
     public string LobbyApiUrl
     {
@@ -80,6 +78,8 @@ public class ClientManager : MonoBehaviour
 
     private string webToken;
 #endif
+
+    private NetTransport transport;
 
     void Awake()
     {
@@ -94,18 +94,14 @@ public class ClientManager : MonoBehaviour
         }
 
         CurrentLobby = GetComponent<ClientLobby>();
-
-        if (transport)
-        {
-            transport.OnNetworkConnected += HandleNetworkConnected;
-            transport.OnNetworkDisconnected += HandleNetworkDisconnected;
-            transport.OnNetworkReceived += HandleNetworkReceived;
-        }
     }
 
     void OnDestroy()
     {
-        ClearTransport();
+        if (transport != null)
+        {
+            RemoveTransport();
+        }
     }
 
     void FixedUpdate()
@@ -128,7 +124,7 @@ public class ClientManager : MonoBehaviour
         {
             transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
         }
-        else if (lobbyConnectionType == LobbyConnectionType.JOIN)
+        else
         {
             transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionToken), TransportMethod.Reliable);
         }
@@ -250,7 +246,7 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbyUserSettings(CurrentUser, userSettings), TransportMethod.Reliable);
         }
-#if CNS_SYNC_DEDICATED || (CNS_SERVER_SINGLE && CNS_SYNC_HOST)
+#if !(CNS_SERVER_MULTIPLE && CNS_SYNC_HOST)
         else
         {
             UpdateUser(userSettings, invokeEvent);
@@ -373,7 +369,6 @@ public class ClientManager : MonoBehaviour
             UserSettings = CurrentUser.Settings,
             LobbySettings = lobbySettings
         };
-        CurrentLobby.Init(lobbyId, transport);
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
         {
@@ -512,7 +507,6 @@ public class ClientManager : MonoBehaviour
             UserSettings = CurrentUser.Settings,
             LobbySettings = lobbySettings
         };
-        CurrentLobby.Init(lobbyId, transport);
         CurrentLobby.LobbyData.Settings = lobbySettings;
         if (invokeEvent)
         {
@@ -539,9 +533,12 @@ public class ClientManager : MonoBehaviour
         CurrentUser = userData;
     }
 
-    public void SetTransport(TransportType transportType)
+    public void RegisterTransport(TransportType transportType)
     {
-        ClearTransport();
+        if (transport != null)
+        {
+            RemoveTransport();
+        }
 
         string transportName = null;
         switch (transportType)
@@ -579,21 +576,64 @@ public class ClientManager : MonoBehaviour
         }
 
         transport = Instantiate(Resources.Load<NetTransport>($"Prefabs/Transports/{transportName}"), this.transform);
+        AddTransportEvents();
+        transport.Initialize(NetDeviceType.Client);
+        transport.StartDevice();
+        CurrentLobby.Init(CurrentLobby.LobbyData.LobbyId, transport);
+    }
+
+    public void SetTransport(NetTransport newTransport)
+    {
+        if (transport != null)
+        {
+            RemoveTransport();
+        }
+
+        transport = newTransport;
+        transport.transform.SetParent(this.transform);
+        AddTransportEvents();
+    }
+
+#if CNS_SYNC_HOST
+    public void BridgeTransport()
+    {
+        if (transport == null)
+        {
+            Debug.LogError("<color=red><b>CNS</b></color>: Attempted to bridge a null transport.");
+            return;
+        }
+
+        if (ServerManager.Instance == null)
+        {
+            Debug.LogError("<color=red><b>CNS</b></color>: Attempted to bridge transport but ServerManager instance is null.");
+            return;
+        }
+
+        ClearTransportEvents();
+        ServerManager.Instance.AddTransport(transport);
+        transport = null;
+    }
+#endif
+
+    public void AddTransportEvents()
+    {
         transport.OnNetworkConnected += HandleNetworkConnected;
         transport.OnNetworkDisconnected += HandleNetworkDisconnected;
         transport.OnNetworkReceived += HandleNetworkReceived;
     }
 
-    private void ClearTransport()
+    public void ClearTransportEvents()
     {
-        if (transport != null)
-        {
-            transport.OnNetworkConnected -= HandleNetworkConnected;
-            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
-            transport.OnNetworkReceived -= HandleNetworkReceived;
-            transport.Shutdown();
-            Destroy(transport.gameObject);
-        }
+        transport.OnNetworkConnected -= HandleNetworkConnected;
+        transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
+        transport.OnNetworkReceived -= HandleNetworkReceived;
+    }
+
+    public void RemoveTransport()
+    {
+        ClearTransportEvents();
+        transport.Shutdown();
+        Destroy(transport.gameObject);
         transport = null;
     }
 }

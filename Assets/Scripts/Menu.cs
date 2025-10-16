@@ -46,11 +46,25 @@ public class Menu : MonoBehaviour
     private void LobbyCreateRequested(ServerSettings serverSettings)
     {
         Debug.Log($"Creating lobby...");
+        if (GameResources.Instance.GameMode == GameMode.Singleplayer)
+        {
+            Instantiate(GameResources.Instance.ServerPrefab);
+            ClientManager.Instance.RegisterTransport(TransportType.Local);
+            ServerManager.Instance.RegisterTransport(TransportType.Local);
+            return;
+        }
+
+#if CNS_SYNC_DEDICATED
+        ClientManager.Instance.RegisterTransport(TransportType.CNet);
+#elif CNS_SYNC_HOST
+        ClientManager.Instance.RegisterTransport(TransportType.CNetRelay);
+#endif
     }
 
     private void LobbyJoinedRequested(int lobbyId, ServerSettings serverSettings)
     {
         Debug.Log($"Joining lobby {lobbyId}...");
+        ClientManager.Instance.RegisterTransport(TransportType.CNet);
     }
 
     private void LobbyConnectionAccepted(int lobbyId)
@@ -71,10 +85,6 @@ public class Menu : MonoBehaviour
     public void StartSinglePlayer()
     {
         GameResources.Instance.GameMode = GameMode.Singleplayer;
-        ClientManager.Instance.SetTransport(TransportType.CNet);
-        Instantiate(localServerPrefab);
-        ServerManager.Instance.ClearTransports();
-        ServerManager.Instance.AddTransport(TransportType.CNet);
         ClientManager.Instance.CreateNewUser();
         ClientManager.Instance.CreateNewLobby();
     }
@@ -85,15 +95,6 @@ public class Menu : MonoBehaviour
 #if CNS_SERVER_MULTIPLE || CNS_LOBBY_MULTIPLE
         ToMultiplayerMenu();
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
-#if CNS_SYNC_DEDICATED
-        ClientManager.Instance.SetTransport(TransportType.CNet);
-#elif CNS_SYNC_HOST
-        ClientManager.Instance.SetTransport(TransportType.Local);
-        Instantiate(localServerPrefab);
-        ServerManager.Instance.ClearTransports();
-        ServerManager.Instance.AddTransport(TransportType.Local);
-        ServerManager.Instance.AddTransport(TransportType.CNetRelay);
-#endif
         ClientManager.Instance.JoinExistingLobby(GameResources.Instance.DefaultLobbyId);
 #endif
     }

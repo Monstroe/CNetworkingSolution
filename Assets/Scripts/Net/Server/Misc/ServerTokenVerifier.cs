@@ -125,7 +125,7 @@ public class ServerTokenVerifier
         {
             return Guid.Parse(tokenIdObj.ToString());
         }
-        throw new Exception("Token does not contain 'token_id' field.");
+        throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'token_id' field.");
     }
 
     private int GetLobbyIdFromToken(Dictionary<string, object> payload)
@@ -134,7 +134,7 @@ public class ServerTokenVerifier
         {
             return Convert.ToInt32(lobbyIdObj);
         }
-        throw new Exception("Token does not contain 'lobby_id' field.");
+        throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'lobby_id' field.");
     }
 
     private LobbyConnectionType GetLobbyConnectionTypeFromToken(Dictionary<string, object> payload)
@@ -143,7 +143,7 @@ public class ServerTokenVerifier
         {
             return Enum.Parse<LobbyConnectionType>(lobbyConnectionTypeObj.ToString());
         }
-        throw new Exception("Token does not contain 'lobby_connection_type' field.");
+        throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'lobby_connection_type' field.");
     }
 
     private Guid GetUserGuidFromToken(Dictionary<string, object> payload)
@@ -152,7 +152,7 @@ public class ServerTokenVerifier
         {
             return Guid.Parse(userGuidObj.ToString());
         }
-        throw new Exception("Token does not contain 'user_guid' field.");
+        throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'user_guid' field.");
     }
 
     private UserSettings GetUserSettingsFromToken(Dictionary<string, object> payload)
@@ -165,7 +165,7 @@ public class ServerTokenVerifier
         }
         else
         {
-            throw new Exception("Token does not contain 'user_name' field.");
+            throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'user_name' field.");
         }
 
         return settings;
@@ -182,7 +182,7 @@ public class ServerTokenVerifier
         }
         else
         {
-            throw new Exception("Token does not contain 'steam_code' field.");
+            throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'steam_code' field.");
         }
 #endif
 
@@ -192,7 +192,7 @@ public class ServerTokenVerifier
         }
         else
         {
-            throw new Exception("Token does not contain 'max_users' field.");
+            throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'max_users' field.");
         }
 
         if (payload.TryGetValue("lobby_visibility", out object lobbyVisibilityObj))
@@ -201,7 +201,7 @@ public class ServerTokenVerifier
         }
         else
         {
-            throw new Exception("Token does not contain 'lobby_visibility' field.");
+            throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'lobby_visibility' field.");
         }
 
         if (payload.TryGetValue("lobby_name", out object lobbyNameObj))
@@ -210,7 +210,7 @@ public class ServerTokenVerifier
         }
         else
         {
-            throw new Exception("Token does not contain 'lobby_name' field.");
+            throw new Exception("<color=red><b>CNS</b></color>: Token does not contain 'lobby_name' field.");
         }
 
         return settings;

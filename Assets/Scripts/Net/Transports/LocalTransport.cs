@@ -20,11 +20,11 @@ public class LocalTransport : NetTransport
     {
         this.deviceType = deviceType;
 
-        if (deviceType == NetDeviceType.Client)
+        /*if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
             ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinRequested;
-        }
+        }*/
     }
 
     private void LobbyCreateRequested(ServerSettings serverSettings)
@@ -157,11 +157,11 @@ public class LocalTransport : NetTransport
         instances[instanceIndex] = null;
         instanceIndex = -1;
 
-        if (deviceType == NetDeviceType.Client)
+        /*if (deviceType == NetDeviceType.Client)
         {
             ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
             ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
-        }
+        }*/
 
         initialized = false;
     }

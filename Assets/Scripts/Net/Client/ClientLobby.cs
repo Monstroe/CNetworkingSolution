@@ -14,7 +14,6 @@ public class ClientLobby : MonoBehaviour
     {
         LobbyData.LobbyId = lobbyId;
         this.transport = transport;
-        transport.Initialize(NetDeviceType.Client);
     }
 
     public void SendToServer(NetPacket packet, TransportMethod method)

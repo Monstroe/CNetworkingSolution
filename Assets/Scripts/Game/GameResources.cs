@@ -6,6 +6,10 @@ public class GameResources : MonoBehaviour
 {
     public static GameResources Instance { get; private set; }
 
+    public GameObject ServerPrefab => serverPrefab;
+
+    public GameMode GameMode { get => gameMode; set => gameMode = value; }
+
     public LayerMask GroundMask => groundMask;
     public LayerMask InteractionMask => interactionMask;
 
@@ -17,7 +21,7 @@ public class GameResources : MonoBehaviour
     public LobbySettings DefaultLobbySettings => defaultLobbySettings;
     public UserSettings DefaultUserSettings => defaultUserSettings;
 
-    public GameMode GameMode { get => gameMode; set => gameMode = value; }
+    [SerializeField] private GameObject serverPrefab;
 
     [Header("Game Settings")]
     [SerializeField] private GameMode gameMode = GameMode.Multiplayer;

@@ -13,26 +13,9 @@ using UnityEngine;
 /// </summary>
 public class CNetRelayTransport : CNetTransport
 {
-    public override void Initialize(NetDeviceType deviceType)
-    {
-        base.Initialize(deviceType);
-
-#if CNS_SERVER_MULTIPLE
-        // Even though this transport only runs on the server (host), CLientManager should still exist in the scene
-        if (ClientManager.Instance != null)
-        {
-            address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientManager instance not found in scene. Using default address {address}.");
-        }
-#endif
-    }
-
     protected override bool StartServer()
     {
-        return base.StartClient(); // Relay transport acts as a client to the relay server
+        throw new NotImplementedException("<color=red><b>CNS</b></color>: CNetRelayTransport does not support starting a server directly. This transport is intended to be used by a client acting as a server (host).");
     }
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
@@ -136,6 +119,26 @@ public class CNetRelayTransport : CNetTransport
 
         switch (receiveType)
         {
+            case RelayMessageType.ConnectionResponse:
+                {
+                    bool accepted = packet.ReadBool();
+                    int lobbyId = packet.ReadInt();
+                    if (accepted)
+                    {
+                        Debug.Log($"<color=green><b>CNS</b></color>: Connection to relay server accepted.");
+                        ClientManager.Instance.ConnectionData.LobbyId = lobbyId;
+                        Instantiate(GameResources.Instance.ServerPrefab);
+                        ClientManager.Instance.BridgeTransport();
+                        ClientManager.Instance.RegisterTransport(TransportType.Local);
+                        ServerManager.Instance.RegisterTransport(TransportType.Local);
+                    }
+                    else
+                    {
+                        LobbyRejectionType errorType = (LobbyRejectionType)packet.ReadByte();
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Connection to relay server rejected. Reason: {errorType}");
+                    }
+                    break;
+                }
             case RelayMessageType.ConnectUser:
                 {
                     RaiseNetworkConnected(remoteId);
@@ -171,6 +174,7 @@ public class CNetRelayTransport : CNetTransport
 
     enum RelayMessageType
     {
+        ConnectionResponse,
         ConnectUser,
         DisconnectUser,
         Data

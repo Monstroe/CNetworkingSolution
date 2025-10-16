@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -13,8 +14,6 @@ public class ServerManager : MonoBehaviour
 
     public ulong ServerTick { get; private set; } = 0;
     public ServerData ServerData { get; private set; } = new ServerData();
-
-    [SerializeField] private List<NetTransport> transports;
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
     public delegate void PublicIpAddressFetchedHandler(string ipAddress);
@@ -36,6 +35,8 @@ public class ServerManager : MonoBehaviour
     public ServerTokenVerifier TokenVerifier { get; private set; }
 #endif
 
+    private List<NetTransport> transports = new List<NetTransport>();
+
     void Awake()
     {
         if (Instance == null)
@@ -49,15 +50,6 @@ public class ServerManager : MonoBehaviour
         }
 
         Debug.Log("<color=green><b>CNS</b></color>: Initializing Server...");
-
-        foreach (NetTransport transport in transports)
-        {
-            transport.Initialize(NetDeviceType.Server);
-            transport.StartDevice();
-            transport.OnNetworkConnected += HandleNetworkConnected;
-            transport.OnNetworkDisconnected += HandleNetworkDisconnected;
-            transport.OnNetworkReceived += HandleNetworkReceived;
-        }
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
         if (GameResources.Instance.GameMode != GameMode.Singleplayer)
@@ -213,7 +205,7 @@ public class ServerManager : MonoBehaviour
     async void OnDestroy()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
-        ClearTransports();
+        RemoveTransports();
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
         if (GameResources.Instance.GameMode != GameMode.Singleplayer)
@@ -239,7 +231,7 @@ public class ServerManager : MonoBehaviour
         connectionData = null;
 #endif
 
-#if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE
+#if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
         connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.CREATE ? GenerateLobbyId() : connectionData.LobbyId;
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
         connectionData.LobbyId = GameResources.Instance.DefaultLobbyId;
@@ -264,6 +256,7 @@ public class ServerManager : MonoBehaviour
         if (connectionData.LobbyConnectionType == LobbyConnectionType.JOIN && ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
         {
             lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
+            connectionData.LobbySettings = lobby.LobbyData.Settings;
         }
         else if (connectionData.LobbyConnectionType == LobbyConnectionType.CREATE)
         {
@@ -419,7 +412,7 @@ public class ServerManager : MonoBehaviour
         Debug.Log($"<color=green><b>CNS</b></color>: User {user.UserId} left lobby {lobby.LobbyData.LobbyId}.");
     }
 
-    public void AddTransport(TransportType transportType)
+    public void RegisterTransport(TransportType transportType)
     {
         string transportName = null;
         NetTransport transport = null;
@@ -460,20 +453,37 @@ public class ServerManager : MonoBehaviour
 
         transport = Instantiate(Resources.Load<GameObject>($"Prefabs/Transports/{transportName}"), this.transform).GetComponent<NetTransport>();
         transports.Add(transport);
+        AddTransportEvents(transport);
         transport.Initialize(NetDeviceType.Server);
         transport.StartDevice();
+    }
+
+    public void AddTransport(NetTransport transport)
+    {
+        transports.Add(transport);
+        transport.transform.SetParent(this.transform);
+        AddTransportEvents(transport);
+    }
+
+    public void AddTransportEvents(NetTransport transport)
+    {
         transport.OnNetworkConnected += HandleNetworkConnected;
         transport.OnNetworkDisconnected += HandleNetworkDisconnected;
         transport.OnNetworkReceived += HandleNetworkReceived;
     }
 
-    public void ClearTransports()
+    public void ClearTransportEvents(NetTransport transport)
+    {
+        transport.OnNetworkConnected -= HandleNetworkConnected;
+        transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
+        transport.OnNetworkReceived -= HandleNetworkReceived;
+    }
+
+    public void RemoveTransports()
     {
         foreach (NetTransport transport in transports)
         {
-            transport.OnNetworkConnected -= HandleNetworkConnected;
-            transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
-            transport.OnNetworkReceived -= HandleNetworkReceived;
+            ClearTransportEvents(transport);
             transport.Shutdown();
             Destroy(transport.gameObject);
         }
@@ -485,7 +495,7 @@ public class ServerManager : MonoBehaviour
         return ((uint)user.UserId, (int)(user.UserId >> 32));
     }
 
-#if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE
+#if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
     private int GenerateLobbyId()
     {
         int newLobbyId;
@@ -497,7 +507,7 @@ public class ServerManager : MonoBehaviour
     }
 #endif
 
-#if CNS_SERVER_MULTIPLE
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
     private IEnumerator GetPublicIpAddress()
     {
         using (var www = UnityWebRequest.Get(publicIpApiUrl))
