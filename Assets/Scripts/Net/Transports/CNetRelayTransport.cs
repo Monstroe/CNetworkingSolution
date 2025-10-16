@@ -83,7 +83,10 @@ public class CNetRelayTransport : CNetTransport
         if (connectedEPs.Remove(remoteEPId))
         {
             Debug.Log($"<color=green><b>CNS</b></color>: Disconnected from relay endpoint: {remoteEP.TCPEndPoint}");
-            ServerManager.Instance.KickUser(ClientManager.Instance.CurrentUser);
+            if (ServerManager.Instance != null)
+            {
+                ServerManager.Instance.KickUser(ClientManager.Instance.CurrentUser);
+            }
         }
         else
         {
@@ -99,18 +102,22 @@ public class CNetRelayTransport : CNetTransport
             return;
         }
 
-        RelayMessageType receiveType = (RelayMessageType)packet.ReadByte();
-        uint remoteId = packet.ReadUInt();
+        byte[] data = new byte[packet.Length];
+        Buffer.BlockCopy(packet.ByteSegment.Array, packet.ByteSegment.Offset, data, 0, packet.Length);
+        NetPacket receivedPacket = new NetPacket(data);
+
+        RelayMessageType receiveType = (RelayMessageType)receivedPacket.ReadByte();
+        uint remoteId = receivedPacket.ReadUInt();
 
         switch (receiveType)
         {
             case RelayMessageType.ConnectionResponse:
                 {
-                    bool accepted = packet.ReadBool();
-                    int lobbyId = packet.ReadInt();
+                    bool accepted = receivedPacket.ReadBool();
+                    int lobbyId = receivedPacket.ReadInt();
                     if (accepted)
                     {
-                        Debug.Log($"<color=green><b>CNS</b></color>: Connection to relay server accepted.");
+                        Debug.Log($"<color=green><b>CNS</b></color>: Connection to relay server accepted: " + lobbyId);
                         ClientManager.Instance.ConnectionData.LobbyId = lobbyId;
                         Instantiate(GameResources.Instance.ServerPrefab);
                         ServerManager.Instance.RegisterTransport(TransportType.Local);
@@ -119,8 +126,7 @@ public class CNetRelayTransport : CNetTransport
                     }
                     else
                     {
-                        LobbyRejectionType errorType = (LobbyRejectionType)packet.ReadByte();
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Connection to relay server rejected. Reason: {errorType}");
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Connection to relay server rejected.");
                     }
                     break;
                 }
@@ -136,9 +142,6 @@ public class CNetRelayTransport : CNetTransport
                 }
             case RelayMessageType.Data:
                 {
-                    byte[] data = new byte[packet.Length];
-                    Buffer.BlockCopy(packet.ByteSegment.Array, packet.ByteSegment.Offset, data, 0, packet.Length);
-                    NetPacket receivedPacket = new NetPacket(data);
                     RaiseNetworkReceived(remoteId, receivedPacket, ConvertProtocolBack(protocol));
                     break;
                 }

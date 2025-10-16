@@ -58,6 +58,7 @@ public class GameManager : MonoBehaviour
     {
         Debug.LogWarning("Lost connection to lobby. Returning to main menu...");
 
+        ClientManager.Instance.RemoveTransport();
         if (ServerManager.Instance != null)
         {
             Destroy(ServerManager.Instance.gameObject);

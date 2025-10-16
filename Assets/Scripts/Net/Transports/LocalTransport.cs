@@ -32,6 +32,7 @@ public class LocalTransport : NetTransport
         if (isDisconnecting)
         {
             isDisconnecting = false;
+            instances[instanceIndex] = null;
             RaiseNetworkDisconnected(0);
         }
 
@@ -93,7 +94,6 @@ public class LocalTransport : NetTransport
         var otherInstance = instances[1 - instanceIndex];
         if (otherInstance == null)
         {
-            Debug.LogError("<color=red><b>CNS</b></color>: No other LocalTransport instance found to send data to.");
             return;
         }
 
@@ -138,15 +138,7 @@ public class LocalTransport : NetTransport
     public override void Shutdown()
     {
         Disconnect();
-        instances[instanceIndex] = null;
-        instanceIndex = -1;
-
-        /*if (deviceType == NetDeviceType.Client)
-        {
-            ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
-            ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinRequested;
-        }*/
-
+        queuedPackets.Clear();
         initialized = false;
     }
 
