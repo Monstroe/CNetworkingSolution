@@ -502,7 +502,7 @@ public class ClientManager : MonoBehaviour
         ConnectionData = new ConnectionData
         {
             LobbyId = lobbyId,
-            LobbyConnectionType = LobbyConnectionType.CREATE,
+            LobbyConnectionType = LobbyConnectionType.JOIN,
             UserGuid = CurrentUser.GlobalGuid,
             UserSettings = CurrentUser.Settings,
             LobbySettings = lobbySettings
