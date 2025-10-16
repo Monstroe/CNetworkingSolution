@@ -7,7 +7,7 @@ public class LocalTransport : NetTransport
     private static LocalTransport[] instances = new LocalTransport[2];
     private int instanceIndex = -1;
 
-    private Queue<(uint remoteId, NetPacket packet, TransportMethod method)> queuedPackets = new Queue<(uint remoteId, NetPacket packet, TransportMethod method)>();
+    private Queue<(uint remoteId, byte[] data, TransportMethod method)> queuedPackets = new Queue<(uint remoteId, byte[] data, TransportMethod method)>();
     private bool isConnecting = false;
     private bool isDisconnecting = false;
 
@@ -34,14 +34,16 @@ public class LocalTransport : NetTransport
         if (isDisconnecting)
         {
             isDisconnecting = false;
+            queuedPackets.Clear();
             instances[instanceIndex] = null;
             RaiseNetworkDisconnected(ServerClientId);
         }
 
         while (queuedPackets.Count > 0)
         {
-            var (remoteId, packet, method) = queuedPackets.Dequeue();
-            RaiseNetworkReceived(remoteId, packet, method);
+            var (remoteId, data, method) = queuedPackets.Dequeue();
+            NetPacket receivedPacket = new NetPacket(data);
+            RaiseNetworkReceived(remoteId, receivedPacket, method);
         }
     }
 
@@ -62,8 +64,8 @@ public class LocalTransport : NetTransport
 
         if (instances[0] != null && instances[1] != null && instances[0].initialized && instances[1].initialized)
         {
-            instances[1 - instanceIndex].isConnecting = true;
             instances[instanceIndex].isConnecting = true;
+            instances[1 - instanceIndex].isConnecting = true;
         }
         return true;
     }
@@ -99,7 +101,7 @@ public class LocalTransport : NetTransport
             return;
         }
 
-        otherInstance.queuedPackets.Enqueue((remoteId, packet, method));
+        otherInstance.queuedPackets.Enqueue((remoteId, packet.ByteArray, method));
     }
 
     public override void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method)
@@ -114,21 +116,10 @@ public class LocalTransport : NetTransport
 
     public override void Disconnect()
     {
-        if (deviceType == NetDeviceType.Server)
+        isDisconnecting = true;
+        if (instances[1 - instanceIndex] != null)
         {
-            isDisconnecting = true;
-            if (instances[1 - instanceIndex] != null)
-            {
-                instances[1 - instanceIndex].isDisconnecting = true;
-            }
-        }
-        else if (deviceType == NetDeviceType.Client)
-        {
-            if (instances[1 - instanceIndex] != null)
-            {
-                instances[1 - instanceIndex].isDisconnecting = true;
-            }
-            isDisconnecting = true;
+            instances[1 - instanceIndex].isDisconnecting = true;
         }
     }
 
@@ -140,7 +131,6 @@ public class LocalTransport : NetTransport
     public override void Shutdown()
     {
         Disconnect();
-        queuedPackets.Clear();
         initialized = false;
     }
 
