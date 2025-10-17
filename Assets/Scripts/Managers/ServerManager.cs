@@ -92,7 +92,7 @@ public class ServerManager : MonoBehaviour
         {
             if (!ServerData.ConnectedUsers.ContainsKey(userId))
             {
-                await RegisterUser(transport, userId);
+                await RegisterUser(userId);
             }
             else
             {
@@ -266,7 +266,7 @@ public class ServerManager : MonoBehaviour
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-    private async Task<UserData> RegisterUser(NetTransport transport, ulong userId)
+    private async Task<UserData> RegisterUser(ulong userId)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         UserData user = new UserData
