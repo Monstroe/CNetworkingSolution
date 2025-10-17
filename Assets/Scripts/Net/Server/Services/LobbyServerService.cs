@@ -6,7 +6,7 @@ public class LobbyServerService : ServerService
     {
         switch (commandType)
         {
-#if !CNS_LOBBY_SINGLE
+#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
             case CommandType.LOBBY_SETTINGS:
                 {
                     if (!user.IsHost(lobby.LobbyData))
