@@ -84,6 +84,6 @@ public class LobbySettings : INetSerializable<LobbySettings>
 
 public enum LobbyVisibility
 {
-    PUBLIC,
-    PRIVATE
+    Public,
+    Private
 }

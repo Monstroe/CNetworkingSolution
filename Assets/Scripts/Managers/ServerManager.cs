@@ -156,7 +156,7 @@ public class ServerManager : MonoBehaviour
                     if (lobby == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {userId} cannot join.");
-                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_NOT_FOUND), TransportMethod.Reliable);
+                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
@@ -164,7 +164,7 @@ public class ServerManager : MonoBehaviour
                     if (lobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {userId} cannot join.");
-                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LOBBY_FULL), TransportMethod.Reliable);
+                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
@@ -230,7 +230,7 @@ public class ServerManager : MonoBehaviour
 #endif
 
 #if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
-        connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.CREATE ? GenerateLobbyId() : connectionData.LobbyId;
+        connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create ? GenerateLobbyId() : connectionData.LobbyId;
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
         connectionData.LobbyConnectionType = LobbyConnectionType.JOIN;
         connectionData.LobbyId = GameResources.Instance.DefaultLobbyId;
@@ -257,7 +257,7 @@ public class ServerManager : MonoBehaviour
             lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
             connectionData.LobbySettings = lobby.LobbyData.Settings;
         }
-        else if (connectionData.LobbyConnectionType == LobbyConnectionType.CREATE)
+        else if (connectionData.LobbyConnectionType == LobbyConnectionType.Create)
         {
             lobby = await RegisterLobby(connectionData);
         }

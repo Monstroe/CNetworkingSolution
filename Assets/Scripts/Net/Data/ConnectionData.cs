@@ -42,12 +42,12 @@ public class ConnectionData : INetSerializable<ConnectionData>
 
 public enum LobbyConnectionType
 {
-    CREATE,
+    Create,
     JOIN,
 }
 
 public enum LobbyRejectionType
 {
-    LOBBY_FULL,
-    LOBBY_NOT_FOUND,
+    LobbyFull,
+    LobbyNotFound,
 }

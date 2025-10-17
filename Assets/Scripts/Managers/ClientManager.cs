@@ -120,7 +120,7 @@ public class ClientManager : MonoBehaviour
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
         transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionToken), TransportMethod.Reliable);
 #elif CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
-        if (lobbyConnectionType == LobbyConnectionType.CREATE)
+        if (lobbyConnectionType == LobbyConnectionType.Create)
         {
             transport.SendToAll(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
         }
@@ -364,7 +364,7 @@ public class ClientManager : MonoBehaviour
         ConnectionData = new ConnectionData
         {
             LobbyId = lobbyId,
-            LobbyConnectionType = LobbyConnectionType.CREATE,
+            LobbyConnectionType = LobbyConnectionType.Create,
             UserGuid = CurrentUser.GlobalGuid,
             UserSettings = CurrentUser.Settings,
             LobbySettings = lobbySettings

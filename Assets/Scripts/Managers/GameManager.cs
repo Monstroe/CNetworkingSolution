@@ -109,7 +109,7 @@ public class GameManager : MonoBehaviour
 
         // NOTE: These two calls aren't necessary, I'm just showcasing features here
         ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
-        ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MyLobby", LobbyVisibility = LobbyVisibility.PUBLIC, MaxUsers = 8 });
+        ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MyLobby", LobbyVisibility = LobbyVisibility.Public, MaxUsers = 8 });
 
         FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
