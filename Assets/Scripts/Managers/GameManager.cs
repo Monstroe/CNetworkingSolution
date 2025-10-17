@@ -38,10 +38,10 @@ public class GameManager : MonoBehaviour
     {
         SceneManager.sceneLoaded += SceneLoaded;
 
+        ClientManager.Instance.OnLobbyConnectionLost += LobbyConnectionLost;
         // NOTE: These two calls aren't necessary, I'm just showcasing features here
         ClientManager.Instance.OnCurrentUserUpdated += CurrentUserUpdated;
         ClientManager.Instance.OnCurrentLobbyUpdated += CurrentLobbyUpdated;
-        ClientManager.Instance.OnLobbyConnectionLost += LobbyConnectionLost;
     }
 
     private void CurrentUserUpdated(UserSettings userSettings)
