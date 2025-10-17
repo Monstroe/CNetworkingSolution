@@ -49,10 +49,13 @@ To install the package, you can choose one of the following ways:
 
 Networked games have differrent ways of syncing their users. I have tried to cover ALL these ways with Scripting Define Symbols. Please see what they all mean:
 
+#### Sync
+1. `CNS_SYNC_DEDICATED`: The server code will be running in a dedicated/managed environment, such as in the cloud
+2. `CNS_SYNC_HOST`: The server code will be running on one of the clients who will act as the server 'host'; clients will connect to this host either directly or through a [relay server](https://github.com/Monstroe/CNSRelayServer)
+
 #### Server
-1. `CNS_SERVER_SINGLE`: One dedicated server that handles every user/lobby for your game
-2. `CNS_SERVER_MULTIPLE`: Multiple dedicated servers that all handle different users/lobbies for your game (this one will most likely require a [web server](https://github.com/Monstroe/CNSWebServer) lobby brokerage system/load balancer)
-3. `CNS_SYNC_HOST`: Clients run their own lobbies where everyone connects to one user called the 'host' (this one will also likely require a web server)
+1. `CNS_SERVER_SINGLE`: One server that handles every user/lobby for your game
+2. `CNS_SERVER_MULTIPLE`: Multiple servers that all handle different users/lobbies for your game (this one will most likely require a [web server](https://github.com/Monstroe/CNSWebServer) lobby brokerage system/load balancer)
 
 #### Lobby
 1. `CNS_LOBBY_SINGLE`: Every server only handles one lobby (this might be better for MMO style games)
@@ -60,6 +63,8 @@ Networked games have differrent ways of syncing their users. I have tried to cov
 
 #### Transports
 1. `CNS_TRANSPORT_LOCAL`: The local singleplayer transport, most projects will require this one
-2. `CNS_TRANSPORT_LITENETLIB`: [LiteNetLib](https://github.com/RevenantX/LiteNetLib) transport
-3. `CNS_TRANSPORT_STEAMRELAY`: [Steamworks](https://github.com/Facepunch/Facepunch.Steamworks) transport
-4. `CNS_TRANSPORT_CNET`: [CNet](https://github.com/Monstroe/CNet) transport
+2. `CNS_TRANSPORT_CNET`: [CNet](https://github.com/Monstroe/CNet) transport
+    - 2.5 `CNS_TRANSPORT_CNETRELAY`: [CNet](https://github.com/Monstroe/CNet) relay transport, used with the [relay server](https://github.com/Monstroe/CNSRelayServer)
+3. `CNS_TRANSPORT_LITENETLIB`: [LiteNetLib](https://github.com/RevenantX/LiteNetLib) transport
+    - 2.5 `CNS_TRANSPORT_LITENETLIBRELAY`: [LiteNetLib](https://github.com/RevenantX/LiteNetLib) relay transport, used with the [relay server](https://github.com/Monstroe/CNSRelayServer)
+4. `CNS_TRANSPORT_STEAMRELAY`: [Steamworks](https://github.com/Facepunch/Facepunch.Steamworks) transport

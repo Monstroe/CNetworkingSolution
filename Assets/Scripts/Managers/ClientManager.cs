@@ -389,7 +389,7 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbySettings(lobbySettings), TransportMethod.Reliable);
         }
-#if CNS_SYNC_DEDICATED || (CNS_SERVER_SINGLE && CNS_SYNC_HOST)
+#if !(CNS_SERVER_MULTIPLE && CNS_SYNC_HOST)
         else
         {
             UpdateLobby(lobbySettings, invokeEvent);
