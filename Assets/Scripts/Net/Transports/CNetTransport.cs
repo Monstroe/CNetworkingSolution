@@ -255,10 +255,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     protected virtual void ReceivePacket(NetEndPoint remoteEP, CNet.NetPacket packet, TransportProtocol protocol)
     {
-        byte[] data = ArrayPool<byte>.Shared.Rent(packet.Length);
-        Buffer.BlockCopy(packet.ByteSegment.Array, packet.ByteSegment.Offset, data, 0, packet.Length);
-        NetPacket receivedPacket = new NetPacket(data);
-        ArrayPool<byte>.Shared.Return(data);
+        NetPacket receivedPacket = new NetPacket(packet.ByteSegment);
         RaiseNetworkReceived(remoteEP.ID, receivedPacket, ConvertProtocolBack(protocol));
     }
 
