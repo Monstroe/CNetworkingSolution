@@ -1,7 +1,7 @@
 
 using System.Collections.Generic;
 
-public class ServerLobbyGameData
+public class ServerGameData
 {
     public Dictionary<UserData, ServerPlayer> ServerPlayers { get; private set; } = new Dictionary<UserData, ServerPlayer>();
     public Dictionary<ushort, ServerItem> ServerItems { get; private set; } = new Dictionary<ushort, ServerItem>();

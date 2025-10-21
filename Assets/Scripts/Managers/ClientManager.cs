@@ -91,6 +91,7 @@ public class ClientManager : MonoBehaviour
         {
             Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple instances of ClientManager detected. Destroying duplicate instance.");
             Destroy(gameObject);
+            return;
         }
 
         CurrentLobby = GetComponent<ClientLobby>();
@@ -502,7 +503,7 @@ public class ClientManager : MonoBehaviour
         ConnectionData = new ConnectionData
         {
             LobbyId = lobbyId,
-            LobbyConnectionType = LobbyConnectionType.JOIN,
+            LobbyConnectionType = LobbyConnectionType.Join,
             UserGuid = CurrentUser.GlobalGuid,
             UserSettings = CurrentUser.Settings,
             LobbySettings = lobbySettings

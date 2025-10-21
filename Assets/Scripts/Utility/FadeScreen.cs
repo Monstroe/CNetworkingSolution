@@ -19,6 +19,7 @@ public class FadeScreen : MonoBehaviour
         {
             Debug.LogWarning("Multiple instances of FadeScreen detected. Destroying duplicate instance.");
             Destroy(gameObject);
+            return;
         }
 
         Image fadeImage = GetComponentInChildren<Image>();

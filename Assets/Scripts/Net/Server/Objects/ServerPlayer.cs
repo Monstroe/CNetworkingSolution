@@ -21,12 +21,12 @@ public class ServerPlayer : ServerObject
     // Interactable
     public ServerInteractable CurrentInteractable { get; set; }
 
-    public ServerPlayer(ushort id, UserData user) : base(id)
+    public ServerPlayer(ushort id, ServerLobby lobby, UserData user) : base(id, lobby)
     {
         this.User = user;
     }
 
-    public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -51,17 +51,17 @@ public class ServerPlayer : ServerObject
         }
     }
 
-    public override void Tick(ServerLobby lobby)
+    public override void Tick()
     {
         lobby.SendToGame(PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerTransform(Position, Rotation, Forward)), TransportMethod.Unreliable, User);
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoined(UserData joinedUser)
     {
         // Nothing
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoinedGame(UserData joinedUser)
     {
         lobby.SendToUser(joinedUser, PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerTransform(Position, Rotation, Forward)), TransportMethod.Reliable);
         lobby.SendToUser(joinedUser, PacketBuilder.ObjectCommunication(this, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed)), TransportMethod.Reliable);
@@ -71,7 +71,7 @@ public class ServerPlayer : ServerObject
         }
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData leftUser)
+    public override void UserLeft(UserData leftUser)
     {
         // Nothing
     }

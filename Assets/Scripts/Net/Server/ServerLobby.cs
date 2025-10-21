@@ -1,21 +1,24 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ServerLobby : MonoBehaviour
 {
     public LobbyData LobbyData { get; private set; } = new LobbyData();
-    public ServerLobbyGameData GameData { get; private set; } = new ServerLobbyGameData();
+    public ServerGameData GameData { get; private set; } = new ServerGameData();
     public EventManager EventManager { get; private set; }
     public Map Map { get; private set; }
 
-    private List<NetTransport> transports;
     private Dictionary<ServiceType, ServerService> services = new Dictionary<ServiceType, ServerService>();
+    private Scene scene;
+    private PhysicsScene physicsScene;
 
-    public void Init(int lobbyId, List<NetTransport> transports)
+    public void Init(int lobbyId, Scene scene)
     {
+        this.scene = scene;
+        physicsScene = scene.GetPhysicsScene();
         LobbyData.LobbyId = lobbyId;
-        this.transports = transports;
 
         // Init Server Services (ADD NEW SERVICES HERE)
         services.Add(ServiceType.GAME, new GameObject("GameServerService").AddComponent<GameServerService>());
@@ -34,6 +37,7 @@ public class ServerLobby : MonoBehaviour
 
         foreach (var service in services.Values)
         {
+            service.Init(this);
             service.transform.SetParent(transform);
         }
 
@@ -63,27 +67,12 @@ public class ServerLobby : MonoBehaviour
 
     public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
     {
-        var (remoteId, transportIndex) = ServerManager.Instance.GetRemoteIdAndTransportIndex(user);
-        transports[transportIndex].Send(remoteId, packet, method);
+        ServerManager.Instance.SendToUser(user, packet, method);
     }
 
     public void SendToUsers(List<UserData> users, NetPacket packet, TransportMethod method)
     {
-        Dictionary<NetTransport, List<uint>> userDict = new Dictionary<NetTransport, List<uint>>();
-        foreach (var user in users)
-        {
-            var (remoteId, transportIndex) = ServerManager.Instance.GetRemoteIdAndTransportIndex(user);
-            if (!userDict.ContainsKey(transports[transportIndex]))
-            {
-                userDict[transports[transportIndex]] = new List<uint>();
-            }
-            userDict[transports[transportIndex]].Add(remoteId);
-        }
-
-        foreach (var (transport, remoteIds) in userDict)
-        {
-            transport.SendToList(remoteIds, packet, method);
-        }
+        ServerManager.Instance.SendToUsers(users, packet, method);
     }
 
     public void ReceiveData(UserData user, NetPacket packet, TransportMethod? transportMethod)
@@ -93,7 +82,7 @@ public class ServerLobby : MonoBehaviour
 
         if (services.TryGetValue(serviceType, out ServerService service))
         {
-            service.ReceiveData(this, user, packet, serviceType, commandType, transportMethod);
+            service.ReceiveData(user, packet, serviceType, commandType, transportMethod);
         }
         else
         {
@@ -107,7 +96,7 @@ public class ServerLobby : MonoBehaviour
 
         foreach (var service in services.Values)
         {
-            service.UserJoined(this, user);
+            service.UserJoined(user);
         }
     }
 
@@ -117,7 +106,7 @@ public class ServerLobby : MonoBehaviour
         SendToLobby(PacketBuilder.GameUserJoined(user), TransportMethod.Reliable);
         foreach (var service in services.Values)
         {
-            service.UserJoinedGame(this, user);
+            service.UserJoinedGame(user);
         }
     }
 
@@ -125,7 +114,7 @@ public class ServerLobby : MonoBehaviour
     {
         foreach (var service in services.Values)
         {
-            service.UserLeft(this, user);
+            service.UserLeft(user);
         }
     }
 
@@ -133,7 +122,7 @@ public class ServerLobby : MonoBehaviour
     {
         foreach (var service in services.Values)
         {
-            service.Tick(this);
+            service.Tick();
         }
     }
 

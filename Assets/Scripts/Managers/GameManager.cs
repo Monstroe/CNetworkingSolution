@@ -30,6 +30,7 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("Multiple instances of GameManager detected. Destroying duplicate instance.");
             Destroy(gameObject);
+            return;
         }
     }
 

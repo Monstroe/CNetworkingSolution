@@ -7,7 +7,7 @@ public class ServerItem : ServerInteractable
     public Vector3 Position { get; set; }
     public Quaternion Rotation { get; set; }
 
-    public ServerItem(ushort id) : base(id)
+    public ServerItem(ushort id, ServerLobby lobby) : base(id, lobby)
     {
     }
 
@@ -31,22 +31,22 @@ public class ServerItem : ServerInteractable
     }
 #nullable disable
 
-    public override void Tick(ServerLobby lobby)
+    public override void Tick()
     {
         // Nothing
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoined(UserData joinedUser)
     {
         // Nothing
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoinedGame(UserData joinedUser)
     {
         // Nothing
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData leftUser)
+    public override void UserLeft(UserData leftUser)
     {
         // Nothing
     }

@@ -22,6 +22,7 @@ public class GameContent : MonoBehaviour
         {
             Debug.LogWarning("Multiple instances of GameContent detected. Destroying duplicate.");
             Destroy(gameObject);
+            return;
         }
     }
 

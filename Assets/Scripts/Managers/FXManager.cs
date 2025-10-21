@@ -22,6 +22,7 @@ public class FXManager : MonoBehaviour
         {
             Debug.LogWarning("Multiple instances of FXManager detected. Destroying duplicate instance.");
             Destroy(gameObject);
+            return;
         }
     }
 

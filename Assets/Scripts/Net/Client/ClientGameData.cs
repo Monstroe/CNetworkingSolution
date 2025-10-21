@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ClientLobbyGameData
+public class ClientGameData
 {
     public Dictionary<UserData, ClientPlayer> ClientPlayers { get; private set; } = new Dictionary<UserData, ClientPlayer>();
     public Dictionary<ushort, ClientItem> ClientItems { get; private set; } = new Dictionary<ushort, ClientItem>();

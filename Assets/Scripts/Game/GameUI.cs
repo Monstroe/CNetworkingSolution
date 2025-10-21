@@ -18,6 +18,7 @@ public class GameUI : MonoBehaviour
         {
             Debug.LogWarning("Multiple instances of GameUI detected. Destroying duplicate.");
             Destroy(gameObject);
+            return;
         }
     }
 

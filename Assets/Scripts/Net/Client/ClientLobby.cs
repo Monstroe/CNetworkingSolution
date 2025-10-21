@@ -5,7 +5,7 @@ using UnityEngine;
 public class ClientLobby : MonoBehaviour
 {
     public LobbyData LobbyData { get; private set; } = new LobbyData();
-    public ClientLobbyGameData GameData { get; private set; } = new ClientLobbyGameData();
+    public ClientGameData GameData { get; private set; } = new ClientGameData();
 
     private NetTransport transport;
     private Dictionary<ServiceType, ClientService> services = new Dictionary<ServiceType, ClientService>();

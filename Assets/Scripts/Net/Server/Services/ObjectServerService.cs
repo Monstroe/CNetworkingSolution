@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class ObjectServerService : ServerService
 {
-    public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -12,41 +12,41 @@ public class ObjectServerService : ServerService
                     ServiceType objectServiceType = (ServiceType)packet.ReadByte();
                     CommandType objectCommand = (CommandType)packet.ReadByte();
                     lobby.GameData.ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
-                    serverObject?.ReceiveData(lobby, user, packet, objectServiceType, objectCommand, transportMethod);
+                    serverObject?.ReceiveData(user, packet, objectServiceType, objectCommand, transportMethod);
                     break;
                 }
         }
     }
 
-    public override void Tick(ServerLobby lobby)
+    public override void Tick()
     {
         foreach (var serverObject in lobby.GameData.ServerObjects.Values)
         {
-            serverObject.Tick(lobby);
+            serverObject.Tick();
         }
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoined(UserData joinedUser)
     {
         foreach (var serverObject in lobby.GameData.ServerObjects.Values)
         {
-            serverObject.UserJoined(lobby, joinedUser);
+            serverObject.UserJoined(joinedUser);
         }
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoinedGame(UserData joinedUser)
     {
         foreach (var serverObject in lobby.GameData.ServerObjects.Values)
         {
-            serverObject.UserJoinedGame(lobby, joinedUser);
+            serverObject.UserJoinedGame(joinedUser);
         }
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData leftUser)
+    public override void UserLeft(UserData leftUser)
     {
         foreach (var serverObject in lobby.GameData.ServerObjects.Values)
         {
-            serverObject.UserLeft(lobby, leftUser);
+            serverObject.UserLeft(leftUser);
         }
     }
 }

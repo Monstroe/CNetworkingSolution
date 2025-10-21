@@ -8,7 +8,7 @@ public class ItemServerService : ServerService
     private List<ushort> spawnedStartingItemIds = new List<ushort>();
     private List<ushort> destroyedStartingItemIds = new List<ushort>();
 
-    public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -37,17 +37,17 @@ public class ItemServerService : ServerService
         }
     }
 
-    public override void Tick(ServerLobby lobby)
+    public override void Tick()
     {
         // Nothing
     }
 
-    public override void UserJoined(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoined(UserData joinedUser)
     {
         // Nothing
     }
 
-    public override void UserJoinedGame(ServerLobby lobby, UserData joinedUser)
+    public override void UserJoinedGame(UserData joinedUser)
     {
         if (!startingItemsInitialized)
         {
@@ -75,7 +75,7 @@ public class ItemServerService : ServerService
         }
     }
 
-    public override void UserLeft(ServerLobby lobby, UserData leftUser)
+    public override void UserLeft(UserData leftUser)
     {
         // Nothing
     }
@@ -83,7 +83,7 @@ public class ItemServerService : ServerService
     public void SpawnItem(ItemType itemType, Vector3 position, Quaternion rotation, ServerLobby lobby, TransportMethod? transportMethod, bool isStartingItem = false)
     {
         ushort newId = lobby.GenerateObjectId();
-        ServerItem serverItem = new ServerItem(newId);
+        ServerItem serverItem = new ServerItem(newId, lobby);
         serverItem.Type = itemType;
         serverItem.Position = position;
         serverItem.Rotation = rotation;

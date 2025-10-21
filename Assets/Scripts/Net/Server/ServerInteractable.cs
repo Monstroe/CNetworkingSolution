@@ -4,7 +4,7 @@ public abstract class ServerInteractable : ServerObject
 {
     public ServerPlayer InteractingPlayer { get; set; }
 
-    public ServerInteractable(ushort id) : base(id)
+    public ServerInteractable(ushort id, ServerLobby lobby) : base(id, lobby)
     {
     }
 
@@ -27,7 +27,7 @@ public abstract class ServerInteractable : ServerObject
     }
 #nullable disable
 
-    public override void ReceiveData(ServerLobby lobby, UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {

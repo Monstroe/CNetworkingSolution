@@ -21,6 +21,7 @@ public class Chat : MonoBehaviour
         {
             Debug.LogWarning("Multiple instances of Chat detected. Destroying duplicate instance.");
             Destroy(gameObject);
+            return;
         }
     }
 

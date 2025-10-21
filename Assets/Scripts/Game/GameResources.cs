@@ -62,6 +62,7 @@ public class GameResources : MonoBehaviour
         {
             Debug.LogWarning("Multiple instances of GameResources detected. Destroying duplicate.");
             Destroy(gameObject);
+            return;
         }
 
         InitSFXClips();

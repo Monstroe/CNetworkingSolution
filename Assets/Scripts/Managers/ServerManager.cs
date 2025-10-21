@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 
 public class ServerManager : MonoBehaviour
 {
@@ -47,6 +48,7 @@ public class ServerManager : MonoBehaviour
         {
             Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple instances of ServerManager detected. Destroying duplicate instance.");
             Destroy(gameObject);
+            return;
         }
 
         Debug.Log("<color=green><b>CNS</b></color>: Initializing Server...");
@@ -63,6 +65,31 @@ public class ServerManager : MonoBehaviour
 #endif
 
         Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
+    }
+
+    public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
+    {
+        var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(user);
+        transports[transportIndex].Send(remoteId, packet, method);
+    }
+
+    public void SendToUsers(List<UserData> users, NetPacket packet, TransportMethod method)
+    {
+        Dictionary<NetTransport, List<uint>> userDict = new Dictionary<NetTransport, List<uint>>();
+        foreach (var user in users)
+        {
+            var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(user);
+            if (!userDict.ContainsKey(transports[transportIndex]))
+            {
+                userDict[transports[transportIndex]] = new List<uint>();
+            }
+            userDict[transports[transportIndex]].Add(remoteId);
+        }
+
+        foreach (var (transport, remoteIds) in userDict)
+        {
+            transport.SendToList(remoteIds, packet, method);
+        }
     }
 
     public void BroadcastMessage(NetPacket packet, TransportMethod method)
@@ -150,13 +177,12 @@ public class ServerManager : MonoBehaviour
                         KickUser(remoteUser);
                         return;
                     }
-                    var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(remoteUser);
 
                     ServerLobby lobby = await GetLobbyData(connectionData);
                     if (lobby == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {userId} cannot join.");
-                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
+                        SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
@@ -164,12 +190,12 @@ public class ServerManager : MonoBehaviour
                     if (lobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {userId} cannot join.");
-                        transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
+                        SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
 
-                    transports[transportIndex].Send(remoteId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
+                    SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
                     await AddUserToLobby(remoteUser, lobby, connectionData);
                 }
                 else
@@ -232,7 +258,7 @@ public class ServerManager : MonoBehaviour
 #if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
         connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create ? GenerateLobbyId() : connectionData.LobbyId;
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
-        connectionData.LobbyConnectionType = LobbyConnectionType.JOIN;
+        connectionData.LobbyConnectionType = LobbyConnectionType.Join;
         connectionData.LobbyId = GameResources.Instance.DefaultLobbyId;
         connectionData.LobbySettings = GameResources.Instance.DefaultLobbySettings;
 #endif
@@ -252,7 +278,7 @@ public class ServerManager : MonoBehaviour
             lobby = await RegisterLobby(connectionData);
         }
 #elif CNS_LOBBY_MULTIPLE
-        if (connectionData.LobbyConnectionType == LobbyConnectionType.JOIN && ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
+        if (connectionData.LobbyConnectionType == LobbyConnectionType.Join && ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
         {
             lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
             connectionData.LobbySettings = lobby.LobbyData.Settings;
@@ -327,8 +353,10 @@ public class ServerManager : MonoBehaviour
     private async Task<ServerLobby> RegisterLobby(ConnectionData connectionData)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
+        Scene lobbyScene = SceneManager.CreateScene($"Lobby_{connectionData.LobbyId}_Scene");
         ServerLobby lobby = new GameObject($"Lobby_{connectionData.LobbyId}").AddComponent<ServerLobby>();
-        lobby.Init(connectionData.LobbyId, transports);
+        SceneManager.MoveGameObjectToScene(lobby.gameObject, lobbyScene);
+        lobby.Init(connectionData.LobbyId, lobbyScene);
         lobby.LobbyData.Settings = connectionData.LobbySettings;
         lobby.transform.SetParent(gameObject.transform);
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
@@ -478,12 +506,12 @@ public class ServerManager : MonoBehaviour
         transports.Clear();
     }
 
-    public (uint, int) GetRemoteIdAndTransportIndex(UserData user)
+    private (uint, int) GetRemoteIdAndTransportIndex(UserData user)
     {
         return ((uint)user.UserId, (int)(user.UserId >> 32));
     }
 
-    public ulong CreateCombinedId(uint userId, NetTransport transport)
+    private ulong CreateCombinedId(uint userId, NetTransport transport)
     {
         return (ulong)transports.IndexOf(transport) << 32 | userId;
     }

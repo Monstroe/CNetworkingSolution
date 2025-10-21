@@ -43,7 +43,7 @@ public class ConnectionData : INetSerializable<ConnectionData>
 public enum LobbyConnectionType
 {
     Create,
-    JOIN,
+    Join,
 }
 
 public enum LobbyRejectionType

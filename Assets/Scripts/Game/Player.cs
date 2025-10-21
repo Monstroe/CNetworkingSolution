@@ -17,6 +17,7 @@ public class Player : ClientPlayer
         {
             Debug.LogWarning("Multiple instances of Player detected. Destroying duplicate.");
             Destroy(gameObject);
+            return;
         }
     }
 
