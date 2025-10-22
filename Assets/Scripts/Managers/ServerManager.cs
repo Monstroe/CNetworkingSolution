@@ -373,12 +373,11 @@ public class ServerManager : MonoBehaviour
         return lobby;
     }
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     private async Task RemoveLobby(ServerLobby lobby)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         ServerData.ActiveLobbies.Remove(lobby.LobbyData.LobbyId);
         Destroy(lobby.gameObject);
+        await SceneManager.UnloadSceneAsync(lobby.LobbyScene);
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
         if (GameResources.Instance.GameMode != GameMode.Singleplayer)

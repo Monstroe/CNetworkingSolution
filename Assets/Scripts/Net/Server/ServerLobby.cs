@@ -8,15 +8,15 @@ public class ServerLobby : MonoBehaviour
     public LobbyData LobbyData { get; private set; } = new LobbyData();
     public ServerGameData GameData { get; private set; } = new ServerGameData();
     public EventManager EventManager { get; private set; }
+    public Scene LobbyScene { get; private set; }
     public Map Map { get; private set; }
 
     private Dictionary<ServiceType, ServerService> services = new Dictionary<ServiceType, ServerService>();
-    private Scene scene;
     private PhysicsScene physicsScene;
 
     public void Init(int lobbyId, Scene scene)
     {
-        this.scene = scene;
+        LobbyScene = scene;
         physicsScene = scene.GetPhysicsScene();
         LobbyData.LobbyId = lobbyId;
 
@@ -120,6 +120,7 @@ public class ServerLobby : MonoBehaviour
 
     public void Tick()
     {
+        physicsScene.Simulate(Time.fixedDeltaTime);
         foreach (var service in services.Values)
         {
             service.Tick();
