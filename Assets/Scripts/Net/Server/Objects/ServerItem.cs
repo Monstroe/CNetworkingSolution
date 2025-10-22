@@ -7,10 +7,6 @@ public class ServerItem : ServerInteractable
     public Vector3 Position { get; set; }
     public Quaternion Rotation { get; set; }
 
-    public ServerItem(ushort id, ServerLobby lobby) : base(id, lobby)
-    {
-    }
-
 #nullable enable
     public override void Grab(ServerPlayer interactingPlayer, ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod)
     {

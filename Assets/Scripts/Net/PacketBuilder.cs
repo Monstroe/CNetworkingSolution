@@ -16,13 +16,13 @@ public enum CommandType
     /* GAME */
     GAME_USER_JOINED,
     /* PLAYER */
-    PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_TRANSFORM, PLAYER_ANIM, PLAYER_GRAB, PLAYER_DROP, PLAYER_INTERACT,
+    PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_TRANSFORM, PLAYER_ANIM,
     /* FX */
     SFX, VFX,
     /* EVENT */
     EVENT_GROUND_HIT,
     /* ITEM */
-    ITEMS_INIT, ITEM_SPAWN, ITEM_DESTROY,
+    INTERACTABLE_GRAB, INTERACTABLE_DROP, INTERACTABLE_INTERACT, ITEMS_INIT, ITEM_SPAWN, ITEM_DESTROY,
     /* CHAT */
     CHAT_MESSAGE, CHAT_USER_JOINED, CHAT_USER_LEFT,
     /* OBJECT */
@@ -182,7 +182,7 @@ public static class PacketBuilder
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
-        packet.Write((byte)CommandType.PLAYER_GRAB);
+        packet.Write((byte)CommandType.INTERACTABLE_GRAB);
         packet.Write(playerId);
         return packet;
     }
@@ -191,7 +191,7 @@ public static class PacketBuilder
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
-        packet.Write((byte)CommandType.PLAYER_INTERACT);
+        packet.Write((byte)CommandType.INTERACTABLE_INTERACT);
         packet.Write(playerId);
         return packet;
     }
@@ -200,7 +200,7 @@ public static class PacketBuilder
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
-        packet.Write((byte)CommandType.PLAYER_DROP);
+        packet.Write((byte)CommandType.INTERACTABLE_DROP);
         packet.Write(playerId);
         return packet;
     }

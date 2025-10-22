@@ -83,7 +83,7 @@ public class ItemServerService : ServerService
     public void SpawnItem(ItemType itemType, Vector3 position, Quaternion rotation, ServerLobby lobby, TransportMethod? transportMethod, bool isStartingItem = false)
     {
         ushort newId = lobby.GenerateObjectId();
-        ServerItem serverItem = new ServerItem(newId, lobby);
+        ServerItem serverItem = null; //new ServerItem(newId, lobby);
         serverItem.Type = itemType;
         serverItem.Position = position;
         serverItem.Rotation = rotation;

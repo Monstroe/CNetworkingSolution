@@ -4,10 +4,6 @@ public abstract class ServerInteractable : ServerObject
 {
     public ServerPlayer InteractingPlayer { get; set; }
 
-    public ServerInteractable(ushort id, ServerLobby lobby) : base(id, lobby)
-    {
-    }
-
 #nullable enable
     public virtual void Grab(ServerPlayer interactingPlayer, ServerLobby lobby, UserData user, NetPacket? packet, TransportMethod? transportMethod)
     {
@@ -31,7 +27,7 @@ public abstract class ServerInteractable : ServerObject
     {
         switch (commandType)
         {
-            case CommandType.PLAYER_GRAB:
+            case CommandType.INTERACTABLE_GRAB:
                 {
                     lobby.GameData.ServerPlayers.TryGetValue(user, out ServerPlayer player);
                     if (player != null && player.CurrentInteractable == null && InteractingPlayer == null)
@@ -41,7 +37,7 @@ public abstract class ServerInteractable : ServerObject
                     }
                     break;
                 }
-            case CommandType.PLAYER_INTERACT:
+            case CommandType.INTERACTABLE_INTERACT:
                 {
                     lobby.GameData.ServerPlayers.TryGetValue(user, out ServerPlayer player);
                     if (player != null && player.CurrentInteractable == this && InteractingPlayer == player)
@@ -51,7 +47,7 @@ public abstract class ServerInteractable : ServerObject
                     }
                     break;
                 }
-            case CommandType.PLAYER_DROP:
+            case CommandType.INTERACTABLE_DROP:
                 {
                     lobby.GameData.ServerPlayers.TryGetValue(user, out ServerPlayer player);
                     if (player != null && player.CurrentInteractable == this && InteractingPlayer == player)

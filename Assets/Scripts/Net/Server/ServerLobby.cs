@@ -57,12 +57,12 @@ public class ServerLobby : MonoBehaviour
 
     public void SendToLobby(NetPacket packet, TransportMethod method, UserData exception = null)
     {
-        SendToUsers(LobbyData.LobbyUsers.Where(u => u != exception).ToList(), packet, method);
+        ServerManager.Instance.SendToUsers(LobbyData.LobbyUsers.Where(u => u != exception).ToList(), packet, method);
     }
 
     public void SendToGame(NetPacket packet, TransportMethod method, UserData exception = null)
     {
-        SendToUsers(LobbyData.GameUsers.Where(u => u != exception).ToList(), packet, method);
+        ServerManager.Instance.SendToUsers(LobbyData.GameUsers.Where(u => u != exception).ToList(), packet, method);
     }
 
     public void SendToUser(UserData user, NetPacket packet, TransportMethod method)

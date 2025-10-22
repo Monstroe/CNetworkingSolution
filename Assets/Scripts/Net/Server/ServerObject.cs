@@ -1,9 +1,11 @@
-public abstract class ServerObject : INetObject
+using UnityEngine;
+
+public abstract class ServerObject : MonoBehaviour, INetObject
 {
     public ushort Id { get; protected set; }
     protected ServerLobby lobby;
 
-    public ServerObject(ushort id, ServerLobby lobby)
+    public virtual void Init(ushort id, ServerLobby lobby)
     {
         this.Id = id;
         this.lobby = lobby;
