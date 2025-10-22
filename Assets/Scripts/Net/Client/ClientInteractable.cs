@@ -39,7 +39,7 @@ public abstract class ClientInteractable : ClientObject
     {
         switch (commandType)
         {
-            case CommandType.PLAYER_GRAB:
+            case CommandType.INTERACTABLE_GRAB:
                 {
                     byte playerId = packet.ReadByte();
                     UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
@@ -47,7 +47,7 @@ public abstract class ClientInteractable : ClientObject
                     Grab(clientPlayer, packet, transportMethod);
                     break;
                 }
-            case CommandType.PLAYER_INTERACT:
+            case CommandType.INTERACTABLE_INTERACT:
                 {
                     byte playerId = packet.ReadByte();
                     UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
@@ -55,7 +55,7 @@ public abstract class ClientInteractable : ClientObject
                     Interact(clientPlayer, packet, transportMethod);
                     break;
                 }
-            case CommandType.PLAYER_DROP:
+            case CommandType.INTERACTABLE_DROP:
                 {
                     byte playerId = packet.ReadByte();
                     UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);

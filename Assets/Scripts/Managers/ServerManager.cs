@@ -102,9 +102,8 @@ public class ServerManager : MonoBehaviour
 
     public async void KickUser(UserData user)
     {
-        if (ServerData.ConnectedUsers.ContainsKey(user.UserId))
+        if (ServerData.ConnectedUsers.TryGetValue(user.UserId, out UserData userData))
         {
-            UserData userData = ServerData.ConnectedUsers[user.UserId];
             await RemoveUser(userData);
         }
 
@@ -137,9 +136,8 @@ public class ServerManager : MonoBehaviour
         ulong userId = CreateCombinedId(args.RemoteId, transport);
         try
         {
-            if (ServerData.ConnectedUsers.ContainsKey(userId))
+            if (ServerData.ConnectedUsers.TryGetValue(userId, out UserData userData))
             {
-                UserData userData = ServerData.ConnectedUsers[userId];
                 await RemoveUser(userData);
             }
         }
@@ -158,10 +156,9 @@ public class ServerManager : MonoBehaviour
             try
             {
 #endif
-            if (remoteUser.InLobby && ServerData.ActiveLobbies.ContainsKey(remoteUser.LobbyId))
+            if (remoteUser.InLobby && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
             {
-                ServerLobby lobby = ServerData.ActiveLobbies[remoteUser.LobbyId];
-                lobby.ReceiveData(remoteUser, args.Packet, args.TransportMethod);
+                existingLobby.ReceiveData(remoteUser, args.Packet, args.TransportMethod);
             }
             else
             {
@@ -178,8 +175,8 @@ public class ServerManager : MonoBehaviour
                         return;
                     }
 
-                    ServerLobby lobby = await GetLobbyData(connectionData);
-                    if (lobby == null)
+                    ServerLobby newLobby = await GetLobbyData(connectionData);
+                    if (newLobby == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {userId} cannot join.");
                         SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
@@ -187,7 +184,7 @@ public class ServerManager : MonoBehaviour
                         return;
                     }
 
-                    if (lobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
+                    if (newLobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {userId} cannot join.");
                         SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
@@ -196,7 +193,7 @@ public class ServerManager : MonoBehaviour
                     }
 
                     SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
-                    await AddUserToLobby(remoteUser, lobby, connectionData);
+                    await AddUserToLobby(remoteUser, newLobby, connectionData);
                 }
                 else
                 {
@@ -322,9 +319,8 @@ public class ServerManager : MonoBehaviour
     {
         ServerData.ConnectedUsers.Remove(user.UserId);
 
-        if (ServerData.ActiveLobbies.ContainsKey(user.LobbyId))
+        if (ServerData.ActiveLobbies.TryGetValue(user.LobbyId, out ServerLobby lobby))
         {
-            ServerLobby lobby = ServerData.ActiveLobbies[user.LobbyId];
             await RemoveUserFromLobby(user, lobby);
 
             if (lobby.LobbyData.LobbyUsers.Count == 0)

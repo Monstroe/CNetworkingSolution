@@ -21,7 +21,7 @@ public class ServerPlayer : ServerObject
     // Interactable
     public ServerInteractable CurrentInteractable { get; set; }
 
-    public ServerPlayer(ushort id, ServerLobby lobby, UserData user) : base(id, lobby)
+    public ServerPlayer(ushort id, ServerLobby lobby, UserData user)// : base(id, lobby)
     {
         this.User = user;
     }
