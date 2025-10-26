@@ -24,12 +24,17 @@ public class ServerPlayer : ServerObject
     // Interactable
     public ServerInteractable CurrentInteractable { get; set; }
 
-    public override void Init(ushort id, ServerLobby lobby)
+    public void Init(ushort id, ServerLobby lobby, UserData user, Vector3 position, Quaternion rotation, Vector3 forward)
     {
         base.Init(id, lobby);
-        lobby.GameData.ServerPlayers.Add(User, this);
+        User = user;
         RB = GetComponent<Rigidbody>();
         RB.isKinematic = true;
+        this.position = position;
+        this.rotation = rotation;
+        this.forward = forward;
+        lobby.GameData.ServerPlayers.Add(User, this);
+        SendToGameClientObject(PacketBuilder.PlayerTransform(this.position, this.rotation, this.forward), TransportMethod.Reliable, User);
     }
 
     public override void Remove()
