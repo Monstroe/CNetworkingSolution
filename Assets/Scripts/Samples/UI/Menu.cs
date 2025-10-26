@@ -77,11 +77,18 @@ public class Menu : MonoBehaviour
 
         FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
-            SceneManager.UnloadSceneAsync(NetResources.Instance.MenuSceneName);
-            SceneManager.LoadSceneAsync(NetResources.Instance.GameSceneName, LoadSceneMode.Additive).completed += (asyncOperation) =>
+            if (ServerManager.Instance != null)
             {
-                SceneManager.SetActiveScene(SceneManager.GetSceneByName(NetResources.Instance.GameSceneName));
-            };
+                SceneManager.UnloadSceneAsync(NetResources.Instance.MenuSceneName);
+                SceneManager.LoadSceneAsync(NetResources.Instance.GameSceneName, LoadSceneMode.Additive).completed += (asyncOperation) =>
+                {
+                    SceneManager.SetActiveScene(SceneManager.GetSceneByName(NetResources.Instance.GameSceneName));
+                };
+            }
+            else
+            {
+                SceneManager.LoadSceneAsync(NetResources.Instance.GameSceneName);
+            }
         });
     }
 
