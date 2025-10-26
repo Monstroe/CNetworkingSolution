@@ -34,11 +34,7 @@ public class PlayerServerService : ServerService
 
         ServerPlayer player = (ServerPlayer)InstantiateOnServer(NetResources.Instance.ServerPlayerPrefab.gameObject, position, rotation, false);
         player.Owner = player; // For server-side movement authority, this should be null
-        player.User = joinedUser;
-        player.Init(joinedUser.PlayerId, lobby);
-        player.transform.position = position;
-        player.transform.rotation = rotation;
-        player.transform.forward = forward;
+        player.Init(joinedUser.PlayerId, lobby, joinedUser, position, rotation, forward);
 
         lobby.SendToGame(PacketBuilder.PlayerSpawn(joinedUser), TransportMethod.Reliable);
     }
