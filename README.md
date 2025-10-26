@@ -67,5 +67,5 @@ Networked games have differrent ways of syncing their users. I have tried to cov
 2. `CNS_TRANSPORT_CNET`: [CNet](https://github.com/Monstroe/CNet) transport
     - 2.5 `CNS_TRANSPORT_CNETRELAY`: [CNet](https://github.com/Monstroe/CNet) relay transport, used with the [relay server](https://github.com/Monstroe/CNSRelayServer)
 3. `CNS_TRANSPORT_LITENETLIB`: [LiteNetLib](https://github.com/RevenantX/LiteNetLib) transport
-    - 2.5 `CNS_TRANSPORT_LITENETLIBRELAY`: [LiteNetLib](https://github.com/RevenantX/LiteNetLib) relay transport, used with the [relay server](https://github.com/Monstroe/CNSRelayServer)
+    - 3.5 `CNS_TRANSPORT_LITENETLIBRELAY`: [LiteNetLib](https://github.com/RevenantX/LiteNetLib) relay transport, used with the [relay server](https://github.com/Monstroe/CNSRelayServer)
 4. `CNS_TRANSPORT_STEAMRELAY`: [Steamworks](https://github.com/Facepunch/Facepunch.Steamworks) transport
