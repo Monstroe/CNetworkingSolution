@@ -10,32 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
-  m_Name: Default Local Group
+  m_Name: CNS_ServerObjectsGroup
   m_EditorClassIdentifier: 
-  m_GroupName: Default Local Group
-  m_GUID: 6d56d296fc6dfe4418fd17ef315c3e13
+  m_GroupName: CNS_ServerObjectsGroup
+  m_GUID: 0bd7cdf125f961246bf8786a85d06fc0
   m_SerializeEntries:
-  - m_GUID: 8a59da5f9cc413b42ac51b7f468f4597
-    m_Address: Assets/GameAssets/SFX/Footstep.wav
+  - m_GUID: 3f2465832a0c0d14eb630d03c6b46522
+    m_Address: Assets/GameAssets/Server/Items/ServerBasicItem.prefab
     m_ReadOnly: 0
     m_SerializedLabels:
-    - CNS_SFX
+    - CNS_ServerPrefabs
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: a2c13a3de89d9f84393a9485913493b0
-    m_Address: Assets/GameAssets/SFX/Collide.wav
+  - m_GUID: b3924dfb319284b42a34a1548e9ff65f
+    m_Address: Assets/GameAssets/Server/ServerPlayer.prefab
     m_ReadOnly: 0
     m_SerializedLabels:
-    - CNS_SFX
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: a8dc795f6a1ec6f46a85c1f53576b74d
-    m_Address: Assets/Prefabs/Map.prefab
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - CNS_Map
+    - CNS_ServerPlayer
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 5bae0df7c2591ef4891617a16b261582, type: 2}
   m_SchemaSet:
     m_Schemas:
-    - {fileID: 11400000, guid: 60992f6fe552ab94da4ecd0d054b46a0, type: 2}
-    - {fileID: 11400000, guid: 1dc9e3645ac741045afe99dc2eb6c4d9, type: 2}
+    - {fileID: 11400000, guid: aeedf01e7fd679f4bb91bc7d74c6c3f5, type: 2}
+    - {fileID: 11400000, guid: a94a06bfde6c6004c85a66406aaabf00, type: 2}

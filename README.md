@@ -19,7 +19,8 @@ Here is a list of some of the features it contains:
   - User settings
   - Player positions, rotations, and animations
   - Player interaction system with `ServerInteractable` and `ClientInteractable`
-  - Spawning and destroying system with players and items
+  - Spawning and destroying system with players and objects
+  - Addressables integration
   - SFX and VFX
   - Event system
   - Chat system

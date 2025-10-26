@@ -15,7 +15,7 @@ MonoBehaviour:
   m_DefaultGroup: 6d56d296fc6dfe4418fd17ef315c3e13
   m_currentHash:
     serializedVersion: 2
-    Hash: 00000000000000000000000000000000
+    Hash: ac86d41ea423a5ef75360d75c5011af3
   m_OptimizeCatalogSize: 0
   m_BuildRemoteCatalog: 0
   m_CatalogRequestsTimeout: 0
@@ -59,8 +59,9 @@ MonoBehaviour:
   m_BuildAddressablesWithPlayerBuild: 0
   m_overridePlayerVersion: '[UnityEditor.PlayerSettings.bundleVersion]'
   m_GroupAssets:
-  - {fileID: 11400000, guid: 32243d6befc134a48b9e5574227cfa37, type: 2}
+  - {fileID: 11400000, guid: b76bab469b4e8ac48ae3f03f0c377c15, type: 2}
   - {fileID: 11400000, guid: 1d8c06d8c6b95c24fa53b07e93df3880, type: 2}
+  - {fileID: 11400000, guid: 62cf5884cf86f1445bde09d0e378159a, type: 2}
   m_BuildSettings:
     m_LogResourceManagerExceptions: 1
     m_BundleBuildPath: Temp/com.unity.addressables/AssetBundles
@@ -99,7 +100,15 @@ MonoBehaviour:
     m_ProfileVersion: 1
   m_LabelTable:
     m_LabelNames:
-    - default
+    - CNS_ClientPlayer
+    - CNS_ServerPlayer
+    - CNS_Map
+    - CNS_ServerPrefabs
+    - CNS_ClientPrefabs
+    - CNS_VFX
+    - CNS_SFX
+    - CNS_SFX
+    - CNS_ClientPrefabs
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: a7d2781f78a3b4940872d3da90ed82ac, type: 2}
