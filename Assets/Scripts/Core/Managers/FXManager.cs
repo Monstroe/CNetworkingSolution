@@ -38,7 +38,7 @@ public class FXManager : MonoBehaviour
         }
         else
         {
-            Addressables.LoadAssetAsync<AudioClip>(sfxDirectory + name).Completed += (handle) =>
+            Addressables.LoadAssetAsync<AudioClip>(name).Completed += (handle) =>
             {
                 AudioSource sfx = Instantiate(sfxPrefab).GetComponent<AudioSource>();
                 AudioClip clip = handle.Result;
