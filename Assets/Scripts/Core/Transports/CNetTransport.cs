@@ -82,9 +82,11 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         initialized = true;
         netSystem.RegisterInterface((IEventNetClient)this);
 
-#if CNS_SERVER_MULTIPLE
-        address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
-#endif
+        if (ClientManager.Instance.CurrentServerSettings != null)
+        {
+            address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
+            port = ClientManager.Instance.CurrentServerSettings.ServerPort;
+        }
 
         netSystem.Connect(address, port, connectionKey);
         return true;
@@ -224,6 +226,33 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
+    private TransportCode ConvertCode(DisconnectionCode disconnectionCode)
+    {
+        switch (disconnectionCode)
+        {
+            case DisconnectionCode.ConnectionClosed:
+                return TransportCode.ConnectionClosed;
+            case DisconnectionCode.ConnectionClosedForcefully:
+                return TransportCode.ConnectionClosed;
+            case DisconnectionCode.ConnectionClosedWithMessage:
+                return TransportCode.ConnectionClosed;
+            case DisconnectionCode.ConnectionDenied:
+                return TransportCode.ConnectionRejected;
+            case DisconnectionCode.ConnectionLost:
+                return TransportCode.ConnectionLost;
+            case DisconnectionCode.ConnectionTimedOut:
+                return TransportCode.ConnectionLost;
+            case DisconnectionCode.InvalidPacket:
+                return TransportCode.InvalidData;
+            case DisconnectionCode.PacketOverMaxSize:
+                return TransportCode.InvalidData;
+            case DisconnectionCode.SocketError:
+                return TransportCode.SocketError;
+            default:
+                return TransportCode.UnknownError;
+        }
+    }
+
     protected virtual void ConnectRemoteEP(NetEndPoint remoteEP)
     {
         var remoteEPId = remoteEP.ID;
@@ -245,11 +274,12 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
         if (connectedEPs.Remove(remoteEPId))
         {
-            RaiseNetworkDisconnected(remoteEPId);
+            RaiseNetworkDisconnected(remoteEPId, ConvertCode(disconnect.DisconnectCode));
         }
         else
         {
             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unknown endpoint disconnected: {remoteEPId}");
+            RaiseNetworkError(ConvertCode(disconnect.DisconnectCode), disconnect.SocketError);
         }
     }
 
@@ -277,6 +307,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
     void IEventNetClient.OnNetworkError(NetEndPoint remoteEP, SocketError error)
     {
         Debug.LogError($"<color=red><b>CNS</b></color>: Network error from {remoteEP?.TCPEndPoint.ToString() ?? "unknown endpoint"}: {error}");
+        RaiseNetworkError(TransportCode.SocketError, error);
     }
 
     void IEventNetListener.OnClientConnected(NetEndPoint remoteEP)

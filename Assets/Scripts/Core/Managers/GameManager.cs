@@ -1,5 +1,4 @@
 using System.Collections;
-using Steamworks.Data;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -55,7 +54,7 @@ public class GameManager : MonoBehaviour
         Debug.Log($"Successfully updated lobby settings: MaxUsers - {lobbySettings.MaxUsers}, LobbyVisibility - {lobbySettings.LobbyVisibility}, LobbyName - {lobbySettings.LobbyName}");
     }
 
-    private void LobbyConnectionLost()
+    private void LobbyConnectionLost(TransportCode code)
     {
         Debug.LogWarning("Lost connection to lobby. Returning to main menu...");
 

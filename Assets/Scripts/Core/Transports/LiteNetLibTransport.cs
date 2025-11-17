@@ -78,9 +78,11 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
             return false;
         }
 
-#if CNS_SERVER_MULTIPLE
-        address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
-#endif
+        if (ClientManager.Instance.CurrentServerSettings != null)
+        {
+            address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
+            port = ClientManager.Instance.CurrentServerSettings.ServerPort;
+        }
 
         NetPeer peer = netManager.Connect(address, port, connectionKey);
 
@@ -249,6 +251,35 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
     }
 
+    private TransportCode ConvertCode(DisconnectReason disconnectReason)
+    {
+        switch (disconnectReason)
+        {
+            case DisconnectReason.ConnectionFailed:
+                return TransportCode.ConnectionFailed;
+            case DisconnectReason.Timeout:
+                return TransportCode.ConnectionLost;
+            case DisconnectReason.HostUnreachable:
+                return TransportCode.ConnectionFailed;
+            case DisconnectReason.NetworkUnreachable:
+                return TransportCode.ConnectionFailed;
+            case DisconnectReason.RemoteConnectionClose:
+                return TransportCode.ConnectionClosed;
+            //case DisconnectReason.DisconnectPeerCalled:
+            case DisconnectReason.ConnectionRejected:
+                return TransportCode.ConnectionRejected;
+            case DisconnectReason.InvalidProtocol:
+                return TransportCode.InvalidData;
+            //case DisconnectReason.UnknownHost:
+            //case DisconnectReason.Reconnect:
+            //case DisconnectReason.PeerToPeerConnection:
+            case DisconnectReason.PeerNotFound:
+                return TransportCode.ConnectionFailed;
+            default:
+                return TransportCode.UnknownError;
+        }
+    }
+
     void IDeliveryEventListener.OnMessageDelivered(NetPeer peer, object userData)
     {
         peerMessageBuffers.Remove((uint)peer.Id);
@@ -279,11 +310,12 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         var peerId = (uint)peer.Id;
         if (connectedPeers.Remove(peerId))
         {
-            RaiseNetworkDisconnected(peerId);
+            RaiseNetworkDisconnected(peerId, ConvertCode(disconnectInfo.Reason));
         }
         else
         {
             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to disconnect a peer that is not connected: {peerId}");
+            RaiseNetworkError(ConvertCode(disconnectInfo.Reason), disconnectInfo.SocketErrorCode);
         }
     }
 
@@ -310,6 +342,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     void INetEventListener.OnNetworkError(IPEndPoint endPoint, SocketError socketError)
     {
         Debug.LogError($"<color=red><b>CNS</b></color>: Network error at {endPoint}: {socketError}");
+        RaiseNetworkError(TransportCode.SocketError, socketError);
     }
 
     void INetEventListener.OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)

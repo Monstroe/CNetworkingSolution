@@ -36,7 +36,7 @@ public class LocalTransport : NetTransport
             isDisconnecting = false;
             queuedPackets.Clear();
             instances[instanceIndex] = null;
-            RaiseNetworkDisconnected(ServerClientId);
+            RaiseNetworkDisconnected(ServerClientId, TransportCode.ConnectionClosed);
         }
 
         while (queuedPackets.Count > 0)

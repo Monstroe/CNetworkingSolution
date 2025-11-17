@@ -75,35 +75,9 @@ public class NetResources : MonoBehaviour
 
         InitTransports();
 
-        IList<IResourceLocation> mapLocations = await LoadLocations("CNS_Map");
-        var mapHandle = await Addressables.LoadAssetAsync<GameObject>(mapLocations[0]).Task;
-        mapHandle.TryGetComponent(out Map map);
-        if (map == null)
-        {
-            Debug.LogError("NetResources could not find Map component on loaded map prefab.");
-            return;
-        }
-        MapPrefab = map;
-
-        IList<IResourceLocation> clientPlayerLocations = await LoadLocations("CNS_ClientPlayer");
-        var clientPlayerHandle = await Addressables.LoadAssetAsync<GameObject>(clientPlayerLocations[0]).Task;
-        clientPlayerHandle.TryGetComponent(out ClientPlayer clientPlayer);
-        if (clientPlayer == null)
-        {
-            Debug.LogError("NetResources could not find ClientPlayer component on loaded client player prefab.");
-            return;
-        }
-        ClientPlayerPrefab = clientPlayer;
-
-        IList<IResourceLocation> serverPlayerLocations = await LoadLocations("CNS_ServerPlayer");
-        var serverPlayerHandle = await Addressables.LoadAssetAsync<GameObject>(serverPlayerLocations[0]).Task;
-        serverPlayerHandle.TryGetComponent(out ServerPlayer serverPlayer);
-        if (serverPlayer == null)
-        {
-            Debug.LogError("NetResources could not find ServerPlayer component on loaded server player prefab.");
-            return;
-        }
-        ServerPlayerPrefab = serverPlayer;
+        await InitMap();
+        await InitClientPlayer();
+        await InitServerPlayer();
 
         await InitAssetRegistry("CNS_ClientPrefabs", clientPrefabsPathToKeyMap, clientPrefabsKeyToPathMap);
         await InitAssetRegistry("CNS_ServerPrefabs", serverPrefabsPathToKeyMap, serverPrefabsKeyToPathMap);
@@ -122,6 +96,60 @@ public class NetResources : MonoBehaviour
             clientToServerPrefabKeyMap.Add(key, clientObject.ServerPrefab.PrefabKey);
             serverToClientPrefabKeyMap.Add(clientObject.ServerPrefab.PrefabKey, key);
         }
+    }
+
+    private async Task InitMap()
+    {
+        IList<IResourceLocation> mapLocations = await LoadLocations("CNS_Map");
+        if (mapLocations.Count == 0)
+        {
+            Debug.LogWarning("NetResources could not find any map prefabs with label 'CNS_Map'");
+            return;
+        }
+        var mapHandle = await Addressables.LoadAssetAsync<GameObject>(mapLocations[0]).Task;
+        mapHandle.TryGetComponent(out Map map);
+        if (map == null)
+        {
+            Debug.LogError("NetResources could not find Map component on loaded map prefab.");
+            return;
+        }
+        MapPrefab = map;
+    }
+
+    private async Task InitClientPlayer()
+    {
+        IList<IResourceLocation> clientPlayerLocations = await LoadLocations("CNS_ClientPlayer");
+        if (clientPlayerLocations.Count == 0)
+        {
+            Debug.LogWarning("NetResources could not find any client player prefabs with label 'CNS_ClientPlayer'");
+            return;
+        }
+        var clientPlayerHandle = await Addressables.LoadAssetAsync<GameObject>(clientPlayerLocations[0]).Task;
+        clientPlayerHandle.TryGetComponent(out ClientPlayer clientPlayer);
+        if (clientPlayer == null)
+        {
+            Debug.LogError("NetResources could not find ClientPlayer component on loaded client player prefab.");
+            return;
+        }
+        ClientPlayerPrefab = clientPlayer;
+    }
+
+    private async Task InitServerPlayer()
+    {
+        IList<IResourceLocation> serverPlayerLocations = await LoadLocations("CNS_ServerPlayer");
+        if (serverPlayerLocations.Count == 0)
+        {
+            Debug.LogWarning("NetResources could not find any server player prefabs with label 'CNS_ServerPlayer'");
+            return;
+        }
+        var serverPlayerHandle = await Addressables.LoadAssetAsync<GameObject>(serverPlayerLocations[0]).Task;
+        serverPlayerHandle.TryGetComponent(out ServerPlayer serverPlayer);
+        if (serverPlayer == null)
+        {
+            Debug.LogError("NetResources could not find ServerPlayer component on loaded server player prefab.");
+            return;
+        }
+        ServerPlayerPrefab = serverPlayer;
     }
 
     public Tuple<int, string> GetServerPrefabFromClientKey(int clientKey)

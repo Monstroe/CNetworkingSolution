@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Net.Sockets;
 using UnityEngine;
 
 public abstract class NetTransport : MonoBehaviour
@@ -20,6 +21,12 @@ public abstract class NetTransport : MonoBehaviour
     /// Event triggered when a packet is received. This is called when the client receives a packet from the server or when the server receives a packet from a client.
     /// </summary>
     public event NetworkReceivedHandler OnNetworkReceived;
+
+    public delegate void NetworkErrorHandler(NetTransport transport, ErrorArgs args);
+    /// <summary>
+    /// Event triggered when a network error occurs.
+    /// </summary>
+    public event NetworkErrorHandler OnNetworkError;
 
     public NetDeviceType DeviceType => deviceType;
     public virtual uint ServerClientId { get; }
@@ -62,9 +69,9 @@ public abstract class NetTransport : MonoBehaviour
         OnNetworkConnected?.Invoke(this, args);
     }
 
-    public void RaiseNetworkDisconnected(uint remoteId)
+    public void RaiseNetworkDisconnected(uint remoteId, TransportCode code)
     {
-        var args = new DisconnectedArgs { RemoteId = remoteId };
+        var args = new DisconnectedArgs { RemoteId = remoteId, Code = code };
         OnNetworkDisconnected?.Invoke(this, args);
     }
 
@@ -72,6 +79,12 @@ public abstract class NetTransport : MonoBehaviour
     {
         var args = new ReceivedArgs { RemoteId = remoteId, Packet = receivedPacket, TransportMethod = method };
         OnNetworkReceived?.Invoke(this, args);
+    }
+
+    public void RaiseNetworkError(TransportCode errorCode, SocketError? socketError = null)
+    {
+        var args = new ErrorArgs { Code = errorCode, SocketError = socketError };
+        OnNetworkError?.Invoke(this, args);
     }
 }
 
@@ -83,6 +96,7 @@ public class ConnectedArgs
 public class DisconnectedArgs
 {
     public uint RemoteId { get; set; }
+    public TransportCode Code { get; set; }
 }
 
 public class ReceivedArgs
@@ -90,6 +104,12 @@ public class ReceivedArgs
     public uint RemoteId { get; set; }
     public NetPacket Packet { get; set; }
     public TransportMethod? TransportMethod { get; set; }
+}
+
+public class ErrorArgs
+{
+    public TransportCode Code { get; set; }
+    public SocketError? SocketError { get; set; }
 }
 
 public enum NetDeviceType
@@ -104,6 +124,18 @@ public enum TransportMethod
     ReliableUnordered,
     UnreliableSequenced,
     Unreliable,
+}
+
+public enum TransportCode
+{
+    ConnectionClosed,
+    ConnectionFailed,
+    ConnectionRejected,
+    ConnectionLost,
+    InvalidData,
+    SocketError,
+    UnknownError,
+    // Additional reasons can be added here
 }
 
 public enum TransportType

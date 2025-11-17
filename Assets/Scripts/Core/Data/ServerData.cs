@@ -22,4 +22,5 @@ public class ServerSettings
     public Guid ServerId { get; set; }
     public string ServerKey { get; set; }
     public string ServerAddress { get; set; }
+    public ushort ServerPort { get; set; }
 }
