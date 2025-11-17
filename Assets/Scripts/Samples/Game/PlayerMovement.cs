@@ -127,7 +127,7 @@ public class PlayerMovement : MonoBehaviour
             if (!justGrounded)
             {
                 justGrounded = true;
-                ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.EventGroundHit(ClientManager.Instance.CurrentUser.PlayerId, new GroundHitArgs() { position = transform.position, rotation = transform.rotation }), TransportMethod.Reliable);
+                ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.EventGroundHit(ClientManager.Instance.CurrentUser.PlayerId, new GroundHitArgs() { position = transform.position, rotation = transform.rotation }), TransportMethod.Reliable);
             }
         }
         else
@@ -157,7 +157,7 @@ public class PlayerMovement : MonoBehaviour
         footstepTimer += Time.deltaTime;
 
         // Networking
-        ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerTransform(transform.position, transform.rotation, cameraTransform.forward)), TransportMethod.Unreliable);
+        ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerTransform(transform.position, transform.rotation, cameraTransform.forward)), TransportMethod.Unreliable);
     }
 
     void Rotate()
@@ -185,7 +185,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (previousGroundedState != Player.Instance.IsGrounded || previousCrouchingState != Player.Instance.IsCrouching || previousWalkingState != Player.Instance.IsWalking || previousSprintingState != Player.Instance.IsSprinting)
         {
-            ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerAnim(Player.Instance.IsWalking, Player.Instance.IsSprinting, Player.Instance.IsCrouching, Player.Instance.IsGrounded, Player.Instance.Jumped, Player.Instance.Grabbed)), TransportMethod.Reliable);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(Player.Instance, PacketBuilder.PlayerAnim(Player.Instance.IsWalking, Player.Instance.IsSprinting, Player.Instance.IsCrouching, Player.Instance.IsGrounded, Player.Instance.Jumped, Player.Instance.Grabbed)), TransportMethod.Reliable);
         }
     }
 

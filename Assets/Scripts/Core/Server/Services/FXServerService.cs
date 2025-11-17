@@ -7,25 +7,25 @@ public class FXServerService : ServerService
     {
         switch (commandType)
         {
-            case CommandType.SFX:
+            case CommandType.SFX_REQUEST:
                 {
                     int sfxKey = packet.ReadInt();
                     float volume = packet.ReadFloat();
                     Vector3? pos = packet.UnreadLength > 0 ? packet.ReadVector3() : null;
                     if (NetResources.Instance.GetSFXPathFromKey(sfxKey) != null)
                     {
-                        lobby.SendToGame(PacketBuilder.PlaySFX(sfxKey, volume, pos), transportMethod ?? TransportMethod.Reliable, user);
+                        lobby.SendToGame(PacketBuilder.PlaySFX(sfxKey, volume, pos), transportMethod ?? TransportMethod.Reliable);
                     }
                     break;
                 }
-            case CommandType.VFX:
+            case CommandType.VFX_REQUEST:
                 {
                     int vfxId = packet.ReadInt();
                     Vector3 pos = packet.ReadVector3();
                     float scale = packet.ReadFloat();
                     if (NetResources.Instance.GetVFXPathFromKey(vfxId) != null)
                     {
-                        lobby.SendToGame(PacketBuilder.PlayVFX(vfxId, pos, scale), transportMethod ?? TransportMethod.Reliable, user);
+                        lobby.SendToGame(PacketBuilder.PlayVFX(vfxId, pos, scale), transportMethod ?? TransportMethod.Reliable);
                     }
                     break;
                 }
