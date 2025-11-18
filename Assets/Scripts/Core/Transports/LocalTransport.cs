@@ -1,5 +1,6 @@
 #if CNS_TRANSPORT_LOCAL
 using System.Collections.Generic;
+using System.Net;
 using UnityEngine;
 
 public class LocalTransport : NetTransport
@@ -112,6 +113,21 @@ public class LocalTransport : NetTransport
     public override void SendToAll(NetPacket packet, TransportMethod method)
     {
         Send(ServerClientId, packet, method);
+    }
+
+    public override void SendUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    {
+        Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendUnconnected is not supported by LocalTransport.");
+    }
+
+    public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, NetPacket packet)
+    {
+        Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendToListUnconnected is not supported by LocalTransport.");
+    }
+
+    public override void BroadcastUnconnected(NetPacket packet)
+    {
+        Debug.LogWarning("<color=yellow><b>CNS</b></color>: BroadcastUnconnected is not supported by LocalTransport.");
     }
 
     public override void Disconnect()

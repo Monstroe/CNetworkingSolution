@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 
 public class GameClientService : ClientService
@@ -18,5 +19,10 @@ public class GameClientService : ClientService
                     break;
                 }
         }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
     }
 }

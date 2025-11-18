@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 
 public class FXClientService : ClientService
@@ -36,5 +37,10 @@ public class FXClientService : ClientService
                     break;
                 }
         }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
     }
 }

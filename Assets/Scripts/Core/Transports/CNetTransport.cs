@@ -1,7 +1,7 @@
 #if CNS_TRANSPORT_CNET
 using System;
-using System.Buffers;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using CNet;
 using UnityEngine;
@@ -149,6 +149,21 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         {
             remoteEP.Send(packet, protocol);
         }
+    }
+
+    public override void SendUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    {
+        Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendUnconnected is not supported by CNetTransport.");
+    }
+
+    public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, NetPacket packet)
+    {
+        Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendToListUnconnected is not supported by CNetTransport.");
+    }
+
+    public override void BroadcastUnconnected(NetPacket packet)
+    {
+        Debug.LogWarning("<color=yellow><b>CNS</b></color>: BroadcastUnconnected is not supported by CNetTransport.");
     }
 
     public override void Disconnect()

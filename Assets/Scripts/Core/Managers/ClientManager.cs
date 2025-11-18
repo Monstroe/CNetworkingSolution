@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Newtonsoft.Json;
@@ -86,6 +88,7 @@ public class ClientManager : MonoBehaviour
 #endif
 
     private NetTransport transport;
+    private Dictionary<ServiceType, ClientService> unconnectedServices = new Dictionary<ServiceType, ClientService>();
 
     void Awake()
     {
@@ -194,6 +197,22 @@ public class ClientManager : MonoBehaviour
             Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from server: {ex.Message}");
         }
 #endif
+    }
+
+    private void HandleNetworkReceivedUnconnected(NetTransport transport, ReceivedUnconnectedArgs args)
+    {
+        NetPacket packet = args.Packet;
+        ServiceType serviceType = (ServiceType)packet.ReadByte();
+        CommandType commandType = (CommandType)packet.ReadByte();
+
+        if (unconnectedServices.TryGetValue(serviceType, out ClientService service))
+        {
+            service.ReceiveDataUnconnected(args.IPEndPoint, packet, serviceType, commandType);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for type {serviceType}. Command {commandType} will not be processed.");
+        }
     }
 
     private void HandleNetworkError(NetTransport transport, ErrorArgs args)
@@ -609,6 +628,7 @@ public class ClientManager : MonoBehaviour
         transport.OnNetworkConnected += HandleNetworkConnected;
         transport.OnNetworkDisconnected += HandleNetworkDisconnected;
         transport.OnNetworkReceived += HandleNetworkReceived;
+        transport.OnNetworkReceivedUnconnected += HandleNetworkReceivedUnconnected;
         transport.OnNetworkError += HandleNetworkError;
     }
 
@@ -617,6 +637,7 @@ public class ClientManager : MonoBehaviour
         transport.OnNetworkConnected -= HandleNetworkConnected;
         transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
         transport.OnNetworkReceived -= HandleNetworkReceived;
+        transport.OnNetworkReceivedUnconnected -= HandleNetworkReceivedUnconnected;
         transport.OnNetworkError -= HandleNetworkError;
     }
 
@@ -626,5 +647,44 @@ public class ClientManager : MonoBehaviour
         transport.Shutdown();
         Destroy(transport.gameObject);
         transport = null;
+    }
+
+    public void RegisterUnconnectedService(ServiceType serviceType, ClientService service)
+    {
+        if (!unconnectedServices.ContainsKey(serviceType))
+        {
+            unconnectedServices[serviceType] = service;
+            Debug.Log($"<color=green><b>CNS</b></color>: Registered unconnected ClientService {serviceType}.");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {serviceType} is already registered.");
+        }
+    }
+
+    public void UnregisterUnconnectedService(ServiceType serviceType)
+    {
+        if (unconnectedServices.ContainsKey(serviceType))
+        {
+            unconnectedServices.Remove(serviceType);
+            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered unconnected ClientService {serviceType}.");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {serviceType} is not registered.");
+        }
+    }
+
+    public ClientService GetUnconnectedService(ServiceType serviceType)
+    {
+        if (unconnectedServices.TryGetValue(serviceType, out ClientService service))
+        {
+            return service;
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {serviceType} not found.");
+            return null;
+        }
     }
 }

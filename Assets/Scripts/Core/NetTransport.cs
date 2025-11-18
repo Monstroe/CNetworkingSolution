@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 
@@ -21,6 +22,12 @@ public abstract class NetTransport : MonoBehaviour
     /// Event triggered when a packet is received. This is called when the client receives a packet from the server or when the server receives a packet from a client.
     /// </summary>
     public event NetworkReceivedHandler OnNetworkReceived;
+
+    public delegate void HandleNetworkReceivedUnconnectedHandler(NetTransport transport, ReceivedUnconnectedArgs args);
+    /// <summary>
+    /// Event triggered when an unconnected packet is received. This is called when a packet is received from an unconnected source.
+    /// </summary>
+    public event HandleNetworkReceivedUnconnectedHandler OnNetworkReceivedUnconnected;
 
     public delegate void NetworkErrorHandler(NetTransport transport, ErrorArgs args);
     /// <summary>
@@ -59,6 +66,9 @@ public abstract class NetTransport : MonoBehaviour
     public abstract void Send(uint remoteId, NetPacket packet, TransportMethod method);
     public abstract void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method);
     public abstract void SendToAll(NetPacket packet, TransportMethod method);
+    public abstract void SendUnconnected(IPEndPoint ipEndPoint, NetPacket packet);
+    public abstract void SendToListUnconnected(List<IPEndPoint> ipEndPoints, NetPacket packet);
+    public abstract void BroadcastUnconnected(NetPacket packet);
     public abstract void Disconnect();
     public abstract void DisconnectRemote(uint remoteId);
     public abstract void Shutdown();
@@ -79,6 +89,12 @@ public abstract class NetTransport : MonoBehaviour
     {
         var args = new ReceivedArgs { RemoteId = remoteId, Packet = receivedPacket, TransportMethod = method };
         OnNetworkReceived?.Invoke(this, args);
+    }
+
+    public void RaiseNetworkReceivedUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    {
+        var args = new ReceivedUnconnectedArgs { IPEndPoint = ipEndPoint, Packet = packet };
+        OnNetworkReceivedUnconnected?.Invoke(this, args);
     }
 
     public void RaiseNetworkError(TransportCode errorCode, SocketError? socketError = null)
@@ -104,6 +120,12 @@ public class ReceivedArgs
     public uint RemoteId { get; set; }
     public NetPacket Packet { get; set; }
     public TransportMethod? TransportMethod { get; set; }
+}
+
+public class ReceivedUnconnectedArgs
+{
+    public IPEndPoint IPEndPoint { get; set; }
+    public NetPacket Packet { get; set; }
 }
 
 public class ErrorArgs

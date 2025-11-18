@@ -31,7 +31,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     [Tooltip("Simulated maximum additional latency for packets in milliseconds (0 for no simulation")]
     [SerializeField] private int simulateMaxLatency = 0;
 
-    private NetManager netManager;
+    protected NetManager netManager;
     protected readonly Dictionary<uint, NetPeer> connectedPeers = new Dictionary<uint, NetPeer>();
     private readonly Dictionary<uint, byte[]> peerMessageBuffers = new Dictionary<uint, byte[]>();
 
@@ -128,11 +128,12 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     public override void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod protocol)
     {
+        byte[] data = packet.ByteArray;
         foreach (var remoteId in remoteIds)
         {
             if (connectedPeers.TryGetValue(remoteId, out NetPeer peer))
             {
-                SendInternal(peer, packet.ByteArray, protocol);
+                SendInternal(peer, data, protocol);
             }
             else
             {
@@ -159,7 +160,25 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         {
             peer.Send(data, 0, deliveryMethod);
         }
+    }
 
+    public override void SendUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    {
+        netManager.SendUnconnectedMessage(packet.ByteArray, ipEndPoint);
+    }
+
+    public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, NetPacket packet)
+    {
+        byte[] data = packet.ByteArray;
+        foreach (var ipEndPoint in ipEndPoints)
+        {
+            netManager.SendUnconnectedMessage(data, ipEndPoint);
+        }
+    }
+
+    public override void BroadcastUnconnected(NetPacket packet)
+    {
+        netManager.SendBroadcast(packet.ByteArray, port);
     }
 
     public override void Disconnect()
@@ -285,6 +304,11 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         peerMessageBuffers.Remove((uint)peer.Id);
     }
 
+    protected virtual void ConnectionRequested(ConnectionRequest request)
+    {
+        request.AcceptIfKey(connectionKey);
+    }
+
     protected virtual void ConnectPeer(NetPeer peer)
     {
         var peerId = (uint)peer.Id;
@@ -329,6 +353,15 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         reader.Recycle();
     }
 
+    protected virtual void ReceiveDataUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
+    {
+        byte[] receivedBytes = new byte[reader.AvailableBytes];
+        reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
+        NetPacket receivedPacket = new NetPacket(receivedBytes);
+        RaiseNetworkReceivedUnconnected(remoteEndPoint, receivedPacket);
+        reader.Recycle();
+    }
+
     void INetEventListener.OnPeerConnected(NetPeer peer)
     {
         ConnectPeer(peer);
@@ -352,7 +385,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     void INetEventListener.OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
     {
-        // Ignore
+        ReceiveDataUnconnected(remoteEndPoint, reader, messageType);
     }
 
     void INetEventListener.OnNetworkLatencyUpdate(NetPeer peer, int latency)
@@ -362,7 +395,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     void INetEventListener.OnConnectionRequest(ConnectionRequest request)
     {
-        request.AcceptIfKey(connectionKey);
+        ConnectionRequested(request);
     }
 
     private static int SecondsToMilliseconds(float seconds)
