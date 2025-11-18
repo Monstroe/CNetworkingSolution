@@ -201,6 +201,10 @@ public class ClientManager : MonoBehaviour
 
     private void HandleNetworkReceivedUnconnected(NetTransport transport, ReceivedUnconnectedArgs args)
     {
+#if !UNITY_EDITOR
+        try
+        {
+#endif
         NetPacket packet = args.Packet;
         ServiceType serviceType = (ServiceType)packet.ReadByte();
         CommandType commandType = (CommandType)packet.ReadByte();
@@ -213,6 +217,13 @@ public class ClientManager : MonoBehaviour
         {
             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for type {serviceType}. Command {commandType} will not be processed.");
         }
+#if !UNITY_EDITOR
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing unconnected received data from {args.IPEndPoint}: {ex.Message}");
+        }
+#endif
     }
 
     private void HandleNetworkError(NetTransport transport, ErrorArgs args)
