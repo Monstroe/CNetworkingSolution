@@ -232,6 +232,30 @@ public class ClientManager : MonoBehaviour
         OnLobbyConnectionError?.Invoke(args.Code, args.SocketError);
     }
 
+    public void SendToUnconnectedClient(IPEndPoint iPEndPoint, NetPacket packet)
+    {
+        if (packet != null)
+        {
+            transport.SendUnconnected(iPEndPoint, packet);
+        }
+    }
+
+    public void SendToUnconnectedClients(List<IPEndPoint> iPEndPoints, NetPacket packet)
+    {
+        if (packet != null)
+        {
+            transport.SendToListUnconnected(iPEndPoints, packet);
+        }
+    }
+
+    public void BroadcastToUnconnectedClients(NetPacket packet)
+    {
+        if (packet != null)
+        {
+            transport.BroadcastUnconnected(packet);
+        }
+    }
+
     public void CreateNewUser(UserSettings userSettings = null, bool invokeEvent = true)
     {
         if (NetResources.Instance.GameMode == GameMode.Singleplayer)

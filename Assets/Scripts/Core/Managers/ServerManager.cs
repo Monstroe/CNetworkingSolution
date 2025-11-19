@@ -99,7 +99,7 @@ public class ServerManager : MonoBehaviour
         }
     }
 
-    public void BroadcastMessage(NetPacket packet, TransportMethod method)
+    public void BroadcastToAllUsers(NetPacket packet, TransportMethod method)
     {
         foreach (NetTransport transport in transports)
         {
@@ -538,7 +538,7 @@ public class ServerManager : MonoBehaviour
     private void InitTokenVerifier()
     {
         TokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
-        TokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval);
+        TokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval, 1);
         TokenVerifier.StartTokenCleanup(tokenValidityDurationSeconds, 10);
     }
 

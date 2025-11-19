@@ -20,14 +20,14 @@ public class ServerTokenVerifier
         secretKey = Key;
     }
 
-    public void StartUnverifiedUserCleanup(int maxSecondsBeforeUnverifiedUserRemoval)
+    public void StartUnverifiedUserCleanup(int maxSecondsBeforeUnverifiedUserRemoval, int checkIntervalSeconds)
     {
         Debug.Log("<color=green><b>CNS</b></color>: Starting unverified user cleanup.");
         Task.Run(async () =>
         {
             while (true)
             {
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(checkIntervalSeconds));
                 var now = DateTime.UtcNow;
 
                 foreach ((UserData user, DateTime timestamp) in unverifiedUsers)

@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceLocations;
-using UnityEngine.VFX;
 
 public class NetResources : MonoBehaviour
 {
@@ -26,6 +25,7 @@ public class NetResources : MonoBehaviour
     public int DefaultLobbyId => defaultLobbyId;
     public LobbySettings DefaultLobbySettings => defaultLobbySettings;
     public UserSettings DefaultUserSettings => defaultUserSettings;
+    public ServerSettings DefaultServerSettings => defaultServerSettings;
 
     [Header("Connection Settings")]
     [SerializeField] private ServerManager serverPrefab;
@@ -44,6 +44,8 @@ public class NetResources : MonoBehaviour
     [SerializeField] private LobbySettings defaultLobbySettings = new LobbySettings();
     [Space]
     [SerializeField] private UserSettings defaultUserSettings = new UserSettings();
+    [Space]
+    [SerializeField] private ServerSettings defaultServerSettings = new ServerSettings();
 
     private readonly Dictionary<string, int> clientPrefabsPathToKeyMap = new Dictionary<string, int>();
     private readonly Dictionary<int, string> clientPrefabsKeyToPathMap = new Dictionary<int, string>();

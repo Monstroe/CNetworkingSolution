@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class ServerData
 {
@@ -16,11 +17,15 @@ public class ServerData
 #endif
 }
 
-
+[Serializable]
 public class ServerSettings
 {
     public Guid ServerId { get; set; }
-    public string ServerKey { get; set; }
-    public string ServerAddress { get; set; }
-    public ushort ServerPort { get; set; }
+    public string ServerKey { get => serverKey; set => serverKey = value; }
+    public string ServerAddress { get => serverAddress; set => serverAddress = value; }
+    public ushort ServerPort { get => serverPort; set => serverPort = value; }
+
+    [SerializeField] private string serverKey;
+    [SerializeField] private string serverAddress;
+    [SerializeField] private ushort serverPort;
 }
