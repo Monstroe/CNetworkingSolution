@@ -8,7 +8,7 @@ public class ClientBasicItem : ClientInteractable
         Debug.Log("Current player grabbed basic item");
     }
 
-    public override void GrabOnNonOwner(OtherPlayer otherPlayer, NetPacket packet, TransportMethod? transportMethod)
+    public override void GrabOnNonOwner(ClientPlayer otherPlayer, NetPacket packet, TransportMethod? transportMethod)
     {
         base.GrabOnNonOwner(otherPlayer, packet, transportMethod);
         Debug.Log("Other player with Id " + otherPlayer.Id + " grabbed basic item");
@@ -20,7 +20,7 @@ public class ClientBasicItem : ClientInteractable
         Debug.Log("Current player interacted with basic item");
     }
 
-    public override void InteractOnNonOwner(OtherPlayer otherPlayer, NetPacket packet, TransportMethod? transportMethod)
+    public override void InteractOnNonOwner(ClientPlayer otherPlayer, NetPacket packet, TransportMethod? transportMethod)
     {
         base.InteractOnNonOwner(otherPlayer, packet, transportMethod);
         Debug.Log("Other player with Id " + otherPlayer.Id + " interacted with basic item");
@@ -32,7 +32,7 @@ public class ClientBasicItem : ClientInteractable
         Debug.Log("Current player dropped basic item");
     }
 
-    public override void DropOnNonOwner(OtherPlayer otherPlayer, NetPacket packet, TransportMethod? transportMethod)
+    public override void DropOnNonOwner(ClientPlayer otherPlayer, NetPacket packet, TransportMethod? transportMethod)
     {
         base.DropOnNonOwner(otherPlayer, packet, transportMethod);
         Debug.Log("Other player with Id " + otherPlayer.Id + " dropped basic item");

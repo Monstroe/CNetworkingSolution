@@ -89,6 +89,7 @@ public class ClientManager : MonoBehaviour
 
     private NetTransport transport;
     private Dictionary<ServiceType, ClientService> unconnectedServices = new Dictionary<ServiceType, ClientService>();
+    private Dictionary<Type, ServiceType> unconnectedServiceTypeCache = new Dictionary<Type, ServiceType>();
 
     void Awake()
     {
@@ -684,11 +685,14 @@ public class ClientManager : MonoBehaviour
         transport = null;
     }
 
-    public void RegisterUnconnectedService(ServiceType serviceType, ClientService service)
+    public void RegisterUnconnectedService<T>(T service) where T : ClientService
     {
+        ServiceType serviceType = service.ServiceType;
         if (!unconnectedServices.ContainsKey(serviceType))
         {
             unconnectedServices[serviceType] = service;
+            unconnectedServiceTypeCache[service.GetType()] = serviceType;
+
             Debug.Log($"<color=green><b>CNS</b></color>: Registered unconnected ClientService {serviceType}.");
         }
         else
@@ -697,8 +701,9 @@ public class ClientManager : MonoBehaviour
         }
     }
 
-    public void UnregisterUnconnectedService(ServiceType serviceType)
+    public void UnregisterUnconnectedService<T>()
     {
+        ServiceType serviceType = unconnectedServiceTypeCache[typeof(T)];
         if (unconnectedServices.ContainsKey(serviceType))
         {
             unconnectedServices.Remove(serviceType);
@@ -710,11 +715,11 @@ public class ClientManager : MonoBehaviour
         }
     }
 
-    public ClientService GetUnconnectedService(ServiceType serviceType)
+    public T GetUnconnectedService<T>() where T : ClientService
     {
-        if (unconnectedServices.TryGetValue(serviceType, out ClientService service))
+        if (unconnectedServiceTypeCache.TryGetValue(typeof(T), out ServiceType serviceType) && unconnectedServices.TryGetValue(serviceType, out ClientService service))
         {
-            return service;
+            return (T)service;
         }
         else
         {

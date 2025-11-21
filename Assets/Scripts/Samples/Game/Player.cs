@@ -61,6 +61,11 @@ public class Player : ClientPlayer
         InteractEnabled = value;
     }
 
+    protected override void UpdateOnNonOwner()
+    {
+        // Prevent lerp from running in ClientPlayer since Player handles own transform
+    }
+
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)

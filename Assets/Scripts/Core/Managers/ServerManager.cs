@@ -17,6 +17,14 @@ public class ServerManager : MonoBehaviour
     public ulong ServerTick { get; private set; } = 0;
     public ServerData ServerData { get; private set; } = new ServerData();
 
+    [Header("Lobby Settings")]
+    [SerializeField] private ServerLobby lobbyPrefab;
+
+#if CNS_LOBBY_SINGLE
+    [Header("Single-Lobby Settings")]
+    [SerializeField] private bool spawnLobbyOnStart = false;
+#endif
+
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
     public delegate void PublicIpAddressFetchedHandler(string ipAddress);
     public event PublicIpAddressFetchedHandler OnPublicIpAddressFetched;
@@ -26,7 +34,7 @@ public class ServerManager : MonoBehaviour
         public string Ip { get; set; }
     }
 
-    [Header("Multi-Lobby Settings")]
+    [Header("Multi-Server Settings")]
     [SerializeField] private string publicIpApiUrl = "https://api.ipify.org/?format=json";
     [SerializeField] private string dbConnectionString = "localhost:6379";
     [SerializeField] private int secondsBetweenHeartbeats = 30;
@@ -38,6 +46,8 @@ public class ServerManager : MonoBehaviour
 #endif
 
     private List<NetTransport> transports = new List<NetTransport>();
+    private Action onInitialized;
+    private bool initialized = false;
 
     void Awake()
     {
@@ -63,9 +73,38 @@ public class ServerManager : MonoBehaviour
             };
             StartCoroutine(GetPublicIpAddress());
         }
+#else
+        initialized = true;
 #endif
+    }
 
-        Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
+    void Start()
+    {
+        onInitialized = new Action(async () =>
+        {
+#if CNS_LOBBY_SINGLE
+            if (spawnLobbyOnStart)
+            {
+                await RegisterLobby(new ConnectionData
+                {
+                    LobbyId = NetResources.Instance.DefaultLobbyId,
+                    LobbyConnectionType = LobbyConnectionType.Create,
+                    LobbySettings = NetResources.Instance.DefaultLobbySettings,
+                    UserGuid = Guid.Empty,
+                    UserSettings = new UserSettings()
+                });
+            }
+#endif
+            Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
+        });
+
+        StartCoroutine(ServerInitialized());
+    }
+
+    private IEnumerator ServerInitialized()
+    {
+        yield return new WaitUntil(() => initialized);
+        onInitialized?.Invoke();
     }
 
     public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
@@ -226,7 +265,6 @@ public class ServerManager : MonoBehaviour
         {
             serverLobby.Tick();
         }
-        //Physics.simulationMode = SimulationMode.FixedUpdate;
 
         ServerTick++;
     }
@@ -334,7 +372,14 @@ public class ServerManager : MonoBehaviour
 
             if (lobby.LobbyData.LobbyUsers.Count == 0)
             {
+#if CNS_LOBBY_SINGLE
+                if (!spawnLobbyOnStart)
+                {
+                    await RemoveLobby(lobby);
+                }
+#else
                 await RemoveLobby(lobby);
+#endif
             }
             else
             {
@@ -361,7 +406,8 @@ public class ServerManager : MonoBehaviour
         Scene lobbyScene = SceneManager.CreateScene($"Lobby_{connectionData.LobbyId}_Scene", new CreateSceneParameters(LocalPhysicsMode.Physics3D));
         Scene previousScene = SceneManager.GetActiveScene();
         SceneManager.SetActiveScene(lobbyScene);
-        ServerLobby lobby = new GameObject($"Lobby_{connectionData.LobbyId}").AddComponent<ServerLobby>();
+        ServerLobby lobby = Instantiate(lobbyPrefab.gameObject).GetComponent<ServerLobby>();
+        lobby.name = $"Lobby_{connectionData.LobbyId}";
         lobby.Init(connectionData.LobbyId, lobbyScene);
         lobby.LobbyData.Settings = connectionData.LobbySettings;
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
@@ -525,6 +571,8 @@ public class ServerManager : MonoBehaviour
 
         await InitDatabaseAsync();
         InitTokenVerifier();
+
+        initialized = true;
     }
 
     private async Task InitDatabaseAsync()
