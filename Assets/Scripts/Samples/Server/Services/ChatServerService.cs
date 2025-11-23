@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 
 public class ChatServerService : ServerService
@@ -18,6 +19,11 @@ public class ChatServerService : ServerService
                     break;
                 }
         }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
     }
 
     public override void Tick()

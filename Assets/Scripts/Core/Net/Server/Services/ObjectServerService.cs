@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using UnityEngine;
 
 public class ObjectServerService : ServerService
@@ -48,6 +49,25 @@ public class ObjectServerService : ServerService
                     if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject))
                     {
                         DestroyObject(serverObject);
+                    }
+                    break;
+                }
+        }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        switch (commandType)
+        {
+            case CommandType.OBJECT_COMMUNICATION:
+                {
+                    ushort objectId = packet.ReadUShort();
+                    ServiceType objectServiceType = (ServiceType)packet.ReadByte();
+                    CommandType objectCommand = (CommandType)packet.ReadByte();
+                    ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
+                    if (serverObject != null)
+                    {
+                        serverObject.ReceiveDataUnconnected(ipEndPoint, packet, objectServiceType, objectCommand);
                     }
                     break;
                 }

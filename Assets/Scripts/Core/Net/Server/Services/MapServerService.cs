@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 
 public class MapServerService : ServerService
@@ -30,6 +31,11 @@ public class MapServerService : ServerService
     }
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    {
+        // Nothing
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
     {
         // Nothing
     }

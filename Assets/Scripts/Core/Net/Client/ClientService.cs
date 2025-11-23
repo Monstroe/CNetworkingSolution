@@ -8,10 +8,10 @@ public abstract class ClientService : ClientBehaviour
     [Header("Client Service Settings")]
     [SerializeField] private ServiceType serviceType;
 
-    protected virtual void Start()
+    public virtual void Init(ClientLobby lobby)
     {
-        ClientManager.Instance.CurrentLobby.RegisterService(this);
-        ClientManager.Instance.RegisterUnconnectedService(this);
+        this.lobby = lobby;
+        lobby.RegisterService(this);
     }
 
     public abstract void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod);

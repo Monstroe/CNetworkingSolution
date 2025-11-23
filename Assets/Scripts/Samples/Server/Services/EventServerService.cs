@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 
 [RequireComponent(typeof(EventManager))]
@@ -34,6 +35,11 @@ public class EventServerService : ServerService
                 }
                 // ADD MORE EVENTS HERE
         }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
     }
 
     public override void Tick()

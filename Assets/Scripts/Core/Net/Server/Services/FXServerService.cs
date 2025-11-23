@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -30,6 +31,11 @@ public class FXServerService : ServerService
                     break;
                 }
         }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
     }
 
     public override void Tick()

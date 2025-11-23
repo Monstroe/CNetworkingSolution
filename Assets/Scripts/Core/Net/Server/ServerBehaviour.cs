@@ -71,7 +71,10 @@ public class ServerBehaviour : MonoBehaviour
     {
         if (instance != null)
         {
-            SceneManager.MoveGameObjectToScene(instance.gameObject, lobby.LobbyScene);
+            if (lobby.LobbyScene.HasValue)
+            {
+                SceneManager.MoveGameObjectToScene(instance.gameObject, lobby.LobbyScene.Value);
+            }
             instance.transform.SetParent(parent);
             instance.Owner = owner;
             if (initAndSendToUsers)

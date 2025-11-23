@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 
 public class LobbyServerService : ServerService
@@ -58,6 +59,11 @@ public class LobbyServerService : ServerService
         }
     }
 
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
+    }
+
     public override void Tick()
     {
         // Nothing
@@ -67,7 +73,7 @@ public class LobbyServerService : ServerService
     {
         lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings), TransportMethod.Reliable);
         lobby.SendToUser(joinedUser, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
-        lobby.SendToUser(joinedUser, PacketBuilder.LobbyTick(ServerManager.Instance.ServerTick), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbyTick(lobby.ServerTick), TransportMethod.Reliable);
         lobby.SendToLobby(PacketBuilder.LobbyUserJoined(joinedUser), TransportMethod.Reliable, joinedUser);
     }
 

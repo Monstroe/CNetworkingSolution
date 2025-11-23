@@ -37,28 +37,13 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         SceneManager.sceneLoaded += SceneLoaded;
-
         ClientManager.Instance.OnLobbyConnectionLost += LobbyConnectionLost;
-        // NOTE: These two calls aren't necessary, I'm just showcasing features here
-        ClientManager.Instance.OnCurrentUserUpdated += CurrentUserUpdated;
-        ClientManager.Instance.OnCurrentLobbyUpdated += CurrentLobbyUpdated;
-    }
-
-    private void CurrentUserUpdated(UserSettings userSettings)
-    {
-        Debug.Log($"Updating settings for local user: UserName - {userSettings.UserName}");
-    }
-
-    private void CurrentLobbyUpdated(LobbySettings lobbySettings)
-    {
-        Debug.Log($"Successfully updated lobby settings: MaxUsers - {lobbySettings.MaxUsers}, LobbyVisibility - {lobbySettings.LobbyVisibility}, LobbyName - {lobbySettings.LobbyName}");
     }
 
     private void LobbyConnectionLost(TransportCode code)
     {
         Debug.LogWarning("Lost connection to lobby. Returning to main menu...");
 
-        ClientManager.Instance.RemoveTransport();
         if (ServerManager.Instance != null)
         {
             Destroy(ServerManager.Instance.gameObject);
@@ -89,7 +74,7 @@ public class GameManager : MonoBehaviour
         if (initLoopCanEnd)
         {
             initLoopCanEnd = false;
-            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.GameUserJoined(ClientManager.Instance.CurrentUser), TransportMethod.Reliable);
+            ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.GameUserJoined(ClientManager.Instance.CurrentLobby.CurrentUser), TransportMethod.Reliable);
             StartCoroutine(StartGame());
         }
     }
@@ -108,7 +93,7 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(pregameLoadDuration);
 
         // NOTE: These two calls aren't necessary, I'm just showcasing features here
-        ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
+        ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentLobby.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
         ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MyLobby", LobbyVisibility = LobbyVisibility.Public, MaxUsers = 8 });
 
         FadeScreen.Instance.Display(true, fadeDuration, () =>

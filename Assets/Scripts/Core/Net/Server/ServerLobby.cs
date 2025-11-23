@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,74 +5,57 @@ using UnityEngine.SceneManagement;
 public class ServerLobby : MonoBehaviour
 {
     public LobbyData LobbyData { get; private set; } = new LobbyData();
-    public ServerGameData GameData { get; private set; } = new ServerGameData();
-    //public EventManager EventManager { get; private set; }
-    public Scene LobbyScene { get; private set; }
-    //public Map Map { get; private set; }
+    public ulong ServerTick { get; private set; } = 0;
+    public Scene? LobbyScene { get; private set; }
 
-    private Dictionary<ServiceType, ServerService> services = new Dictionary<ServiceType, ServerService>();
-    private Dictionary<Type, ServiceType> serviceTypeCache = new Dictionary<Type, ServiceType>();
-    private SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
+    private PhysicsScene? physicsScene;
 
-    private PhysicsScene physicsScene;
+    private MultiTransportUtility transportUtility;
+    private readonly ServerServiceUtility services = new ServerServiceUtility();
 
-    public void Init(int lobbyId, Scene scene)
+    public void Init(MultiTransportUtility transportUtility, Scene? scene = null)
     {
-        LobbyScene = scene;
-        physicsScene = scene.GetPhysicsScene();
-        LobbyData.LobbyId = lobbyId;
+        this.transportUtility = transportUtility;
 
-        // Init Server Services (ADD NEW SERVICES HERE)
-        //services.Add(ServiceType.GAME, new GameObject("GameServerService").AddComponent<GameServerService>());
-        //services.Add(ServiceType.PLAYER, new GameObject("PlayerServerService").AddComponent<PlayerServerService>());
-        //services.Add(ServiceType.FX, new GameObject("FXServerService").AddComponent<FXServerService>());
-        //services.Add(ServiceType.EVENT, new GameObject("EventServerService").AddComponent<EventServerService>());
-        //services.Add(ServiceType.CHAT, new GameObject("ChatServerService").AddComponent<ChatServerService>());
-        // The object server service is special because it handles all networked object communication
-        // Server services should run first (with the exception of the lobby service), then server objects
-        // Therefore THIS SERVER SERVICE SHOULD ALWAYS BE ADDED LAST, DON'T ADD ANYTHING AFTER THIS
-        //services.Add(ServiceType.OBJECT, new GameObject("ObjectServerService").AddComponent<ObjectServerService>());
-        // The lobby service is also special because it handles lobby and user management
-        // It needs to run last because the clients shouldn't clean up their UserData until all other services have processed the user leaving
-        //services.Add(ServiceType.LOBBY, new GameObject("LobbyServerService").AddComponent<LobbyServerService>());
+        LobbyScene = scene;
+        physicsScene = scene?.GetPhysicsScene();
 
         foreach (var service in this.GetComponentsInChildren<ServerService>())
         {
             service.Init(this);
-            //service.transform.SetParent(this.transform);
         }
-
-        // Init Event Manager
-        //EventManager = new GameObject("EventManager").AddComponent<EventManager>();
-        //EventManager.transform.SetParent(this.transform);
-
-        // Init Map
-        /*Map = Instantiate(NetResources.Instance.MapPrefab.gameObject, Vector3.zero, Quaternion.identity).GetComponent<Map>();
-        Map.transform.SetParent(this.transform);
-        foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
-            r.enabled = false;
-        foreach (ClientObject obj in Map.GetComponentsInChildren<ClientObject>(true))
-        {
-            obj.gameObject.TryGetComponent(out Collider objCollider);
-            if (objCollider != null)
-                objCollider.enabled = false;
-            obj.enabled = false;
-        }*/
     }
 
     public void SendToLobby(NetPacket packet, TransportMethod method, UserData exception = null)
     {
-        ServerManager.Instance.SendToUsers(LobbyData.LobbyUsers.Where(u => u != exception).ToList(), packet, method);
+        if (packet != null)
+        {
+            transportUtility.SendToRemotes(LobbyData.LobbyUsers.Where(u => u != exception).ToList().ConvertAll(user => user.UserId), packet, method);
+        }
     }
 
     public void SendToGame(NetPacket packet, TransportMethod method, UserData exception = null)
     {
-        ServerManager.Instance.SendToUsers(LobbyData.GameUsers.Where(u => u != exception).ToList(), packet, method);
+        if (packet != null)
+        {
+            transportUtility.SendToRemotes(LobbyData.GameUsers.Where(u => u != exception).ToList().ConvertAll(user => user.UserId), packet, method);
+        }
     }
 
     public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
     {
-        ServerManager.Instance.SendToUser(user, packet, method);
+        if (packet != null)
+        {
+            transportUtility.SendToRemote(user.UserId, packet, method);
+        }
+    }
+
+    public void ShutdownLobby()
+    {
+        foreach (var user in LobbyData.LobbyUsers.ToList())
+        {
+            transportUtility.KickRemote(user.UserId);
+        }
     }
 
     public void ReceiveData(UserData user, NetPacket packet, TransportMethod? transportMethod)
@@ -82,7 +63,7 @@ public class ServerLobby : MonoBehaviour
         ServiceType serviceType = (ServiceType)packet.ReadByte();
         CommandType commandType = (CommandType)packet.ReadByte();
 
-        if (services.TryGetValue(serviceType, out ServerService service))
+        if (services.GetService(serviceType, out ServerService service))
         {
             service.ReceiveData(user, packet, serviceType, commandType, transportMethod);
         }
@@ -95,101 +76,65 @@ public class ServerLobby : MonoBehaviour
     public void UserJoined(UserData user)
     {
         user.PlayerId = GeneratePlayerId();
-
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
-        {
-            foreach (ServerService service in serviceList)
-            {
-                service.UserJoined(user);
-            }
-        }
+        services.UserJoined(user);
     }
 
     public void UserJoinedGame(UserData user)
     {
         user.InGame = true;
         SendToLobby(PacketBuilder.GameUserJoined(user), TransportMethod.Reliable);
-
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
-        {
-            foreach (ServerService service in serviceList)
-            {
-                service.UserJoinedGame(user);
-            }
-        }
+        services.UserJoinedGame(user);
     }
 
     public void UserLeft(UserData user)
     {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
-        {
-            foreach (ServerService service in serviceList)
-            {
-                service.UserLeft(user);
-            }
-        }
+        services.UserLeft(user);
     }
 
     public void Tick()
     {
-        physicsScene.Simulate(Time.fixedDeltaTime);
-
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        if (physicsScene.HasValue)
         {
-            foreach (ServerService service in serviceList)
-            {
-                service.Tick();
-            }
+            physicsScene.Value.Simulate(Time.fixedDeltaTime);
         }
+        services.Tick();
+        ServerTick++;
     }
 
     public void RegisterService<T>(T service) where T : ServerService
     {
-        ServiceType serviceType = service.ServiceType;
-        int executionOrder = service.ExecutionOrder;
-        if (!services.ContainsKey(serviceType))
+        if (services.RegisterService(service))
         {
-            services[serviceType] = service;
-            serviceTypeCache[service.GetType()] = serviceType;
-
-            if (!serviceOrderCache.TryGetValue(executionOrder, out List<ServerService> list))
-            {
-                list = new List<ServerService>();
-                serviceOrderCache[executionOrder] = list;
-            }
-            list.Add(service);
-
-            Debug.Log($"<color=green><b>CNS</b></color>: Registered ServerService {serviceType}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Registered ServerService {typeof(T)}.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} is already registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {typeof(T)} is already registered.");
         }
     }
 
     public void UnregisterService<T>()
     {
-        ServiceType serviceType = serviceTypeCache[typeof(T)];
-        if (services.ContainsKey(serviceType))
+        if (services.UnregisterService<T>())
         {
-            services.Remove(serviceType);
-            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ServerService {serviceType}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ServerService {typeof(T)}.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} is not registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {typeof(T)} is not registered.");
         }
     }
 
     public T GetService<T>() where T : ServerService
     {
-        if (serviceTypeCache.TryGetValue(typeof(T), out ServiceType serviceType) && services.TryGetValue(serviceType, out ServerService service))
+        ServerService service = services.GetService<T>();
+        if (service != null)
         {
             return (T)service;
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} not found.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {typeof(T)} not found.");
             return null;
         }
     }

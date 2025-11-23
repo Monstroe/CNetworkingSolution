@@ -1,6 +1,4 @@
-using UnityEngine;
-
-public interface NetObject
+public interface INetObject
 {
     public ushort Id { get; }
 }

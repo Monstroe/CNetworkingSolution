@@ -138,7 +138,7 @@ public static class PacketBuilder
     }
 
     /* OBJECT */
-    public static NetPacket ObjectCommunication(NetObject netObject, NetPacket packet)
+    public static NetPacket ObjectCommunication(INetObject netObject, NetPacket packet)
     {
         packet.Insert(0, (byte)ServiceType.OBJECT);
         packet.Insert(1, (byte)CommandType.OBJECT_COMMUNICATION);

@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -111,6 +112,11 @@ public class ServerPlayer : ServerObject
                     break;
                 }
         }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
     }
 
     public override void Tick()

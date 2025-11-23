@@ -16,16 +16,16 @@ public abstract class ClientInteractable : ClientObject
 
     private bool firstTransformReceived = false;
 
-    public override void Init(ushort id)
+    public override void Init(ushort id, ClientLobby lobby)
     {
-        base.Init(id);
-        ClientManager.Instance.CurrentLobby.GetService<InteractableClientService>().ClientInteractables.Add(id, this);
+        base.Init(id, lobby);
+        lobby.GetService<InteractableClientService>().ClientInteractables.Add(id, this);
         RB = GetComponent<Rigidbody>();
     }
 
     public override void Remove()
     {
-        ClientManager.Instance.CurrentLobby.GetService<InteractableClientService>().ClientInteractables.Remove(Id);
+        lobby.GetService<InteractableClientService>().ClientInteractables.Remove(Id);
         base.Remove();
     }
 
@@ -93,24 +93,24 @@ public abstract class ClientInteractable : ClientObject
             case CommandType.INTERACTABLE_GRAB:
                 {
                     byte playerId = packet.ReadByte();
-                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                    ClientManager.Instance.CurrentLobby.GetService<PlayerClientService>().ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
+                    UserData user = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                    lobby.GetService<PlayerClientService>().ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
                     Grab(clientPlayer, packet, transportMethod);
                     break;
                 }
             case CommandType.INTERACTABLE_INTERACT:
                 {
                     byte playerId = packet.ReadByte();
-                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                    ClientManager.Instance.CurrentLobby.GetService<PlayerClientService>().ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
+                    UserData user = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                    lobby.GetService<PlayerClientService>().ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
                     Interact(clientPlayer, packet, transportMethod);
                     break;
                 }
             case CommandType.INTERACTABLE_DROP:
                 {
                     byte playerId = packet.ReadByte();
-                    UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                    ClientManager.Instance.CurrentLobby.GetService<PlayerClientService>().ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
+                    UserData user = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                    lobby.GetService<PlayerClientService>().ClientPlayers.TryGetValue(user, out ClientPlayer clientPlayer);
                     Drop(clientPlayer, packet, transportMethod);
                     break;
                 }

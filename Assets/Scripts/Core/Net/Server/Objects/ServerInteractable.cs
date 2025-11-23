@@ -1,3 +1,4 @@
+using System.Net;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -84,6 +85,11 @@ public class ServerInteractable : ServerObject
                     break;
                 }
         }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        // Nothing
     }
 
     public override void UserJoined(UserData joinedUser)

@@ -88,16 +88,16 @@ public class ClientPlayer : ClientObject
     private bool jumpingState = false;
     private bool grabbingState = false;
 
-    public override void Init(ushort id)
+    public override void Init(ushort id, ClientLobby lobby)
     {
-        base.Init(id);
-        ClientManager.Instance.CurrentLobby.GetService<PlayerClientService>().ClientPlayers.Add(User, this);
+        base.Init(id, lobby);
+        lobby.GetService<PlayerClientService>().ClientPlayers.Add(User, this);
         anim = GetComponentInChildren<Animator>();
     }
 
     public override void Remove()
     {
-        ClientManager.Instance.CurrentLobby.GetService<PlayerClientService>().ClientPlayers.Remove(User);
+        lobby.GetService<PlayerClientService>().ClientPlayers.Remove(User);
         base.Remove();
     }
 

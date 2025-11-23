@@ -2,7 +2,7 @@ using System.Net;
 using UnityEditor;
 using UnityEngine;
 
-public abstract class ClientObject : ClientBehaviour, NetObject
+public abstract class ClientObject : ClientBehaviour, INetObject
 {
     public ushort Id { get; private set; }
 
@@ -22,15 +22,16 @@ public abstract class ClientObject : ClientBehaviour, NetObject
     [Tooltip("Reference to the corresponding server prefab for this client object.")]
     [SerializeField] private ServerObject serverPrefab;
 
-    public virtual void Init(ushort id)
+    public virtual void Init(ushort id, ClientLobby lobby)
     {
         Id = id;
-        ClientManager.Instance.CurrentLobby.GetService<ObjectClientService>().ClientObjects.Add(id, this);
+        this.lobby = lobby;
+        lobby.GetService<ObjectClientService>().ClientObjects.Add(id, this);
     }
 
     public virtual void Remove()
     {
-        ClientManager.Instance.CurrentLobby.GetService<ObjectClientService>().ClientObjects.Remove(Id);
+        lobby.GetService<ObjectClientService>().ClientObjects.Remove(Id);
     }
 
 #if UNITY_EDITOR
@@ -120,6 +121,6 @@ public abstract class ClientObject : ClientBehaviour, NetObject
 
     protected void SendToServerObject(NetPacket packet, TransportMethod transportMethod)
     {
-        ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.ObjectCommunication(this, packet), transportMethod);
+        lobby.SendToServer(PacketBuilder.ObjectCommunication(this, packet), transportMethod);
     }
 }

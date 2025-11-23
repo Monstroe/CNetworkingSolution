@@ -127,7 +127,7 @@ public class PlayerMovement : MonoBehaviour
             if (!justGrounded)
             {
                 justGrounded = true;
-                ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.EventGroundHit(ClientManager.Instance.CurrentUser.PlayerId, new GroundHitArgs() { position = transform.position, rotation = transform.rotation }), TransportMethod.Reliable);
+                ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.EventGroundHit(ClientManager.Instance.CurrentLobby.CurrentUser.PlayerId, new GroundHitArgs() { position = transform.position, rotation = transform.rotation }), TransportMethod.Reliable);
             }
         }
         else

@@ -31,7 +31,7 @@ public class ObjectClientService : ClientService
                     for (int i = 0; i < startingClientObjects.Count; i++)
                     {
                         ClientObject obj = startingClientObjects[i];
-                        obj.Init(startingObjectIds[i]);
+                        obj.Init(startingObjectIds[i], lobby);
                     }
                     break;
                 }
@@ -56,17 +56,17 @@ public class ObjectClientService : ClientService
                         ClientObject obj = Instantiate(handle, pos, rot).GetComponent<ClientObject>();
                         if (ownerId != null)
                         {
-                            UserData ownerUser = ClientManager.Instance.CurrentLobby.LobbyData.GameUsers.Where(user => user.PlayerId == ownerId.Value).FirstOrDefault();
+                            UserData ownerUser = lobby.LobbyData.GameUsers.Where(user => user.PlayerId == ownerId.Value).FirstOrDefault();
                             if (ownerUser != null)
                             {
-                                obj.Owner = ClientManager.Instance.CurrentLobby.GetService<PlayerClientService>().ClientPlayers[ownerUser];
+                                obj.Owner = lobby.GetService<PlayerClientService>().ClientPlayers[ownerUser];
                             }
                             else
                             {
                                 Debug.LogWarning($"ObjectClientService ReceiveData could not find owner user with PlayerId {ownerId.Value}");
                             }
                         }
-                        obj.Init(objectId);
+                        obj.Init(objectId, lobby);
                     }
                     else
                     {

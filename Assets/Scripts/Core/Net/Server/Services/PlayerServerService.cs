@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using UnityEngine;
 
 public class PlayerServerService : ServerService
@@ -9,6 +10,11 @@ public class PlayerServerService : ServerService
     [SerializeField] private ServerPlayer serverPlayerPrefab;
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    {
+        // Nothing
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
     {
         // Nothing
     }

@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class ClientBehaviour : MonoBehaviour
 {
+    protected ClientLobby lobby;
+
     protected void InstantiateOnNetwork(string originalPath, Vector3 position, Quaternion rotation, bool setThisPlayerAsOwner = true)
     {
         SendObjectSpawnRequest(originalPath, position, rotation, setThisPlayerAsOwner);
@@ -28,11 +30,11 @@ public class ClientBehaviour : MonoBehaviour
             return;
         }
 
-        ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.ObjectSpawnRequest(originalPath, position, rotation, setThisPlayerAsOwner), TransportMethod.Reliable);
+        lobby.SendToServer(PacketBuilder.ObjectSpawnRequest(originalPath, position, rotation, setThisPlayerAsOwner), TransportMethod.Reliable);
     }
 
     protected void DestroyOnNetwork(ClientObject clientObj)
     {
-        ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.ObjectDestroyRequest(clientObj.Id), TransportMethod.Reliable);
+        lobby.SendToServer(PacketBuilder.ObjectDestroyRequest(clientObj.Id), TransportMethod.Reliable);
     }
 }

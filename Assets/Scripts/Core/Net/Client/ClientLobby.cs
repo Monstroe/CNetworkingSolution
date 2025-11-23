@@ -1,27 +1,40 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class ClientLobby : MonoBehaviour
 {
-    public LobbyData LobbyData { get; private set; } = new LobbyData();
+    public LobbyData LobbyData { get; set; } = new LobbyData();
+    public UserData CurrentUser { get; set; }
+    public ulong ClientTick { get; set; } = 0;
 
-    private NetTransport transport;
-    private Dictionary<ServiceType, ClientService> services = new Dictionary<ServiceType, ClientService>();
-    private Dictionary<Type, ServiceType> serviceTypeCache = new Dictionary<Type, ServiceType>();
+    private SingleTransportUtility transportUtility;
+    private readonly ClientServiceUtility services = new ClientServiceUtility();
 
-    public void Init(int lobbyId, NetTransport transport)
+    public void Init(SingleTransportUtility transport)
     {
-        LobbyData.LobbyId = lobbyId;
-        this.transport = transport;
+        transportUtility = transport;
+
+        foreach (var service in this.GetComponentsInChildren<ClientService>())
+        {
+            service.Init(this);
+        }
+    }
+
+    void FixedUpdate()
+    {
+        ClientTick++;
     }
 
     public void SendToServer(NetPacket packet, TransportMethod method)
     {
         if (packet != null)
         {
-            transport.SendToAll(packet, method);
+            transportUtility.SendToAllRemotes(packet, method);
         }
+    }
+
+    public void DisconnectFromLobby()
+    {
+        transportUtility.RemoveTransport();
     }
 
     public void ReceiveData(NetPacket packet, TransportMethod? transportMethod)
@@ -29,7 +42,7 @@ public class ClientLobby : MonoBehaviour
         ServiceType serviceType = (ServiceType)packet.ReadByte();
         CommandType commandType = (CommandType)packet.ReadByte();
 
-        if (services.TryGetValue(serviceType, out ClientService service))
+        if (services.GetService(serviceType, out ClientService service))
         {
             service.ReceiveData(packet, serviceType, commandType, transportMethod);
         }
@@ -41,43 +54,38 @@ public class ClientLobby : MonoBehaviour
 
     public void RegisterService<T>(T service) where T : ClientService
     {
-        ServiceType serviceType = service.ServiceType;
-        if (!services.ContainsKey(serviceType))
+        if (services.RegisterService(service))
         {
-            services[serviceType] = service;
-            serviceTypeCache[service.GetType()] = serviceType;
-
-            Debug.Log($"<color=green><b>CNS</b></color>: Registered ClientService {serviceType}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Registered ClientService {typeof(T)}.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {serviceType} is already registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {typeof(T)} is already registered.");
         }
     }
 
-    public void UnregisterService<T>()
+    public void UnregisterService<T>() where T : ClientService
     {
-        ServiceType serviceType = serviceTypeCache[typeof(T)];
-        if (services.ContainsKey(serviceType))
+        if (services.UnregisterService<T>())
         {
-            services.Remove(serviceType);
-            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ClientService {serviceType}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ClientService {typeof(T)}.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {serviceType} is not registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {typeof(T)} is not registered.");
         }
     }
 
     public T GetService<T>() where T : ClientService
     {
-        if (serviceTypeCache.TryGetValue(typeof(T), out ServiceType serviceType) && services.TryGetValue(serviceType, out ClientService service))
+        ClientService service = services.GetService<T>();
+        if (service != null)
         {
             return (T)service;
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {serviceType} not found.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {typeof(T)} not found.");
             return null;
         }
     }

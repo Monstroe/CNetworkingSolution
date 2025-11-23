@@ -1,20 +1,18 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
+[RequireComponent(typeof(MultiTransportUtility))]
 public class ServerManager : MonoBehaviour
 {
     public static ServerManager Instance { get; private set; }
-
-    public ulong ServerTick { get; private set; } = 0;
     public ServerData ServerData { get; private set; } = new ServerData();
 
     [Header("Lobby Settings")]
@@ -45,7 +43,7 @@ public class ServerManager : MonoBehaviour
     public ServerTokenVerifier TokenVerifier { get; private set; }
 #endif
 
-    private List<NetTransport> transports = new List<NetTransport>();
+    private MultiTransportUtility transportUtility;
     private Action onInitialized;
     private bool initialized = false;
 
@@ -64,6 +62,9 @@ public class ServerManager : MonoBehaviour
 
         Debug.Log("<color=green><b>CNS</b></color>: Initializing Server...");
 
+        transportUtility = GetComponent<MultiTransportUtility>();
+        AddTransportUtilityEvents();
+
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
         if (NetResources.Instance.GameMode != GameMode.Singleplayer)
         {
@@ -80,7 +81,9 @@ public class ServerManager : MonoBehaviour
 
     void Start()
     {
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         onInitialized = new Action(async () =>
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
 #if CNS_LOBBY_SINGLE
             if (spawnLobbyOnStart)
@@ -111,8 +114,7 @@ public class ServerManager : MonoBehaviour
     {
         if (packet != null)
         {
-            var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(user);
-            transports[transportIndex].Send(remoteId, packet, method);
+            transportUtility.SendToRemote(user.UserId, packet, method);
         }
     }
 
@@ -120,83 +122,71 @@ public class ServerManager : MonoBehaviour
     {
         if (packet != null)
         {
-            Dictionary<NetTransport, List<uint>> userDict = new Dictionary<NetTransport, List<uint>>();
-            foreach (var user in users)
-            {
-                var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(user);
-                if (!userDict.ContainsKey(transports[transportIndex]))
-                {
-                    userDict[transports[transportIndex]] = new List<uint>();
-                }
-                userDict[transports[transportIndex]].Add(remoteId);
-            }
-
-            foreach (var (transport, remoteIds) in userDict)
-            {
-                transport.SendToList(remoteIds, packet, method);
-            }
+            transportUtility.SendToRemotes(users.ConvertAll(user => user.UserId), packet, method);
         }
     }
 
     public void BroadcastToAllUsers(NetPacket packet, TransportMethod method)
     {
-        foreach (NetTransport transport in transports)
+        if (packet != null)
         {
-            transport.SendToAll(packet, method);
+            transportUtility.SendToAllRemotes(packet, method);
         }
     }
 
     public async void KickUser(UserData user)
     {
+        // TODO: SEE IF I REALLY NEED THIS
         if (ServerData.ConnectedUsers.TryGetValue(user.UserId, out UserData userData))
         {
             await RemoveUser(userData);
         }
 
-        var (remoteId, transportIndex) = GetRemoteIdAndTransportIndex(user);
-        transports[transportIndex].DisconnectRemote(remoteId);
+        transportUtility.KickRemote(user.UserId);
     }
 
-    private async void HandleNetworkConnected(NetTransport transport, ConnectedArgs args)
+    public void Shutdown()
     {
-        ulong userId = CreateCombinedId(args.RemoteId, transport);
+        transportUtility.RemoveTransports();
+    }
+
+    private async void HandleNetworkConnected(ulong remoteId)
+    {
         try
         {
-            if (!ServerData.ConnectedUsers.ContainsKey(userId))
+            if (!ServerData.ConnectedUsers.ContainsKey(remoteId))
             {
-                await RegisterUser(userId);
+                await RegisterUser(remoteId);
             }
             else
             {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {userId} attempted to connect again.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} attempted to connect again.");
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {userId}: {ex.Message}");
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {remoteId}: {ex.Message}");
         }
     }
 
-    private async void HandleNetworkDisconnected(NetTransport transport, DisconnectedArgs args)
+    private async void HandleNetworkDisconnected(ulong remoteId, TransportCode code)
     {
-        ulong userId = CreateCombinedId(args.RemoteId, transport);
         try
         {
-            if (ServerData.ConnectedUsers.TryGetValue(userId, out UserData userData))
+            if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
             {
                 await RemoveUser(userData);
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {userId}: {ex.Message}");
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {remoteId}: {ex.Message}");
         }
     }
 
-    private async void HandleNetworkReceived(NetTransport transport, ReceivedArgs args)
+    private async void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
     {
-        ulong userId = CreateCombinedId(args.RemoteId, transport);
-        if (ServerData.ConnectedUsers.TryGetValue(userId, out UserData remoteUser))
+        if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData remoteUser))
         {
 #if !UNITY_EDITOR
             try
@@ -204,11 +194,10 @@ public class ServerManager : MonoBehaviour
 #endif
             if (remoteUser.InLobby && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
             {
-                existingLobby.ReceiveData(remoteUser, args.Packet, args.TransportMethod);
+                existingLobby.ReceiveData(remoteUser, packet, method);
             }
             else
             {
-                NetPacket packet = args.Packet;
                 ServiceType serviceType = (ServiceType)packet.ReadByte();
                 CommandType commandType = (CommandType)packet.ReadByte();
                 if (serviceType == ServiceType.CONNECTION && commandType == CommandType.CONNECTION_REQUEST)
@@ -216,7 +205,7 @@ public class ServerManager : MonoBehaviour
                     ConnectionData connectionData = GetConnectionData(packet);
                     if (connectionData == null)
                     {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {userId}.");
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {remoteId}.");
                         KickUser(remoteUser);
                         return;
                     }
@@ -224,7 +213,7 @@ public class ServerManager : MonoBehaviour
                     ServerLobby newLobby = await GetLobbyData(connectionData);
                     if (newLobby == null)
                     {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {userId} cannot join.");
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {remoteId} cannot join.");
                         SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
@@ -232,7 +221,7 @@ public class ServerManager : MonoBehaviour
 
                     if (newLobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
                     {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {userId} cannot join.");
+                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {remoteId} cannot join.");
                         SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
@@ -243,7 +232,7 @@ public class ServerManager : MonoBehaviour
                 }
                 else
                 {
-                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {userId} is not in any active lobby.");
+                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {remoteId} is not in any active lobby.");
                     KickUser(remoteUser);
                 }
             }
@@ -251,11 +240,16 @@ public class ServerManager : MonoBehaviour
             }
             catch (Exception ex)
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {userId}: {ex.Message}");
+                Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {remoteId}: {ex.Message}");
                 KickUser(remoteUser);
             }
 #endif
         }
+    }
+
+    private void HandleNetworkError(TransportCode code, SocketError? socketError)
+    {
+        Debug.LogError($"<color=red><b>CNS</b></color>: Network error occurred: {code} {(socketError.HasValue ? $"(Socket Error: {socketError.Value})" : "")}");
     }
 
     void FixedUpdate()
@@ -265,15 +259,14 @@ public class ServerManager : MonoBehaviour
         {
             serverLobby.Tick();
         }
-
-        ServerTick++;
     }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
     async void OnDestroy()
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
-        RemoveTransports();
+        transportUtility.RemoveTransports();
+        ClearTransportUtilityEvents();
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
         if (NetResources.Instance.GameMode != GameMode.Singleplayer)
@@ -373,7 +366,11 @@ public class ServerManager : MonoBehaviour
             if (lobby.LobbyData.LobbyUsers.Count == 0)
             {
 #if CNS_LOBBY_SINGLE
-                if (!spawnLobbyOnStart)
+                if (spawnLobbyOnStart)
+                {
+                    lobby.UserLeft(user);
+                }
+                else
                 {
                     await RemoveLobby(lobby);
                 }
@@ -408,7 +405,8 @@ public class ServerManager : MonoBehaviour
         SceneManager.SetActiveScene(lobbyScene);
         ServerLobby lobby = Instantiate(lobbyPrefab.gameObject).GetComponent<ServerLobby>();
         lobby.name = $"Lobby_{connectionData.LobbyId}";
-        lobby.Init(connectionData.LobbyId, lobbyScene);
+        lobby.Init(transportUtility, lobbyScene);
+        lobby.LobbyData.LobbyId = connectionData.LobbyId;
         lobby.LobbyData.Settings = connectionData.LobbySettings;
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
         SceneManager.SetActiveScene(previousScene);
@@ -429,7 +427,10 @@ public class ServerManager : MonoBehaviour
     {
         ServerData.ActiveLobbies.Remove(lobby.LobbyData.LobbyId);
         Destroy(lobby.gameObject);
-        await SceneManager.UnloadSceneAsync(lobby.LobbyScene);
+        if (lobby.LobbyScene.HasValue)
+        {
+            await SceneManager.UnloadSceneAsync(lobby.LobbyScene.Value);
+        }
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
         if (NetResources.Instance.GameMode != GameMode.Singleplayer)
@@ -481,53 +482,30 @@ public class ServerManager : MonoBehaviour
 
     public void RegisterTransport(TransportType transportType)
     {
-        NetTransport transport = Instantiate(NetResources.Instance.TransportPrefabs[transportType], this.transform).GetComponent<NetTransport>();
-        transports.Add(transport);
-        AddTransportEvents(transport);
-        transport.Initialize(NetDeviceType.Server);
-        transport.StartDevice();
+        transportUtility.RegisterTransport(transportType, NetDeviceType.Server);
     }
 
     public void AddTransport(NetTransport transport)
     {
-        transports.Add(transport);
-        transport.transform.SetParent(this.transform);
-        AddTransportEvents(transport);
+        transportUtility.AddTransport(transport);
     }
 
-    public void AddTransportEvents(NetTransport transport)
+    private void AddTransportUtilityEvents()
     {
-        transport.OnNetworkConnected += HandleNetworkConnected;
-        transport.OnNetworkDisconnected += HandleNetworkDisconnected;
-        transport.OnNetworkReceived += HandleNetworkReceived;
+        transportUtility.OnMultiConnected += HandleNetworkConnected;
+        transportUtility.OnMultiDisconnected += HandleNetworkDisconnected;
+        transportUtility.OnMultiReceived += HandleNetworkReceived;
+        // Received unconnected events are not handled on the server for now
+        transportUtility.OnMultiError += HandleNetworkError;
     }
 
-    public void ClearTransportEvents(NetTransport transport)
+    private void ClearTransportUtilityEvents()
     {
-        transport.OnNetworkConnected -= HandleNetworkConnected;
-        transport.OnNetworkDisconnected -= HandleNetworkDisconnected;
-        transport.OnNetworkReceived -= HandleNetworkReceived;
-    }
-
-    public void RemoveTransports()
-    {
-        foreach (NetTransport transport in transports)
-        {
-            ClearTransportEvents(transport);
-            transport.Shutdown();
-            Destroy(transport.gameObject);
-        }
-        transports.Clear();
-    }
-
-    private (uint, int) GetRemoteIdAndTransportIndex(UserData user)
-    {
-        return ((uint)user.UserId, (int)(user.UserId >> 32));
-    }
-
-    private ulong CreateCombinedId(uint userId, NetTransport transport)
-    {
-        return (ulong)transports.IndexOf(transport) << 32 | userId;
+        transportUtility.OnMultiConnected -= HandleNetworkConnected;
+        transportUtility.OnMultiDisconnected -= HandleNetworkDisconnected;
+        transportUtility.OnMultiReceived -= HandleNetworkReceived;
+        // Received unconnected events are not handled on the server for now
+        transportUtility.OnMultiError -= HandleNetworkError;
     }
 
 #if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED

@@ -1,7 +1,8 @@
+using System.Net;
 using UnityEditor;
 using UnityEngine;
 
-public abstract class ServerObject : ServerBehaviour, NetObject
+public abstract class ServerObject : ServerBehaviour, INetObject
 {
     public ushort Id { get; private set; }
 
@@ -54,6 +55,7 @@ public abstract class ServerObject : ServerBehaviour, NetObject
 #endif
 
     public abstract void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod);
+    public abstract void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType);
     public abstract void Tick();
     public abstract void UserJoined(UserData joinedUser);
     public abstract void UserJoinedGame(UserData joinedUser);

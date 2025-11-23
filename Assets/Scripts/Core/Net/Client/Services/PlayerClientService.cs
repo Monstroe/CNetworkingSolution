@@ -16,21 +16,21 @@ public class PlayerClientService : ClientService
                 {
                     byte playerId = packet.ReadByte();
 
-                    if (ClientManager.Instance.CurrentUser.PlayerId == playerId)
+                    if (lobby.CurrentUser.PlayerId == playerId)
                     {
                         Player.Instance.Owner = Player.Instance;
-                        Player.Instance.User = ClientManager.Instance.CurrentUser;
-                        Player.Instance.Init(ClientManager.Instance.CurrentUser.PlayerId);
+                        Player.Instance.User = lobby.CurrentUser;
+                        Player.Instance.Init(lobby.CurrentUser.PlayerId, lobby);
                     }
                     else
                     {
-                        UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                        if (!ClientPlayers.ContainsKey(user) && !ClientManager.Instance.CurrentLobby.GetService<ObjectClientService>().ClientObjects.ContainsKey(user.PlayerId))
+                        UserData user = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                        if (!ClientPlayers.ContainsKey(user) && !lobby.GetService<ObjectClientService>().ClientObjects.ContainsKey(user.PlayerId))
                         {
                             ClientPlayer op = Instantiate(clientPlayerPrefab.gameObject).GetComponent<ClientPlayer>();
                             op.Owner = op;
                             op.User = user;
-                            op.Init(user.PlayerId);
+                            op.Init(user.PlayerId, lobby);
                         }
                         else
                         {
@@ -42,7 +42,7 @@ public class PlayerClientService : ClientService
             case CommandType.PLAYER_DESTROY:
                 {
                     byte playerId = packet.ReadByte();
-                    if (ClientManager.Instance.CurrentUser.PlayerId == playerId)
+                    if (lobby.CurrentUser.PlayerId == playerId)
                     {
                         Debug.LogWarning("Received PLAYER_DESTROY for the local player. Ignoring.");
                         // Can add logic here to handle local player destruction if needed
@@ -50,8 +50,8 @@ public class PlayerClientService : ClientService
                     }
                     else
                     {
-                        UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                        if (ClientPlayers.TryGetValue(user, out ClientPlayer player) && ClientManager.Instance.CurrentLobby.GetService<ObjectClientService>().ClientObjects.ContainsKey(user.PlayerId))
+                        UserData user = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
+                        if (ClientPlayers.TryGetValue(user, out ClientPlayer player) && lobby.GetService<ObjectClientService>().ClientObjects.ContainsKey(user.PlayerId))
                         {
                             player.Remove();
                             Destroy(player.gameObject);

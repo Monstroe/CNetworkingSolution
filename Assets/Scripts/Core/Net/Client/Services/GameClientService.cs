@@ -10,7 +10,7 @@ public class GameClientService : ClientService
             case CommandType.GAME_USER_JOINED:
                 {
                     byte playerId = packet.ReadByte();
-                    ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId).InGame = true;
+                    lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId).InGame = true;
                     break;
                 }
         }

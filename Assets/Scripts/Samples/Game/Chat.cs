@@ -70,7 +70,7 @@ public class Chat : MonoBehaviour
 
     public void SubmitMessage(string message)
     {
-        ClientManager.Instance?.CurrentLobby.SendToServer(PacketBuilder.ChatMessage(ClientManager.Instance?.CurrentUser, message), TransportMethod.Reliable);
+        ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.ChatMessage(ClientManager.Instance.CurrentLobby.CurrentUser, message), TransportMethod.Reliable);
     }
 
     public void AddUserJoinedMessage(string userName)
