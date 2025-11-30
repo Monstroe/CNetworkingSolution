@@ -44,7 +44,8 @@ public abstract class NetTransport : MonoBehaviour
 
     public abstract void Initialize(NetDeviceType deviceType);
 
-    public virtual bool StartDevice()
+#nullable enable
+    public virtual bool StartDevice(TransportData? transportData = null)
     {
         if (deviceType == NetDeviceType.Client)
         {
@@ -60,9 +61,12 @@ public abstract class NetTransport : MonoBehaviour
             return false;
         }
     }
+#nullable disable
 
-    protected abstract bool StartClient();
-    protected abstract bool StartServer();
+#nullable enable
+    protected abstract bool StartClient(TransportData? transportData = null);
+    protected abstract bool StartServer(TransportData? transportData = null);
+#nullable disable
     public abstract void Send(uint remoteId, NetPacket packet, TransportMethod method);
     public abstract void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method);
     public abstract void SendToAll(NetPacket packet, TransportMethod method);

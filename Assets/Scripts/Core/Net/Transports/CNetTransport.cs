@@ -72,7 +72,8 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         netSystem.MaxPendingConnections = maxPendingConnections;
     }
 
-    protected override bool StartClient()
+#nullable enable
+    protected override bool StartClient(TransportData? transportData = null)
     {
         if (initialized)
         {
@@ -82,17 +83,17 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         initialized = true;
         netSystem.RegisterInterface((IEventNetClient)this);
 
-        if (ClientManager.Instance.CurrentServerSettings != null)
+        if (transportData != null)
         {
-            address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
-            port = ClientManager.Instance.CurrentServerSettings.ServerPort;
+            address = transportData.ConnectionAddress;
+            port = transportData.ConnectionPort;
         }
 
         netSystem.Connect(address, port, connectionKey);
         return true;
     }
 
-    protected override bool StartServer()
+    protected override bool StartServer(TransportData? transportData = null)
     {
         if (initialized)
         {
@@ -101,9 +102,17 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
         initialized = true;
         netSystem.RegisterInterface((IEventNetListener)this);
+
+        if (transportData != null)
+        {
+            address = transportData.ConnectionAddress;
+            port = transportData.ConnectionPort;
+        }
+
         netSystem.Listen(port);
         return true;
     }
+#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {

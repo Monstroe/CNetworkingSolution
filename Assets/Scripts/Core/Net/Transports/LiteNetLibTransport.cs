@@ -61,7 +61,8 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         };
     }
 
-    protected override bool StartClient()
+#nullable enable
+    protected override bool StartClient(TransportData? transportData = null)
     {
         if (initialized)
         {
@@ -71,17 +72,17 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
         initialized = true;
 
+        if (transportData != null)
+        {
+            address = transportData.ConnectionAddress;
+            port = transportData.ConnectionPort;
+        }
+
         var success = netManager.Start();
         if (!success)
         {
             Debug.LogError("<color=red><b>CNS</b></color>: Failed to start LiteNetLib transport.");
             return false;
-        }
-
-        if (ClientManager.Instance.CurrentServerSettings != null)
-        {
-            address = ClientManager.Instance.CurrentServerSettings.ServerAddress;
-            port = ClientManager.Instance.CurrentServerSettings.ServerPort;
         }
 
         NetPeer peer = netManager.Connect(address, port, connectionKey);
@@ -94,7 +95,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         return true;
     }
 
-    protected override bool StartServer()
+    protected override bool StartServer(TransportData? transportData = null)
     {
         if (initialized)
         {
@@ -103,6 +104,12 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
 
         initialized = true;
+
+        if (transportData != null)
+        {
+            address = transportData.ConnectionAddress;
+            port = transportData.ConnectionPort;
+        }
 
         bool success = netManager.Start(port);
         if (!success)
@@ -113,6 +120,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
         return true;
     }
+#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {
