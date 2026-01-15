@@ -4,9 +4,6 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    public delegate void GameInitializedEventHandler();
-    public event GameInitializedEventHandler OnGameInitialized;
-
     public static GameManager Instance { get; private set; }
 
     public bool Initialized { get; private set; } = false;
@@ -37,7 +34,24 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         SceneManager.sceneLoaded += SceneLoaded;
-        ClientManager.Instance.OnLobbyConnectionLost += LobbyConnectionLost;
+        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized += GameInitialized;
+        ClientManager.Instance.OnLobbyConnectionLost -= LobbyConnectionLost;
+    }
+
+    void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= SceneLoaded;
+        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
+        ClientManager.Instance.OnLobbyConnectionLost -= LobbyConnectionLost;
+    }
+
+    private void SceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name.Equals(NetResources.Instance.GameSceneName))
+        {
+            LoadPreGame();
+            initLoopCanStart = true;
+        }
     }
 
     private void LobbyConnectionLost(TransportCode code)
@@ -79,22 +93,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void SceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (scene.name.Equals(NetResources.Instance.GameSceneName))
-        {
-            LoadPreGame();
-            initLoopCanStart = true;
-        }
-    }
-
     private IEnumerator InitGame()
     {
         yield return new WaitForSeconds(pregameLoadDuration);
 
+        // TODO: FIX THIS
         // NOTE: These two calls aren't necessary, I'm just showcasing features here
-        ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentLobby.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
-        ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MyLobby", LobbyVisibility = LobbyVisibility.Public, MaxUsers = 8 });
+        //ClientManager.Instance.UpdateCurrentUser(new UserSettings() { UserName = $"Player-{ClientManager.Instance.CurrentLobby.CurrentUser.GlobalGuid.ToString().Substring(0, 8)}" });
+        //ClientManager.Instance.UpdateCurrentLobby(new LobbySettings() { LobbyName = "MyLobby", LobbyVisibility = LobbyVisibility.Public, MaxUsers = 8 });
 
         FadeScreen.Instance.Display(true, fadeDuration, () =>
         {

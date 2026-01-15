@@ -3,15 +3,15 @@ using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 
-public class SingleTransportUtility : MonoBehaviour
+public class SingleTransportUtility : MonoBehaviour, ITransportUtility
 {
-    public delegate void OnConnectedEventHandler(uint remoteId);
+    public delegate void OnConnectedEventHandler(ulong remoteId);
     public event OnConnectedEventHandler OnSingleConnected;
 
-    public delegate void OnDisconnectedEventHandler(uint remoteId, TransportCode code);
+    public delegate void OnDisconnectedEventHandler(ulong remoteId, TransportCode code);
     public event OnDisconnectedEventHandler OnSingleDisconnected;
 
-    public delegate void OnReceivedEventHandler(uint remoteId, NetPacket packet, TransportMethod? method);
+    public delegate void OnReceivedEventHandler(ulong remoteId, NetPacket packet, TransportMethod? method);
     public event OnReceivedEventHandler OnSingleReceived;
 
     public delegate void OnReceivedUnconnectedEventHandler(IPEndPoint iPEndPoint, NetPacket packet);
@@ -21,15 +21,16 @@ public class SingleTransportUtility : MonoBehaviour
     public event OnErrorEventHandler OnSingleError;
 
     public NetTransport Transport { get; set; }
+    public List<ulong> ConnectedUserIds { get; set; } = new List<ulong>();
 
-    public void SendToRemote(uint remoteId, NetPacket packet, TransportMethod method)
+    public void SendToRemote(ulong remoteId, NetPacket packet, TransportMethod method)
     {
-        Transport.Send(remoteId, packet, method);
+        Transport.Send((uint)remoteId, packet, method);
     }
 
-    public void SendToRemotes(List<uint> remoteIds, NetPacket packet, TransportMethod method)
+    public void SendToRemotes(List<ulong> remoteIds, NetPacket packet, TransportMethod method)
     {
-        Transport.SendToList(remoteIds, packet, method);
+        Transport.SendToList(remoteIds.ConvertAll(id => (uint)id), packet, method);
     }
 
     public void SendToAllRemotes(NetPacket packet, TransportMethod method)
@@ -52,56 +53,41 @@ public class SingleTransportUtility : MonoBehaviour
         Transport.BroadcastUnconnected(packet);
     }
 
-    public void KickRemote(uint remoteId)
+    public void KickRemote(ulong remoteId)
     {
-        Transport.DisconnectRemote(remoteId);
+        if (ConnectedUserIds.Remove(remoteId))
+        {
+            Transport.DisconnectRemote((uint)remoteId);
+        }
     }
 
-    public void RegisterTransport(TransportType transportType, NetDeviceType deviceType)
+#nullable enable
+    public void RegisterTransport(TransportType transportType, NetDeviceType deviceType, TransportSettings? transportSettings = null)
     {
         if (Transport != null)
         {
-            RemoveTransport();
+            RemoveTransports();
         }
 
         Transport = Instantiate(NetResources.Instance.TransportPrefabs[transportType], this.transform).GetComponent<NetTransport>();
+        Transport.TransportData.TransportType = transportType;
         AddTransportEvents();
         Transport.Initialize(deviceType);
-        Transport.StartDevice();
+        Transport.StartDevice(transportSettings);
     }
+#nullable disable
 
-    public void SetTransport(NetTransport newTransport)
+    public void AddTransport(NetTransport newTransport)
     {
         if (Transport != null)
         {
-            RemoveTransport();
+            RemoveTransports();
         }
 
         Transport = newTransport;
         Transport.transform.SetParent(this.transform);
         AddTransportEvents();
     }
-
-#if CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-    public void BridgeTransport()
-    {
-        if (Transport == null)
-        {
-            Debug.LogError("<color=red><b>CNS</b></color>: Attempted to bridge a null Transport.");
-            return;
-        }
-
-        if (ServerManager.Instance == null)
-        {
-            Debug.LogError("<color=red><b>CNS</b></color>: Attempted to bridge Transport but ServerManager instance is null.");
-            return;
-        }
-
-        ClearTransportEvents();
-        ServerManager.Instance.AddTransport(Transport);
-        Transport = null;
-    }
-#endif
 
     private void AddTransportEvents()
     {
@@ -121,10 +107,28 @@ public class SingleTransportUtility : MonoBehaviour
         Transport.OnNetworkError -= HandleNetworkError;
     }
 
-    public void RemoveTransport()
+    public void DisconnectTransports()
     {
         if (Transport != null)
         {
+            ClearUserIds();
+            Transport.Disconnect();
+        }
+    }
+
+    public void RemoveTransport(NetTransport transport)
+    {
+        if (Transport == transport)
+        {
+            RemoveTransports();
+        }
+    }
+
+    public void RemoveTransports()
+    {
+        if (Transport != null)
+        {
+            ClearUserIds();
             ClearTransportEvents();
             Transport.Shutdown();
             Destroy(Transport.gameObject);
@@ -132,19 +136,35 @@ public class SingleTransportUtility : MonoBehaviour
         }
     }
 
+    private void ClearUserIds()
+    {
+        ConnectedUserIds.Clear();
+    }
+
     private void HandleNetworkConnected(NetTransport Transport, ConnectedArgs args)
     {
-        OnSingleConnected?.Invoke(args.RemoteId);
+        ulong userId = args.RemoteId;
+        if (!ConnectedUserIds.Contains(userId))
+        {
+            ConnectedUserIds.Add(userId);
+            OnSingleConnected?.Invoke(userId);
+        }
     }
 
     private void HandleNetworkDisconnected(NetTransport Transport, DisconnectedArgs args)
     {
-        OnSingleDisconnected?.Invoke(args.RemoteId, args.Code);
+        ulong userId = args.RemoteId;
+        ConnectedUserIds.Remove(userId);
+        OnSingleDisconnected?.Invoke(userId, args.Code);
     }
 
     private void HandleNetworkReceived(NetTransport Transport, ReceivedArgs args)
     {
-        OnSingleReceived?.Invoke(args.RemoteId, args.Packet, args.TransportMethod);
+        ulong userId = args.RemoteId;
+        if (ConnectedUserIds.Contains(userId))
+        {
+            OnSingleReceived?.Invoke(userId, args.Packet, args.TransportMethod);
+        }
     }
 
     private void HandleNetworkReceivedUnconnected(NetTransport Transport, ReceivedUnconnectedArgs args)

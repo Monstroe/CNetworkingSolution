@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,10 +12,11 @@ public class ServerLobby : MonoBehaviour
 
     private PhysicsScene? physicsScene;
 
-    private MultiTransportUtility transportUtility;
+    private ITransportUtility transportUtility;
     private readonly ServerServiceUtility services = new ServerServiceUtility();
+    private readonly ServerServiceUtility unconnectedServices = new ServerServiceUtility();
 
-    public void Init(MultiTransportUtility transportUtility, Scene? scene = null)
+    public void Init(ITransportUtility transportUtility, Scene? scene = null)
     {
         this.transportUtility = transportUtility;
 
@@ -50,6 +53,35 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
+    public void SendToUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
+    {
+        if (packet != null)
+        {
+            transportUtility.SendToUnconnectedRemote(iPEndPoint, packet);
+        }
+    }
+
+    public void SendToUnconnected(List<IPEndPoint> iPEndPoints, NetPacket packet)
+    {
+        if (packet != null)
+        {
+            transportUtility.SendToUnconnectedRemotes(iPEndPoints, packet);
+        }
+    }
+
+    public void BroadcastToUnconnected(NetPacket packet)
+    {
+        if (packet != null)
+        {
+            transportUtility.BroadcastToUnconnectedRemotes(packet);
+        }
+    }
+
+    public void KickUser(UserData user)
+    {
+        transportUtility.KickRemote(user.UserId);
+    }
+
     public void ShutdownLobby()
     {
         foreach (var user in LobbyData.LobbyUsers.ToList())
@@ -73,6 +105,21 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
+    public void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    {
+        ServiceType serviceType = (ServiceType)packet.ReadByte();
+        CommandType commandType = (CommandType)packet.ReadByte();
+
+        if (unconnectedServices.GetService(serviceType, out ServerService unconnectedService))
+        {
+            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, serviceType, commandType);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for type {serviceType}. Command {commandType} will not be processed.");
+        }
+    }
+
     public void UserJoined(UserData user)
     {
         user.PlayerId = GeneratePlayerId();
@@ -81,8 +128,6 @@ public class ServerLobby : MonoBehaviour
 
     public void UserJoinedGame(UserData user)
     {
-        user.InGame = true;
-        SendToLobby(PacketBuilder.GameUserJoined(user), TransportMethod.Reliable);
         services.UserJoinedGame(user);
     }
 
@@ -105,36 +150,74 @@ public class ServerLobby : MonoBehaviour
     {
         if (services.RegisterService(service))
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: Registered ServerService {typeof(T)}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Registered ServerService {service.ServiceType}.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {typeof(T)} is already registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {service.ServiceType} is already registered.");
         }
     }
 
-    public void UnregisterService<T>()
+    public void UnregisterService<T>() where T : ServerService
     {
-        if (services.UnregisterService<T>())
+        if (services.UnregisterService<T>(out ServiceType serviceType))
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ServerService {typeof(T)}.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ServerService {serviceType}.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {typeof(T)} is not registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} is not registered.");
         }
     }
 
     public T GetService<T>() where T : ServerService
     {
-        ServerService service = services.GetService<T>();
+        ServerService service = services.GetService<T>(out ServiceType serviceType);
         if (service != null)
         {
             return (T)service;
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {typeof(T)} not found.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} not found.");
+            return null;
+        }
+    }
+
+    public void RegisterUnconnectedService<T>(T service) where T : ServerService
+    {
+        if (unconnectedServices.RegisterService(service))
+        {
+            Debug.Log($"<color=green><b>CNS</b></color>: Registered unconnected ServerService {service.ServiceType}.");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ServerService {service.ServiceType} is already registered.");
+        }
+    }
+
+    public void UnregisterUnconnectedService<T>() where T : ServerService
+    {
+        if (unconnectedServices.UnregisterService<T>(out ServiceType serviceType))
+        {
+            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered unconnected ServerService {serviceType}.");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ServerService {serviceType} is not registered.");
+        }
+    }
+
+    public T GetUnconnectedService<T>() where T : ServerService
+    {
+        ServerService service = unconnectedServices.GetService<T>(out ServiceType serviceType);
+        if (service != null)
+        {
+            return (T)service;
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ServerService {serviceType} not found.");
             return null;
         }
     }

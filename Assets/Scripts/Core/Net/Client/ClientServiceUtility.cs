@@ -18,9 +18,9 @@ public class ClientServiceUtility
         return false;
     }
 
-    public bool UnregisterService<T>() where T : ClientService
+    public bool UnregisterService<T>(out ServiceType serviceType) where T : ClientService
     {
-        ServiceType serviceType = serviceTypeCache[typeof(T)];
+        serviceType = serviceTypeCache[typeof(T)];
         if (services.ContainsKey(serviceType))
         {
             services.Remove(serviceType);
@@ -29,9 +29,9 @@ public class ClientServiceUtility
         return false;
     }
 
-    public T GetService<T>() where T : ClientService
+    public T GetService<T>(out ServiceType serviceType) where T : ClientService
     {
-        if (serviceTypeCache.TryGetValue(typeof(T), out ServiceType serviceType) && services.TryGetValue(serviceType, out ClientService service))
+        if (serviceTypeCache.TryGetValue(typeof(T), out serviceType) && services.TryGetValue(serviceType, out ClientService service))
         {
             return (T)service;
         }

@@ -12,23 +12,19 @@ public class NetResources : MonoBehaviour
     public ServerManager ServerPrefab => serverPrefab;
     public Dictionary<TransportType, NetTransport> TransportPrefabs { get; private set; } = new Dictionary<TransportType, NetTransport>();
 
-    public GameMode GameMode { get => gameMode; set => gameMode = value; }
-
     public string GameSceneName => gameSceneName;
     public string MenuSceneName => menuSceneName;
     public string ServerSceneName => serverSceneName;
 
+    public NetMode DefaultNetMode => defaultNetMode;
     public int DefaultLobbyId => defaultLobbyId;
     public LobbySettings DefaultLobbySettings => defaultLobbySettings;
     public UserSettings DefaultUserSettings => defaultUserSettings;
-    public ServerSettings DefaultServerSettings => defaultServerSettings;
+    public TransportSettings DefaultTransportSettings => defaultTransportSettings;
 
     [Header("Connection Settings")]
     [SerializeField] private ServerManager serverPrefab;
     [SerializeField] private List<NetTransport> transportPrefabs;
-
-    [Header("Game Settings")]
-    [SerializeField] private GameMode gameMode = GameMode.Multiplayer;
 
     [Header("Scene Names")]
     [SerializeField] private string gameSceneName = "Game";
@@ -36,12 +32,14 @@ public class NetResources : MonoBehaviour
     [SerializeField] private string serverSceneName = "Server";
 
     [Header("Default Settings")]
+    [SerializeField] private NetMode defaultNetMode = NetMode.Online;
+    [Space]
     [SerializeField] private int defaultLobbyId = 0;
     [SerializeField] private LobbySettings defaultLobbySettings = new LobbySettings();
     [Space]
     [SerializeField] private UserSettings defaultUserSettings = new UserSettings();
     [Space]
-    [SerializeField] private ServerSettings defaultServerSettings = new ServerSettings();
+    [SerializeField] private TransportSettings defaultTransportSettings = new TransportSettings();
 
     private readonly Dictionary<string, int> clientPrefabsPathToKeyMap = new Dictionary<string, int>();
     private readonly Dictionary<int, string> clientPrefabsKeyToPathMap = new Dictionary<int, string>();
@@ -201,35 +199,46 @@ public class NetResources : MonoBehaviour
             {
 #if CNS_TRANSPORT_LOCAL
                 case LocalTransport:
-                    TransportPrefabs.Add(TransportType.Local, transport);
-                    break;
-#endif
-#if CNS_TRANSPORT_CNET
-                case CNetTransport:
-                    TransportPrefabs.Add(TransportType.CNet, transport);
+                    transport.TransportData.TransportType = TransportType.Local;
                     break;
 #endif
 #if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
                 case CNetRelayTransport:
-                    TransportPrefabs.Add(TransportType.CNetRelay, transport);
+                    transport.TransportData.TransportType = TransportType.CNetRelay;
                     break;
 #endif
-#if CNS_TRANSPORT_LITENETLIB
-                case LiteNetLibTransport:
-                    TransportPrefabs.Add(TransportType.LiteNetLib, transport);
+#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETBROADCAST
+                case CNetBroadcastTransport:
+                    transport.TransportData.TransportType = TransportType.CNetBroadcast;
+                    break;
+#endif
+#if CNS_TRANSPORT_CNET
+                case CNetTransport:
+                    transport.TransportData.TransportType = TransportType.CNet;
                     break;
 #endif
 #if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
                 case LiteNetLibRelayTransport:
-                    TransportPrefabs.Add(TransportType.LiteNetLibRelay, transport);
+                    transport.TransportData.TransportType = TransportType.LiteNetLibRelay;
+                    break;
+#endif
+#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBBROADCAST
+                case LiteNetLibBroadcastTransport:
+                    transport.TransportData.TransportType = TransportType.LiteNetLibBroadcast;
+                    break;
+#endif
+#if CNS_TRANSPORT_LITENETLIB
+                case LiteNetLibTransport:
+                    transport.TransportData.TransportType = TransportType.LiteNetLib;
                     break;
 #endif
 #if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
                 case SteamRelayTransport:
-                    TransportPrefabs.Add(TransportType.SteamRelay, transport);
+                    transport.TransportData.TransportType = TransportType.SteamRelay;
                     break;
 #endif
             }
+            TransportPrefabs.Add(transport.TransportData.TransportType, transport);
         }
     }
 
@@ -243,8 +252,8 @@ public class NetResources : MonoBehaviour
     }
 }
 
-public enum GameMode
+public enum NetMode
 {
-    Singleplayer,
-    Multiplayer,
+    Local,
+    Online,
 }

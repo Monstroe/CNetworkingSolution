@@ -12,9 +12,9 @@ public enum CommandType
     /* CONNECTION */
     CONNECTION_REQUEST, CONNECTION_RESPONSE,
     /* LOBBY */
-    LOBBY_SETTINGS, LOBBY_USER_SETTINGS, LOBBY_USERS_LIST, LOBBY_USER_JOINED, LOBBY_USER_LEFT, LOBBY_TICK,
+    LOBBY_SETTINGS, LOBBY_USER_SETTINGS, LOBBY_USERS_LIST, LOBBY_USER_JOINED, LOBBY_USER_LEFT, LOBBY_USER_KICK, LOBBY_TICK,
     /* GAME */
-    GAME_USER_JOINED,
+    GAME_USER_JOINED, GAME_START,
     /* OBJECT */
     OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY,
     /* FX */
@@ -68,22 +68,24 @@ public static class PacketBuilder
     }
 
     /* LOBBY */
-    public static NetPacket LobbySettings(LobbySettings settings)
+    public static NetPacket LobbySettings(LobbySettings settings, bool invokeEvent = false)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_SETTINGS);
         settings.Serialize(packet);
+        packet.Write(invokeEvent);
         return packet;
     }
 
-    public static NetPacket LobbyUserSettings(UserData user, UserSettings settings)
+    public static NetPacket LobbyUserSettings(UserData user, UserSettings settings, bool invokeEvent = false)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_USER_SETTINGS);
         packet.Write(user.UserId);
         settings.Serialize(packet);
+        packet.Write(invokeEvent);
         return packet;
     }
 
@@ -118,16 +120,35 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket LobbyTick(ulong tick)
+    public static NetPacket LobbyUserKick(UserData user, LobbyRejectionType reason)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.LOBBY);
+        packet.Write((byte)CommandType.LOBBY_USER_KICK);
+        packet.Write(user.UserId);
+        packet.Write((byte)reason);
+        return packet;
+    }
+
+    public static NetPacket LobbyTick(ulong tick, bool invokeEvent = false)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_TICK);
         packet.Write(tick);
+        packet.Write(invokeEvent);
         return packet;
     }
 
     /* GAME */
+    public static NetPacket GameStart()
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.GAME);
+        packet.Write((byte)CommandType.GAME_START);
+        return packet;
+    }
+
     public static NetPacket GameUserJoined(UserData user)
     {
         NetPacket packet = new NetPacket();

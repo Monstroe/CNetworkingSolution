@@ -26,13 +26,34 @@ public class LobbyServerService : ServerService
 
                     LobbySettings lobbySettings = new LobbySettings().Deserialize(packet);
                     lobby.LobbyData.Settings = lobbySettings;
-                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings), transportMethod ?? TransportMethod.Reliable);
+                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings, true), TransportMethod.Reliable);
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-                    if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+                    if (NetResources.Instance.NetMode != NetMode.Local)
                     {
                         ServerManager.Instance.Database.UpdateLobbyMetadataAsync(lobby.LobbyData);
                     }
 #endif
+                    break;
+                }
+            case CommandType.LOBBY_USER_KICK:
+                {
+                    if (!user.IsHost(lobby.LobbyData))
+                    {
+                        Debug.LogWarning($"User {user.UserId} tried to kick a user, but only the host can kick users.");
+                        return;
+                    }
+
+                    ulong kickUserId = packet.ReadULong();
+                    LobbyRejectionType rejectionType = (LobbyRejectionType)packet.ReadByte();
+                    UserData kickUser = lobby.LobbyData.LobbyUsers.Find(u => u.UserId == kickUserId);
+                    if (kickUser == null)
+                    {
+                        Debug.LogWarning($"User {user.UserId} tried to kick user {kickUserId}, but that user was not found in the lobby.");
+                        return;
+                    }
+
+                    lobby.SendToLobby(PacketBuilder.LobbyUserKick(kickUser, rejectionType), TransportMethod.Reliable);
+                    lobby.KickUser(kickUser);
                     break;
                 }
 #endif
@@ -47,9 +68,9 @@ public class LobbyServerService : ServerService
 
                     UserSettings userSettings = new UserSettings().Deserialize(packet);
                     user.Settings = userSettings;
-                    lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings), transportMethod ?? TransportMethod.Reliable);
+                    lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings, true), TransportMethod.Reliable);
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-                    if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+                    if (NetResources.Instance.NetMode != NetMode.Local)
                     {
                         ServerManager.Instance.Database.UpdateUserMetadataAsync(user);
                     }
@@ -71,9 +92,9 @@ public class LobbyServerService : ServerService
 
     public override void UserJoined(UserData joinedUser)
     {
-        lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings, false), TransportMethod.Reliable);
         lobby.SendToUser(joinedUser, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
-        lobby.SendToUser(joinedUser, PacketBuilder.LobbyTick(lobby.ServerTick), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, PacketBuilder.LobbyTick(lobby.ServerTick, true), TransportMethod.Reliable);
         lobby.SendToLobby(PacketBuilder.LobbyUserJoined(joinedUser), TransportMethod.Reliable, joinedUser);
     }
 

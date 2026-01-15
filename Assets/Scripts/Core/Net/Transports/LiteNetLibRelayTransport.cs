@@ -6,10 +6,12 @@ using UnityEngine;
 
 public class LiteNetLibRelayTransport : LiteNetLibTransport
 {
-    protected override bool StartServer()
+#nullable enable
+    protected override bool StartServer(TransportSettings? transportSettings = null)
     {
         throw new NotImplementedException("<color=red><b>CNS</b></color>: CNetRelayTransport does not support starting a server directly. This transport is intended to be used by a client acting as a server (host).");
     }
+#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {
@@ -57,7 +59,7 @@ public class LiteNetLibRelayTransport : LiteNetLibTransport
             Debug.Log($"<color=green><b>CNS</b></color>: Connected to relay server: {peer.Address}");
 
 #if CNS_SERVER_MULTIPLE
-            base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.ConnectionToken), TransportMethod.Reliable);
+            base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.WebAPI.ConnectionToken), TransportMethod.Reliable);
 #elif CNS_SERVER_SINGLE
             base.SendToAll(PacketBuilder.ConnectionRequest(ClientManager.Instance.ConnectionData), TransportMethod.Reliable);
 #endif
@@ -82,12 +84,13 @@ public class LiteNetLibRelayTransport : LiteNetLibTransport
             Debug.Log($"<color=green><b>CNS</b></color>: Disconnected from relay server: {peer.Address}");
             if (ServerManager.Instance != null)
             {
-                ServerManager.Instance.KickUser(ClientManager.Instance.CurrentUser);
+                ServerManager.Instance.KickUser(ClientManager.Instance.CurrentLobby.CurrentUser);
             }
         }
         else
         {
             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Attempting to disconnect a peer that is not connected: {peerId}");
+            RaiseNetworkError(ConvertCode(disconnectInfo.Reason), disconnectInfo.SocketErrorCode);
         }
     }
 
@@ -127,7 +130,8 @@ public class LiteNetLibRelayTransport : LiteNetLibTransport
                 }
             case RelayMessageType.DisconnectedUser:
                 {
-                    RaiseNetworkDisconnected(remoteId);
+                    TransportCode code = (TransportCode)receivedPacket.ReadByte();
+                    RaiseNetworkDisconnected(remoteId, code);
                     break;
                 }
             case RelayMessageType.Data:
@@ -143,10 +147,6 @@ public class LiteNetLibRelayTransport : LiteNetLibTransport
                 }
         }
     }
-
-
-
-
 
     enum RelayMessageType
     {

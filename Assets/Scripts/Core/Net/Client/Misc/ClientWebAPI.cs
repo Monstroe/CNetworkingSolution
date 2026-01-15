@@ -8,6 +8,9 @@ using UnityEngine.Networking;
 
 public class ClientWebAPI
 {
+    public delegate void WebAPIConnectionErrorEventHandler(string errorMessage);
+    public event WebAPIConnectionErrorEventHandler OnWebAPIConnectionError;
+
     class UserResponse
     {
         public Guid GlobalGuid { get; set; }
@@ -20,7 +23,7 @@ public class ClientWebAPI
         public int LobbyId { get; set; }
         public LobbySettings LobbySettings { get; set; }
 #nullable enable
-        public ServerSettings? ServerSettings { get; set; }
+        public TransportSettings? ServerSettings { get; set; }
         public string? ServerToken { get; set; }
 #nullable disable
     }
@@ -55,6 +58,7 @@ public class ClientWebAPI
             else
             {
                 Debug.LogError($"<color=red><b>CNS</b></color>: Failed to create user: {www.error}");
+                OnWebAPIConnectionError?.Invoke(www.error);
             }
         }
     }
@@ -87,13 +91,14 @@ public class ClientWebAPI
                 else
                 {
                     Debug.LogError($"<color=red><b>CNS</b></color>: Failed to update user: {www.error}");
+                    OnWebAPIConnectionError?.Invoke(www.error);
                 }
             }
         }
     }
 
 #nullable enable
-    public IEnumerator CreateLobbyCoroutine(LobbySettings lobbySettings, UserSettings userSettings, Action<Guid, UserSettings> onUserRecreate, Action<int, LobbySettings, ServerSettings?> onLobbyCreate)
+    public IEnumerator CreateLobbyCoroutine(LobbySettings lobbySettings, UserSettings userSettings, Action<Guid, UserSettings> onUserRecreate, Action<int, LobbySettings, TransportSettings?> onLobbyCreate)
     {
         string json = JsonConvert.SerializeObject(lobbySettings);
         byte[] jsonBytes = Encoding.UTF8.GetBytes(json);
@@ -123,6 +128,7 @@ public class ClientWebAPI
                 else
                 {
                     Debug.LogError($"<color=red><b>CNS</b></color>: Failed to create lobby: {www.error}");
+                    OnWebAPIConnectionError?.Invoke(www.error);
                 }
             }
         }
@@ -157,13 +163,14 @@ public class ClientWebAPI
                 else
                 {
                     Debug.LogError($"<color=red><b>CNS</b></color>: Failed to create lobby: {www.error}");
+                    OnWebAPIConnectionError?.Invoke(www.error);
                 }
             }
         }
     }
 
 #nullable enable
-    public IEnumerator JoinLobbyCoroutine(int lobbyId, UserSettings userSettings, Action<Guid, UserSettings> onUserRecreate, Action<int, LobbySettings, ServerSettings?> onLobbyJoin)
+    public IEnumerator JoinLobbyCoroutine(int lobbyId, UserSettings userSettings, Action<Guid, UserSettings> onUserRecreate, Action<int, LobbySettings, TransportSettings?> onLobbyJoin)
     {
         using (var www = new UnityWebRequest($"{LobbyApiUrl}/lobby/join/{lobbyId}", "GET"))
         {
@@ -188,6 +195,7 @@ public class ClientWebAPI
                 else
                 {
                     Debug.LogError($"<color=red><b>CNS</b></color>: Failed to join lobby: {www.error}");
+                    OnWebAPIConnectionError?.Invoke(www.error);
                 }
             }
         }

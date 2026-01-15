@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 
-public class MultiTransportUtility : MonoBehaviour
+public class MultiTransportUtility : MonoBehaviour, ITransportUtility
 {
     public delegate void OnConnectedEventHandler(ulong remoteId);
     public event OnConnectedEventHandler OnMultiConnected;
@@ -21,6 +21,7 @@ public class MultiTransportUtility : MonoBehaviour
     public event OnErrorEventHandler OnMultiError;
 
     public List<NetTransport> Transports { get; set; } = new List<NetTransport>();
+    public List<ulong> ConnectedUserIds { get; set; } = new List<ulong>();
 
     public void SendToRemote(ulong remoteId, NetPacket packet, TransportMethod method)
     {
@@ -81,18 +82,24 @@ public class MultiTransportUtility : MonoBehaviour
 
     public void KickRemote(ulong remoteId)
     {
-        var (internalId, transportIndex) = GetRemoteIdAndTransportIndex(remoteId);
-        Transports[transportIndex].DisconnectRemote(internalId);
+        if (ConnectedUserIds.Remove(remoteId))
+        {
+            var (internalId, transportIndex) = GetRemoteIdAndTransportIndex(remoteId);
+            Transports[transportIndex].DisconnectRemote(internalId);
+        }
     }
 
-    public void RegisterTransport(TransportType transportType, NetDeviceType deviceType)
+#nullable enable
+    public void RegisterTransport(TransportType transportType, NetDeviceType deviceType, TransportSettings? transportSettings = null)
     {
         NetTransport transport = Instantiate(NetResources.Instance.TransportPrefabs[transportType], this.transform).GetComponent<NetTransport>();
+        transport.TransportData.TransportType = transportType;
         Transports.Add(transport);
         AddTransportEvents(transport);
         transport.Initialize(deviceType);
-        transport.StartDevice();
+        transport.StartDevice(transportSettings);
     }
+#nullable disable
 
     public void AddTransport(NetTransport transport)
     {
@@ -119,8 +126,30 @@ public class MultiTransportUtility : MonoBehaviour
         transport.OnNetworkError -= HandleNetworkError;
     }
 
+    public void DisconnectTransports()
+    {
+        ClearUserIds();
+        foreach (NetTransport transport in Transports)
+        {
+            transport.Disconnect();
+        }
+    }
+
+    public void RemoveTransport(NetTransport transport)
+    {
+        if (transport != null && Transports.Contains(transport))
+        {
+            RemoveUserIds(transport);
+            ClearTransportEvents(transport);
+            transport.Shutdown();
+            Transports.Remove(transport);
+            Destroy(transport.gameObject);
+        }
+    }
+
     public void RemoveTransports()
     {
+        ClearUserIds();
         foreach (NetTransport transport in Transports)
         {
             ClearTransportEvents(transport);
@@ -128,6 +157,29 @@ public class MultiTransportUtility : MonoBehaviour
             Destroy(transport.gameObject);
         }
         Transports.Clear();
+    }
+
+    private void RemoveUserIds(NetTransport transport)
+    {
+        List<ulong> toRemove = new List<ulong>();
+        foreach (var userId in ConnectedUserIds)
+        {
+            var (_, transportIndex) = GetRemoteIdAndTransportIndex(userId);
+            if (Transports[transportIndex] == transport)
+            {
+                toRemove.Add(userId);
+            }
+        }
+
+        foreach (var userId in toRemove)
+        {
+            ConnectedUserIds.Remove(userId);
+        }
+    }
+
+    private void ClearUserIds()
+    {
+        ConnectedUserIds.Clear();
     }
 
     private (uint, int) GetRemoteIdAndTransportIndex(ulong userId)
@@ -142,17 +194,28 @@ public class MultiTransportUtility : MonoBehaviour
 
     private void HandleNetworkConnected(NetTransport transport, ConnectedArgs args)
     {
-        OnMultiConnected?.Invoke(CreateCombinedId(args.RemoteId, transport));
+        ulong userId = CreateCombinedId(args.RemoteId, transport);
+        if (!ConnectedUserIds.Contains(userId))
+        {
+            ConnectedUserIds.Add(userId);
+            OnMultiConnected?.Invoke(userId);
+        }
     }
 
     private void HandleNetworkDisconnected(NetTransport transport, DisconnectedArgs args)
     {
-        OnMultiDisconnected?.Invoke(CreateCombinedId(args.RemoteId, transport), args.Code);
+        ulong userId = CreateCombinedId(args.RemoteId, transport);
+        ConnectedUserIds.Remove(userId);
+        OnMultiDisconnected?.Invoke(userId, args.Code);
     }
 
     private void HandleNetworkReceived(NetTransport transport, ReceivedArgs args)
     {
-        OnMultiReceived?.Invoke(CreateCombinedId(args.RemoteId, transport), args.Packet, args.TransportMethod);
+        ulong userId = CreateCombinedId(args.RemoteId, transport);
+        if (ConnectedUserIds.Contains(userId))
+        {
+            OnMultiReceived?.Invoke(userId, args.Packet, args.TransportMethod);
+        }
     }
 
     private void HandleNetworkReceivedUnconnected(NetTransport transport, ReceivedUnconnectedArgs args)

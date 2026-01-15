@@ -22,21 +22,20 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
     [SerializeField] private float reconnectDelay = 0.5f;
     [Tooltip("Maximum connection attempts before client stops and reports a disconnection")]
     [SerializeField] private int maxConnectAttempts = 10;
-    [Tooltip("Size of default buffer for decoding incoming packets, in bytes")]
-    [SerializeField] private int messageBufferSize = 1024 * 5;
     [Tooltip("Simulated chance for a packet to be \"lost\", from 0 (no simulation) to 100 percent")]
     [SerializeField] private int simulatePacketLossChance = 0;
     [Tooltip("Simulated minimum additional latency for packets in milliseconds (0 for no simulation)")]
     [SerializeField] private int simulateMinLatency = 0;
-    [Tooltip("Simulated maximum additional latency for packets in milliseconds (0 for no simulation")]
+    [Tooltip("Simulated maximum additional latency for packets in milliseconds (0 for no simulation)")]
     [SerializeField] private int simulateMaxLatency = 0;
+    [Tooltip("Enable messages receiving without connection")]
+    [SerializeField] private bool unconnectedMessagesEnabled = false;
+    [Tooltip("Allows receive broadcast packets")]
+    [SerializeField] private bool broadcastReceiveEnabled = false;
 
     protected NetManager netManager;
     protected readonly Dictionary<uint, NetPeer> connectedPeers = new Dictionary<uint, NetPeer>();
     private readonly Dictionary<uint, byte[]> peerMessageBuffers = new Dictionary<uint, byte[]>();
-
-    public override uint ServerClientId => 0;
-    public override List<uint> ConnectedClientIds => new List<uint>(connectedPeers.Keys);
 
     void FixedUpdate()
     {
@@ -45,7 +44,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     public override void Initialize(NetDeviceType deviceType)
     {
-        this.deviceType = deviceType;
+        TransportData.DeviceType = deviceType;
 
         netManager = new NetManager(this)
         {
@@ -57,25 +56,30 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
             SimulationPacketLossChance = simulatePacketLossChance,
             SimulateLatency = simulateMaxLatency > 0,
             SimulationMinLatency = simulateMinLatency,
-            SimulationMaxLatency = simulateMaxLatency
+            SimulationMaxLatency = simulateMaxLatency,
+            UnconnectedMessagesEnabled = unconnectedMessagesEnabled,
+            BroadcastReceiveEnabled = broadcastReceiveEnabled
         };
     }
 
 #nullable enable
-    protected override bool StartClient(TransportData? transportData = null)
+    protected override bool StartClient(TransportSettings? transportSettings = null)
     {
         if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + TransportData.DeviceType);
             return false;
         }
 
         initialized = true;
 
-        if (transportData != null)
+        if (transportSettings != null)
         {
-            address = transportData.ConnectionAddress;
-            port = transportData.ConnectionPort;
+            address = transportSettings.ConnectionAddress ?? address;
+            port = transportSettings.ConnectionPort ?? port;
+            connectionKey = transportSettings.ConnectionKey ?? connectionKey;
+            unconnectedMessagesEnabled = transportSettings.UnconnectedPacketsEnabled ?? unconnectedMessagesEnabled;
+            broadcastReceiveEnabled = transportSettings.UnconnectedPacketsEnabled ?? broadcastReceiveEnabled;
         }
 
         var success = netManager.Start();
@@ -85,32 +89,33 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
             return false;
         }
 
-        NetPeer peer = netManager.Connect(address, port, connectionKey);
-
-        if (peer.Id != (int)ServerClientId)
-        {
-            throw new InvalidPacketException("<color=red><b>CNS</b></color>: Server peer did not have id 0: " + peer.Id);
-        }
-
+        netManager.UnconnectedMessagesEnabled = unconnectedMessagesEnabled;
+        netManager.BroadcastReceiveEnabled = broadcastReceiveEnabled;
+        netManager.Connect(address, port, connectionKey);
         return true;
     }
 
-    protected override bool StartServer(TransportData? transportData = null)
+    protected override bool StartServer(TransportSettings? transportSettings = null)
     {
         if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + TransportData.DeviceType);
             return false;
         }
 
         initialized = true;
 
-        if (transportData != null)
+        if (transportSettings != null)
         {
-            address = transportData.ConnectionAddress;
-            port = transportData.ConnectionPort;
+            address = transportSettings.ConnectionAddress ?? address;
+            port = transportSettings.ConnectionPort ?? port;
+            connectionKey = transportSettings.ConnectionKey ?? connectionKey;
+            unconnectedMessagesEnabled = transportSettings.UnconnectedPacketsEnabled ?? unconnectedMessagesEnabled;
+            broadcastReceiveEnabled = transportSettings.UnconnectedPacketsEnabled ?? broadcastReceiveEnabled;
         }
 
+        netManager.UnconnectedMessagesEnabled = unconnectedMessagesEnabled;
+        netManager.BroadcastReceiveEnabled = broadcastReceiveEnabled;
         bool success = netManager.Start(port);
         if (!success)
         {
@@ -172,21 +177,30 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
     public override void SendUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
     {
-        netManager.SendUnconnectedMessage(packet.ByteArray, ipEndPoint);
+        if (netManager.UnconnectedMessagesEnabled)
+        {
+            netManager.SendUnconnectedMessage(packet.ByteArray, ipEndPoint);
+        }
     }
 
     public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, NetPacket packet)
     {
-        byte[] data = packet.ByteArray;
-        foreach (var ipEndPoint in ipEndPoints)
+        if (netManager.UnconnectedMessagesEnabled)
         {
-            netManager.SendUnconnectedMessage(data, ipEndPoint);
+            byte[] data = packet.ByteArray;
+            foreach (var ipEndPoint in ipEndPoints)
+            {
+                netManager.SendUnconnectedMessage(data, ipEndPoint);
+            }
         }
     }
 
     public override void BroadcastUnconnected(NetPacket packet)
     {
-        netManager.SendBroadcast(packet.ByteArray, port);
+        if (netManager.BroadcastReceiveEnabled)
+        {
+            netManager.SendBroadcast(packet.ByteArray, port);
+        }
     }
 
     public override void Disconnect()
@@ -278,7 +292,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
     }
 
-    private TransportCode ConvertCode(DisconnectReason disconnectReason)
+    protected TransportCode ConvertCode(DisconnectReason disconnectReason)
     {
         switch (disconnectReason)
         {
@@ -324,6 +338,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         if (!connectedPeers.ContainsKey(peerId))
         {
             connectedPeers[peerId] = peer;
+            TransportData.ConnectedClientIds.Add(peerId);
             RaiseNetworkConnected(peerId);
         }
         else
@@ -342,6 +357,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         var peerId = (uint)peer.Id;
         if (connectedPeers.Remove(peerId))
         {
+            TransportData.ConnectedClientIds.Remove(peerId);
             RaiseNetworkDisconnected(peerId, ConvertCode(disconnectInfo.Reason));
         }
         else

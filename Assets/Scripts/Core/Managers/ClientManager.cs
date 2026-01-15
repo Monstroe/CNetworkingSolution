@@ -12,12 +12,12 @@ public class ClientManager : MonoBehaviour
     public event NewUserCreatedEventHandler OnNewUserCreated;
 
 #nullable enable
-    public delegate void LobbyCreateRequestedEventHandler(ServerSettings? serverSettings);
+    public delegate void LobbyCreateRequestedEventHandler(TransportSettings? serverSettings);
 #nullable disable
     public event LobbyCreateRequestedEventHandler OnLobbyCreateRequested;
 
 #nullable enable
-    public delegate void LobbyJoinRequestedEventHandler(int lobbyId, ServerSettings? serverSettings);
+    public delegate void LobbyJoinRequestedEventHandler(int lobbyId, TransportSettings? serverSettings);
 #nullable disable
     public event LobbyJoinRequestedEventHandler OnLobbyJoinRequested;
 
@@ -36,20 +36,20 @@ public class ClientManager : MonoBehaviour
     public static ClientManager Instance { get; private set; }
     public ClientLobby CurrentLobby { get; private set; }
 #nullable enable
-    public ServerSettings? CurrentServerSettings { get; set; }
+    public TransportSettings? CurrentTransportSettings { get; set; }
 #nullable disable
     public bool IsConnected { get; private set; } = false;
     public ConnectionData ConnectionData { get; private set; }
+    public NetMode NetMode { get; set; }
 
 #if CNS_SERVER_MULTIPLE
     [Tooltip("The URL of the lobby API. PLEASE DON'T PUT A SLASH AT THE END.")]
     [SerializeField] private string lobbyApiUrl = "http://localhost:5107/api";
 
-    private ClientWebAPI webAPI;
+    public ClientWebAPI WebAPI { get; private set; }
 #endif
 
     private SingleTransportUtility transportUtility;
-    private readonly ClientServiceUtility unconnectedServices = new ClientServiceUtility();
 
     void Awake()
     {
@@ -70,28 +70,37 @@ public class ClientManager : MonoBehaviour
         AddTransportUtilityEvents();
         CurrentLobby = GetComponent<ClientLobby>();
         CurrentLobby.Init(transportUtility);
+        CurrentLobby.LobbyData.Settings = NetResources.Instance.DefaultLobbySettings.Clone();
+        CurrentLobby.CurrentUser.Settings = NetResources.Instance.DefaultUserSettings.Clone();
+        NetMode = NetResources.Instance.DefaultNetMode;
 #if CNS_SERVER_MULTIPLE
-        webAPI = new ClientWebAPI(lobbyApiUrl);
+        WebAPI = new ClientWebAPI(lobbyApiUrl);
 #endif
         Debug.Log("<color=green><b>CNS</b></color>: Client initialized.");
     }
 
     void OnDestroy()
     {
-        transportUtility.RemoveTransport();
+        transportUtility.RemoveTransports();
         ClearTransportUtilityEvents();
     }
 
-    private void HandleNetworkConnected(uint remoteId)
+    private void HandleNetworkConnected(ulong remoteId)
     {
-        if (NetResources.Instance.GameMode == GameMode.Singleplayer)
+        if (NetMode == NetMode.Local)
         {
             transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
             return;
         }
-
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(webAPI.ConnectionToken), TransportMethod.Reliable);
+        if (WebAPI.ConnectionToken != null)
+        {
+            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(WebAPI.ConnectionToken), TransportMethod.Reliable);
+        }
+        else
+        {
+            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
+        }
 #elif CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
         if (ConnectionData.LobbyConnectionType == LobbyConnectionType.Create)
         {
@@ -99,22 +108,31 @@ public class ClientManager : MonoBehaviour
         }
         else
         {
-            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(webAPI.ConnectionToken), TransportMethod.Reliable);
+            if (WebAPI.ConnectionToken != null)
+            {
+                transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(WebAPI.ConnectionToken), TransportMethod.Reliable);
+            }
+            else
+            {
+                transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
+            }
         }
 #elif CNS_SERVER_SINGLE
-        transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
+            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
 #endif
     }
 
-    private void HandleNetworkDisconnected(uint remoteId, TransportCode code)
+    private void HandleNetworkDisconnected(ulong remoteId, TransportCode code)
     {
         Debug.Log("<color=green><b>CNS</b></color>: Client disconnected: " + code);
-        transportUtility.RemoveTransport();
+        transportUtility.RemoveTransports();
         IsConnected = false;
+        CurrentLobby.LobbyData = new LobbyData();
+        CurrentLobby.LobbyData.Settings = NetResources.Instance.DefaultLobbySettings.Clone();
         OnLobbyConnectionLost?.Invoke(code);
     }
 
-    private void HandleNetworkReceived(uint remoteId, NetPacket packet, TransportMethod? method)
+    private void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
     {
 #if !UNITY_EDITOR
         try
@@ -144,7 +162,7 @@ public class ClientManager : MonoBehaviour
                 {
                     Debug.LogWarning("<color=yellow><b>CNS</b></color>: Client rejected");
                     LobbyRejectionType errorType = (LobbyRejectionType)packet.ReadByte();
-                    OnLobbyConnectionRejected?.Invoke(CurrentLobby.LobbyData.LobbyId, errorType);
+                    OnLobbyConnectionRejected?.Invoke(lobbyId, errorType);
                 }
             }
             else
@@ -167,17 +185,7 @@ public class ClientManager : MonoBehaviour
         try
         {
 #endif
-        ServiceType serviceType = (ServiceType)packet.ReadByte();
-        CommandType commandType = (CommandType)packet.ReadByte();
-
-        if (unconnectedServices.GetService(serviceType, out ClientService service))
-        {
-            service.ReceiveDataUnconnected(iPEndPoint, packet, serviceType, commandType);
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for type {serviceType}. Command {commandType} will not be processed.");
-        }
+        CurrentLobby.ReceiveDataUnconnected(iPEndPoint, packet);
 #if !UNITY_EDITOR
         }
         catch (Exception ex)
@@ -193,45 +201,21 @@ public class ClientManager : MonoBehaviour
         OnLobbyConnectionError?.Invoke(code, socketError);
     }
 
-    public void SendToUnconnectedClient(IPEndPoint iPEndPoint, NetPacket packet)
-    {
-        if (packet != null)
-        {
-            transportUtility.SendToUnconnectedRemote(iPEndPoint, packet);
-        }
-    }
-
-    public void SendToUnconnectedClients(List<IPEndPoint> iPEndPoints, NetPacket packet)
-    {
-        if (packet != null)
-        {
-            transportUtility.SendToUnconnectedRemotes(iPEndPoints, packet);
-        }
-    }
-
-    public void BroadcastToUnconnectedClients(NetPacket packet)
-    {
-        if (packet != null)
-        {
-            transportUtility.BroadcastToUnconnectedRemotes(packet);
-        }
-    }
-
     public void CreateNewUser(UserSettings userSettings = null, bool invokeEvent = true)
     {
-        if (NetResources.Instance.GameMode == GameMode.Singleplayer)
+        if (NetMode == NetMode.Local)
         {
-            CreateUser(Guid.NewGuid(), userSettings ?? NetResources.Instance.DefaultUserSettings, invokeEvent);
+            CreateUser(Guid.NewGuid(), userSettings ?? NetResources.Instance.DefaultUserSettings.Clone(), invokeEvent);
             return;
         }
 
 #if CNS_SERVER_MULTIPLE
-        StartCoroutine(webAPI.CreateUserCoroutine(userSettings ?? NetResources.Instance.DefaultUserSettings, (userGuid, settings) =>
+        StartCoroutine(WebAPI.CreateUserCoroutine(userSettings ?? NetResources.Instance.DefaultUserSettings.Clone(), (userGuid, settings) =>
         {
             CreateUser(userGuid, settings, invokeEvent);
         }));
 #elif CNS_SERVER_SINGLE
-        CreateUser(Guid.NewGuid(), userSettings ?? NetResources.Instance.DefaultUserSettings, invokeEvent);
+        CreateUser(Guid.NewGuid(), userSettings ?? NetResources.Instance.DefaultUserSettings.Clone(), invokeEvent);
 #endif
     }
 
@@ -255,6 +239,10 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbyUserSettings(CurrentLobby.CurrentUser, userSettings), TransportMethod.Reliable);
         }
+        else if (NetMode == NetMode.Local)
+        {
+            UpdateUser(userSettings);
+        }
 #if !(CNS_SERVER_MULTIPLE && CNS_SYNC_HOST)
         else
         {
@@ -263,9 +251,9 @@ public class ClientManager : MonoBehaviour
 #endif
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
-            StartCoroutine(webAPI.UpdateUserCoroutine(userSettings, (userGuid, settings) =>
+            StartCoroutine(WebAPI.UpdateUserCoroutine(userSettings, (userGuid, settings) =>
             {
                 // User recreated
                 CreateUser(userGuid, settings, false);
@@ -283,16 +271,16 @@ public class ClientManager : MonoBehaviour
         CurrentLobby.CurrentUser.Settings = userSettings;
     }
 
-    public void CreateNewLobby(LobbySettings lobbySettings = null, ServerSettings serverSettings = null, bool invokeEvent = true)
+    public void CreateNewLobby(LobbySettings lobbySettings = null, bool invokeEvent = true)
     {
-        if (NetResources.Instance.GameMode == GameMode.Singleplayer)
+        if (NetMode == NetMode.Local)
         {
-            CreateLobby(NetResources.Instance.DefaultLobbyId, lobbySettings ?? NetResources.Instance.DefaultLobbySettings, serverSettings, invokeEvent);
+            CreateLobby(NetResources.Instance.DefaultLobbyId, lobbySettings ?? NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
             return;
         }
 
 #if CNS_SERVER_MULTIPLE
-        StartCoroutine(webAPI.CreateLobbyCoroutine(lobbySettings, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
+        StartCoroutine(WebAPI.CreateLobbyCoroutine(lobbySettings, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
         {
             // User recreated
             CreateUser(userGuid, settings, false);
@@ -302,12 +290,12 @@ public class ClientManager : MonoBehaviour
             CreateLobby(lobbyId, lobbySettingsResponse, serverSettingsResponse, invokeEvent);
         }));
 #elif CNS_SERVER_SINGLE
-        CreateLobby(-1, lobbySettings ?? NetResources.Instance.DefaultLobbySettings, serverSettings, invokeEvent);
+        CreateLobby(-1, lobbySettings ?? NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
 #endif
     }
 
 #nullable enable
-    private void CreateLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
+    private void CreateLobby(int lobbyId, LobbySettings lobbySettings, TransportSettings? serverSettings, bool invokeEvent)
     {
         ConnectionData = new ConnectionData
         {
@@ -319,7 +307,6 @@ public class ClientManager : MonoBehaviour
         };
         CurrentLobby.LobbyData.LobbyId = lobbyId;
         CurrentLobby.LobbyData.Settings = lobbySettings;
-        CurrentServerSettings = serverSettings;
         if (invokeEvent)
         {
             OnLobbyCreateRequested?.Invoke(serverSettings);
@@ -333,6 +320,10 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.SendToServer(PacketBuilder.LobbySettings(lobbySettings), TransportMethod.Reliable);
         }
+        else if (NetMode == NetMode.Local)
+        {
+            UpdateLobby(lobbySettings);
+        }
 #if !(CNS_SERVER_MULTIPLE && CNS_SYNC_HOST)
         else
         {
@@ -341,9 +332,9 @@ public class ClientManager : MonoBehaviour
 #endif
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
-            StartCoroutine(webAPI.UpdateLobbyCoroutine(lobbySettings, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
+            StartCoroutine(WebAPI.UpdateLobbyCoroutine(lobbySettings, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
             {
                 // User recreated
                 CreateUser(userGuid, settings, false);
@@ -361,16 +352,16 @@ public class ClientManager : MonoBehaviour
         CurrentLobby.LobbyData.Settings = lobbySettings;
     }
 
-    public void JoinExistingLobby(int lobbyId, ServerSettings serverSettings = null, bool invokeEvent = true)
+    public void JoinExistingLobby(int lobbyId, bool invokeEvent = true)
     {
-        if (NetResources.Instance.GameMode == GameMode.Singleplayer)
+        if (NetMode == NetMode.Local)
         {
-            JoinLobby(lobbyId, NetResources.Instance.DefaultLobbySettings, serverSettings, invokeEvent);
+            JoinLobby(lobbyId, NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
             return;
         }
 
 #if CNS_SERVER_MULTIPLE
-        StartCoroutine(webAPI.JoinLobbyCoroutine(lobbyId, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
+        StartCoroutine(WebAPI.JoinLobbyCoroutine(lobbyId, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
         {
             // User recreated
             CreateUser(userGuid, settings, false);
@@ -380,12 +371,12 @@ public class ClientManager : MonoBehaviour
             JoinLobby(joinedLobbyId, lobbySettingsResponse, serverSettingsResponse, invokeEvent);
         }));
 #elif CNS_SERVER_SINGLE
-        JoinLobby(lobbyId, NetResources.Instance.DefaultLobbySettings, serverSettings, invokeEvent);
+        JoinLobby(lobbyId, NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
 #endif
     }
 
 #nullable enable
-    private void JoinLobby(int lobbyId, LobbySettings lobbySettings, ServerSettings? serverSettings, bool invokeEvent)
+    private void JoinLobby(int lobbyId, LobbySettings lobbySettings, TransportSettings? serverSettings, bool invokeEvent)
     {
         ConnectionData = new ConnectionData
         {
@@ -397,7 +388,6 @@ public class ClientManager : MonoBehaviour
         };
         CurrentLobby.LobbyData.LobbyId = lobbyId;
         CurrentLobby.LobbyData.Settings = lobbySettings;
-        CurrentServerSettings = serverSettings;
         if (invokeEvent)
         {
             OnLobbyJoinRequested?.Invoke(lobbyId, serverSettings);
@@ -405,19 +395,22 @@ public class ClientManager : MonoBehaviour
     }
 #nullable disable
 
-    public void Shutdown()
+    public void RemoveTransports()
     {
-        transportUtility.RemoveTransport();
+        transportUtility.RemoveTransports();
     }
 
-    public void RegisterTransport(TransportType transportType)
+#nullable enable
+    public void RegisterTransport(TransportType transportType, TransportSettings? transportSettings = null)
     {
-        transportUtility.RegisterTransport(transportType, NetDeviceType.Client);
+        CurrentTransportSettings = transportSettings;
+        transportUtility.RegisterTransport(transportType, NetDeviceType.Client, transportSettings);
     }
+#nullable disable
 
     public void SetTransport(NetTransport newTransport)
     {
-        transportUtility.SetTransport(newTransport);
+        transportUtility.AddTransport(newTransport);
     }
 
 #if CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
@@ -457,43 +450,5 @@ public class ClientManager : MonoBehaviour
         transportUtility.OnSingleReceived -= HandleNetworkReceived;
         transportUtility.OnSingleReceivedUnconnected -= HandleNetworkReceivedUnconnected;
         transportUtility.OnSingleError -= HandleNetworkError;
-    }
-
-    public void RegisterUnconnectedService<T>(T service) where T : ClientService
-    {
-        if (unconnectedServices.RegisterService(service))
-        {
-            Debug.Log($"<color=green><b>CNS</b></color>: Registered unconnected ClientService {typeof(T)}.");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {typeof(T)} is already registered.");
-        }
-    }
-
-    public void UnregisterUnconnectedService<T>() where T : ClientService
-    {
-        if (unconnectedServices.UnregisterService<T>())
-        {
-            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered unconnected ClientService {typeof(T)}.");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {typeof(T)} is not registered.");
-        }
-    }
-
-    public T GetUnconnectedService<T>() where T : ClientService
-    {
-        ClientService service = unconnectedServices.GetService<T>();
-        if (service != null)
-        {
-            return (T)service;
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {typeof(T)} not found.");
-            return null;
-        }
     }
 }

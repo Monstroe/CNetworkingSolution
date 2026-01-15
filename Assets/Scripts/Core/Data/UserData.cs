@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class UserData : INetSerializable<UserData>
@@ -41,22 +42,44 @@ public class UserData : INetSerializable<UserData>
 }
 
 [Serializable]
-public class UserSettings : INetSerializable<UserSettings>
+public class UserSettings : INetSerializable<UserSettings>, IDeepClone<UserSettings>
 {
     public string UserName { get => userName; set => userName = value; }
+    public UserType UserType { get => userType; set => userType = value; }
 
     [SerializeField] private string userName;
+    [SerializeField] private UserType userType;
 
-    public UserSettings Deserialize(NetPacket packet)
+    public UserSettings Clone()
     {
         return new UserSettings()
         {
-            UserName = packet.ReadString()
+            UserName = this.UserName,
+            UserType = this.UserType,
+        };
+    }
+
+    public UserSettings Deserialize(NetPacket packet)
+    {
+        string userName = packet.ReadString();
+        UserType userType = (UserType)packet.ReadByte();
+
+        return new UserSettings()
+        {
+            UserName = userName,
+            UserType = userType
         };
     }
 
     public void Serialize(NetPacket packet)
     {
         packet.Write(UserName);
+        packet.Write((byte)UserType);
     }
+}
+
+public enum UserType
+{
+    Player,
+    // Additional user types can be added here
 }

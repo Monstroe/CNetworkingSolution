@@ -12,7 +12,7 @@ public class LocalTransport : NetTransport
     private bool isConnecting = false;
     private bool isDisconnecting = false;
 
-    public override uint ServerClientId => 0;
+    public uint DefaultId => 0;
 
     void FixedUpdate()
     {
@@ -21,15 +21,22 @@ public class LocalTransport : NetTransport
 
     public override void Initialize(NetDeviceType deviceType)
     {
-        this.deviceType = deviceType;
+        TransportData.DeviceType = deviceType;
     }
 
     void PollEvents()
     {
+        while (queuedPackets.Count > 0)
+        {
+            var (remoteId, data, method) = queuedPackets.Dequeue();
+            NetPacket receivedPacket = new NetPacket(data);
+            RaiseNetworkReceived(remoteId, receivedPacket, method);
+        }
+
         if (isConnecting)
         {
             isConnecting = false;
-            RaiseNetworkConnected(ServerClientId);
+            RaiseNetworkConnected(DefaultId);
         }
 
         if (isDisconnecting)
@@ -37,23 +44,16 @@ public class LocalTransport : NetTransport
             isDisconnecting = false;
             queuedPackets.Clear();
             instances[instanceIndex] = null;
-            RaiseNetworkDisconnected(ServerClientId, TransportCode.ConnectionClosed);
-        }
-
-        while (queuedPackets.Count > 0)
-        {
-            var (remoteId, data, method) = queuedPackets.Dequeue();
-            NetPacket receivedPacket = new NetPacket(data);
-            RaiseNetworkReceived(remoteId, receivedPacket, method);
+            RaiseNetworkDisconnected(DefaultId, TransportCode.ConnectionClosed);
         }
     }
 
 #nullable enable
-    protected override bool StartClient(TransportData? transportData = null)
+    protected override bool StartClient(TransportSettings? transportSettings = null)
     {
         if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + TransportData.DeviceType);
             return false;
         }
 
@@ -72,11 +72,11 @@ public class LocalTransport : NetTransport
         return true;
     }
 
-    protected override bool StartServer(TransportData? transportData = null)
+    protected override bool StartServer(TransportSettings? transportSettings = null)
     {
         if (initialized)
         {
-            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + deviceType);
+            Debug.LogWarning("<color=yellow><b>CNS</b></color>: Already started as " + TransportData.DeviceType);
             return false;
         }
 
@@ -109,12 +109,12 @@ public class LocalTransport : NetTransport
 
     public override void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method)
     {
-        Send(ServerClientId, packet, method);
+        Send(DefaultId, packet, method);
     }
 
     public override void SendToAll(NetPacket packet, TransportMethod method)
     {
-        Send(ServerClientId, packet, method);
+        Send(DefaultId, packet, method);
     }
 
     public override void SendUnconnected(IPEndPoint ipEndPoint, NetPacket packet)

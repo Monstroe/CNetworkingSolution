@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 public class ConnectionData : INetSerializable<ConnectionData>
 {
@@ -50,4 +49,6 @@ public enum LobbyRejectionType
 {
     LobbyFull,
     LobbyNotFound,
+    LobbyClosed,
+    KickedByHost,
 }

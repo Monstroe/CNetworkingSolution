@@ -42,10 +42,10 @@ public class Menu : MonoBehaviour
         Debug.Log($"New user created with ID: {userId}");
     }
 
-    private void LobbyCreateRequested(ServerSettings serverSettings)
+    private void LobbyCreateRequested(TransportSettings serverSettings)
     {
         Debug.Log($"Creating lobby...");
-        if (NetResources.Instance.GameMode == GameMode.Singleplayer)
+        if (ClientManager.Instance.NetMode == NetMode.Local)
         {
             Instantiate(NetResources.Instance.ServerPrefab);
             ServerManager.Instance.RegisterTransport(TransportType.Local);
@@ -65,10 +65,10 @@ public class Menu : MonoBehaviour
 #endif
     }
 
-    private void LobbyJoinedRequested(int lobbyId, ServerSettings serverSettings)
+    private void LobbyJoinedRequested(int lobbyId, TransportSettings serverSettings)
     {
         Debug.Log($"Joining lobby {lobbyId}...");
-        ClientManager.Instance.RegisterTransport(TransportType.CNet);
+        //ClientManager.Instance.RegisterTransport(TransportType.CNet);
     }
 
     private void LobbyConnectionAccepted(int lobbyId)
@@ -99,7 +99,7 @@ public class Menu : MonoBehaviour
 
     public void StartSinglePlayer()
     {
-        NetResources.Instance.GameMode = GameMode.Singleplayer;
+        ClientManager.Instance.NetMode = NetMode.Local;
         ClientManager.Instance.CreateNewUser();
         ClientManager.Instance.CreateNewLobby();
     }

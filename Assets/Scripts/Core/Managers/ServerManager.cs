@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ public class ServerManager : MonoBehaviour
 {
     public static ServerManager Instance { get; private set; }
     public ServerData ServerData { get; private set; } = new ServerData();
+    public NetMode NetMode { get; set; }
 
     [Header("Lobby Settings")]
     [SerializeField] private ServerLobby lobbyPrefab;
@@ -64,9 +66,12 @@ public class ServerManager : MonoBehaviour
 
         transportUtility = GetComponent<MultiTransportUtility>();
         AddTransportUtilityEvents();
+        ServerData.ServerId = Guid.NewGuid();
+        ServerData.SecretKey = GenerateSecretKey();
+        NetMode = NetResources.Instance.DefaultNetMode;
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             OnPublicIpAddressFetched += async (ip) =>
             {
@@ -92,7 +97,7 @@ public class ServerManager : MonoBehaviour
                 {
                     LobbyId = NetResources.Instance.DefaultLobbyId,
                     LobbyConnectionType = LobbyConnectionType.Create,
-                    LobbySettings = NetResources.Instance.DefaultLobbySettings,
+                    LobbySettings = NetResources.Instance.DefaultLobbySettings.Clone(),
                     UserGuid = Guid.Empty,
                     UserSettings = new UserSettings()
                 });
@@ -110,42 +115,18 @@ public class ServerManager : MonoBehaviour
         onInitialized?.Invoke();
     }
 
-    public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
+    public void KickUser(UserData user)
     {
-        if (packet != null)
-        {
-            transportUtility.SendToRemote(user.UserId, packet, method);
-        }
-    }
-
-    public void SendToUsers(List<UserData> users, NetPacket packet, TransportMethod method)
-    {
-        if (packet != null)
-        {
-            transportUtility.SendToRemotes(users.ConvertAll(user => user.UserId), packet, method);
-        }
-    }
-
-    public void BroadcastToAllUsers(NetPacket packet, TransportMethod method)
-    {
-        if (packet != null)
-        {
-            transportUtility.SendToAllRemotes(packet, method);
-        }
-    }
-
-    public async void KickUser(UserData user)
-    {
-        // TODO: SEE IF I REALLY NEED THIS
-        if (ServerData.ConnectedUsers.TryGetValue(user.UserId, out UserData userData))
-        {
-            await RemoveUser(userData);
-        }
-
         transportUtility.KickRemote(user.UserId);
     }
 
-    public void Shutdown()
+    public void RemoveTransport(TransportType transportType)
+    {
+        NetTransport transport = transportUtility.Transports.Find(t => t.TransportData.TransportType == transportType);
+        transportUtility.RemoveTransport(transport);
+    }
+
+    public void RemoveTransports()
     {
         transportUtility.RemoveTransports();
     }
@@ -176,6 +157,10 @@ public class ServerManager : MonoBehaviour
             if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
             {
                 await RemoveUser(userData);
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} already disconnected.");
             }
         }
         catch (Exception ex)
@@ -214,7 +199,7 @@ public class ServerManager : MonoBehaviour
                     if (newLobby == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {remoteId} cannot join.");
-                        SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
+                        transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
@@ -222,12 +207,12 @@ public class ServerManager : MonoBehaviour
                     if (newLobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {remoteId} cannot join.");
-                        SendToUser(remoteUser, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
+                        transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
                         KickUser(remoteUser);
                         return;
                     }
 
-                    SendToUser(remoteUser, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
+                    transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
                     await AddUserToLobby(remoteUser, newLobby, connectionData);
                 }
                 else
@@ -246,6 +231,24 @@ public class ServerManager : MonoBehaviour
 #endif
         }
     }
+
+#if CNS_LOBBY_SINGLE
+    private void HandleNetworkReceivedUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
+    {
+#if !UNITY_EDITOR
+        try
+        {
+#endif
+        ServerData.CurrentLobby.ReceiveDataUnconnected(iPEndPoint, packet);
+#if !UNITY_EDITOR
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing unconnected received data from {iPEndPoint}: {ex.Message}");
+        }
+#endif
+    }
+#endif
 
     private void HandleNetworkError(TransportCode code, SocketError? socketError)
     {
@@ -269,7 +272,7 @@ public class ServerManager : MonoBehaviour
         ClearTransportUtilityEvents();
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             await Database.Close();
         }
@@ -278,7 +281,7 @@ public class ServerManager : MonoBehaviour
 
     private ConnectionData GetConnectionData(NetPacket packet)
     {
-        if (NetResources.Instance.GameMode == GameMode.Singleplayer)
+        if (NetMode == NetMode.Local)
         {
             return new ConnectionData().Deserialize(packet);
         }
@@ -297,7 +300,7 @@ public class ServerManager : MonoBehaviour
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
         connectionData.LobbyConnectionType = LobbyConnectionType.Join;
         connectionData.LobbyId = NetResources.Instance.DefaultLobbyId;
-        connectionData.LobbySettings = NetResources.Instance.DefaultLobbySettings;
+        connectionData.LobbySettings = NetResources.Instance.DefaultLobbySettings.Clone();
 #endif
         return connectionData;
     }
@@ -345,7 +348,7 @@ public class ServerManager : MonoBehaviour
         ServerData.ConnectedUsers[user.UserId] = user;
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             await Database.AddUserToServerLimboAsync(user.UserId, maxSecondsBeforeUnverifiedUserRemoval);
             TokenVerifier.AddUnverifiedUser(user);
@@ -370,7 +373,7 @@ public class ServerManager : MonoBehaviour
                 {
                     lobby.UserLeft(user);
                 }
-                else
+                else 
                 {
                     await RemoveLobby(lobby);
                 }
@@ -385,7 +388,7 @@ public class ServerManager : MonoBehaviour
         }
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             await Database.DeleteUserAsync(user.GlobalGuid);
             await Database.RemoveUserFromServerAsync(user.GlobalGuid);
@@ -412,7 +415,7 @@ public class ServerManager : MonoBehaviour
         SceneManager.SetActiveScene(previousScene);
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             await Database.SaveLobbyMetadataAsync(lobby.LobbyData);
             await Database.RemoveLobbyFromLimbo(lobby.LobbyData.LobbyId);
@@ -433,7 +436,7 @@ public class ServerManager : MonoBehaviour
         }
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             await Database.RemoveLobbyFromServerAsync(lobby.LobbyData.LobbyId);
             await Database.DeleteLobbyAsync(lobby.LobbyData.LobbyId);
@@ -452,7 +455,7 @@ public class ServerManager : MonoBehaviour
         lobby.LobbyData.LobbyUsers.Add(user);
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             TokenVerifier.RemoveUnverifiedUser(user);
             await Database.SaveUserMetadataAsync(user);
@@ -472,7 +475,7 @@ public class ServerManager : MonoBehaviour
         lobby.LobbyData.LobbyUsers.Remove(user);
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (NetResources.Instance.GameMode != GameMode.Singleplayer)
+        if (NetMode != NetMode.Local)
         {
             await Database.RemoveUserFromLobbyAsync(user.LobbyId, user.GlobalGuid);
         }
@@ -480,10 +483,12 @@ public class ServerManager : MonoBehaviour
         Debug.Log($"<color=green><b>CNS</b></color>: User {user.UserId} left lobby {lobby.LobbyData.LobbyId}.");
     }
 
-    public void RegisterTransport(TransportType transportType)
+#nullable enable
+    public void RegisterTransport(TransportType transportType, TransportSettings? transportSettings = null)
     {
-        transportUtility.RegisterTransport(transportType, NetDeviceType.Server);
+        transportUtility.RegisterTransport(transportType, NetDeviceType.Server, transportSettings);
     }
+#nullable disable
 
     public void AddTransport(NetTransport transport)
     {
@@ -495,7 +500,9 @@ public class ServerManager : MonoBehaviour
         transportUtility.OnMultiConnected += HandleNetworkConnected;
         transportUtility.OnMultiDisconnected += HandleNetworkDisconnected;
         transportUtility.OnMultiReceived += HandleNetworkReceived;
-        // Received unconnected events are not handled on the server for now
+#if CNS_LOBBY_SINGLE
+        transportUtility.OnMultiReceivedUnconnected += HandleNetworkReceivedUnconnected;
+#endif
         transportUtility.OnMultiError += HandleNetworkError;
     }
 
@@ -504,21 +511,11 @@ public class ServerManager : MonoBehaviour
         transportUtility.OnMultiConnected -= HandleNetworkConnected;
         transportUtility.OnMultiDisconnected -= HandleNetworkDisconnected;
         transportUtility.OnMultiReceived -= HandleNetworkReceived;
-        // Received unconnected events are not handled on the server for now
+#if CNS_LOBBY_SINGLE
+        transportUtility.OnMultiReceivedUnconnected -= HandleNetworkReceivedUnconnected;
+#endif
         transportUtility.OnMultiError -= HandleNetworkError;
     }
-
-#if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
-    private int GenerateLobbyId()
-    {
-        int newLobbyId;
-        do
-        {
-            newLobbyId = UnityEngine.Random.Range(100000, 1000000);
-        } while (ServerData.ActiveLobbies.ContainsKey(newLobbyId));
-        return newLobbyId;
-    }
-#endif
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
     private IEnumerator GetPublicIpAddress()
@@ -543,9 +540,9 @@ public class ServerManager : MonoBehaviour
 
     private async Task InitServerAsync(string address)
     {
-        ServerData.Settings.ServerId = Guid.NewGuid();
-        ServerData.Settings.ServerKey = GenerateSecretKey();
-        ServerData.Settings.ServerAddress = address;
+        ServerData.Settings.ConnectionAddress = address;
+        ServerData.Settings.ConnectionPort = NetResources.Instance.DefaultTransportSettings.ConnectionPort;
+        ServerData.Settings.ConnectionKey = NetResources.Instance.DefaultTransportSettings.ConnectionKey;
 
         await InitDatabaseAsync();
         InitTokenVerifier();
@@ -556,17 +553,30 @@ public class ServerManager : MonoBehaviour
     private async Task InitDatabaseAsync()
     {
         Database = new ServerDatabaseHandler();
-        await Database.Connect(dbConnectionString, ServerData.Settings.ServerId);
+        await Database.Connect(dbConnectionString, ServerData.ServerId);
         await Database.SaveServerMetadataAsync(ServerData);
         Database.StartHeartbeat(secondsBetweenHeartbeats);
     }
 
     private void InitTokenVerifier()
     {
-        TokenVerifier = new ServerTokenVerifier(ServerData.Settings.ServerKey);
+        TokenVerifier = new ServerTokenVerifier(ServerData.SecretKey);
         TokenVerifier.StartUnverifiedUserCleanup(maxSecondsBeforeUnverifiedUserRemoval, 1);
         TokenVerifier.StartTokenCleanup(tokenValidityDurationSeconds, 10);
     }
+#endif
+
+#if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
+    private int GenerateLobbyId()
+    {
+        int newLobbyId;
+        do
+        {
+            newLobbyId = UnityEngine.Random.Range(100000, 1000000);
+        } while (ServerData.ActiveLobbies.ContainsKey(newLobbyId));
+        return newLobbyId;
+    }
+#endif
 
     private string GenerateSecretKey(int byteLength = 32)
     {
@@ -578,5 +588,4 @@ public class ServerManager : MonoBehaviour
 
         return Convert.ToBase64String(keyBytes);
     }
-#endif
 }

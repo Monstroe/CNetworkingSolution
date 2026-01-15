@@ -35,25 +35,21 @@ public abstract class NetTransport : MonoBehaviour
     /// </summary>
     public event NetworkErrorHandler OnNetworkError;
 
-    public NetDeviceType DeviceType => deviceType;
-    public virtual uint ServerClientId { get; }
-    public virtual List<uint> ConnectedClientIds { get; }
-
-    protected NetDeviceType deviceType;
+    public TransportData TransportData { get; protected set; } = new TransportData();
     protected bool initialized = false;
 
     public abstract void Initialize(NetDeviceType deviceType);
 
 #nullable enable
-    public virtual bool StartDevice(TransportData? transportData = null)
+    public virtual bool StartDevice(TransportSettings? transportSettings = null)
     {
-        if (deviceType == NetDeviceType.Client)
+        if (TransportData.DeviceType == NetDeviceType.Client)
         {
-            return StartClient();
+            return StartClient(transportSettings);
         }
-        else if (deviceType == NetDeviceType.Server)
+        else if (TransportData.DeviceType == NetDeviceType.Server)
         {
-            return StartServer();
+            return StartServer(transportSettings);
         }
         else
         {
@@ -61,11 +57,9 @@ public abstract class NetTransport : MonoBehaviour
             return false;
         }
     }
-#nullable disable
 
-#nullable enable
-    protected abstract bool StartClient(TransportData? transportData = null);
-    protected abstract bool StartServer(TransportData? transportData = null);
+    protected abstract bool StartClient(TransportSettings? transportSettings = null);
+    protected abstract bool StartServer(TransportSettings? transportSettings = null);
 #nullable disable
     public abstract void Send(uint remoteId, NetPacket packet, TransportMethod method);
     public abstract void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method);
@@ -138,12 +132,6 @@ public class ErrorArgs
     public SocketError? SocketError { get; set; }
 }
 
-public enum NetDeviceType
-{
-    Client,
-    Server
-}
-
 public enum TransportMethod
 {
     Reliable,
@@ -162,26 +150,4 @@ public enum TransportCode
     SocketError,
     UnknownError,
     // Additional reasons can be added here
-}
-
-public enum TransportType
-{
-#if CNS_TRANSPORT_LOCAL
-    Local,
-#endif
-#if CNS_TRANSPORT_CNET
-    CNet,
-#endif
-#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-    CNetRelay,
-#endif
-#if CNS_TRANSPORT_LITENETLIB
-    LiteNetLib,
-#endif
-#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-    LiteNetLibRelay,
-#endif
-#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
-    SteamRelay,
-#endif
 }
