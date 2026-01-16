@@ -1,7 +1,7 @@
 using System.Net;
 using UnityEngine;
 
-public class ClientPlayer : ClientObject
+public class ClientPlayer : ClientTransform
 {
     public UserData User { get; set; }
 
@@ -69,16 +69,6 @@ public class ClientPlayer : ClientObject
 
     public ClientInteractable CurrentInteractable { get; set; } = null;
 
-    [Header("Movement")]
-    [SerializeField] private float lerpSpeed = 15;
-
-    // Movement
-    private Vector3 position;
-    private Quaternion rotation;
-    private Vector3 forward;
-
-    private bool firstTransformReceived = false;
-
     // Animations
     private Animator anim;
     private bool groundedState = false;
@@ -103,28 +93,27 @@ public class ClientPlayer : ClientObject
 
     protected override void UpdateOnNonOwner()
     {
-        base.UpdateOnNonOwner();
-        transform.position = Vector3.Lerp(transform.position, position, lerpSpeed * Time.deltaTime);
-        //transform.rotation = Quaternion.Slerp(transform.rotation, rotation, lerpSpeed * Time.deltaTime);
-        transform.forward = Vector3.Lerp(transform.forward, Vector3.ProjectOnPlane(forward, Vector3.up), lerpSpeed * Time.deltaTime);
+        //base.UpdateOnNonOwner(); // Disable base interpolation of rotation (using forward only)
+        transform.position = Vector3.Lerp(transform.position, receivedPosition, lerpSpeed * Time.deltaTime);
+        transform.forward = Vector3.Lerp(transform.forward, Vector3.ProjectOnPlane(receivedForward, Vector3.up), lerpSpeed * Time.deltaTime);
     }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
+        //base.ReceiveData(packet, serviceType, commandType, transportMethod); // Disabled to prevent double handling of OBJECT_TRANSFORM
         switch (commandType)
         {
-            case CommandType.PLAYER_TRANSFORM:
+            case CommandType.OBJECT_TRANSFORM:
                 {
-                    position = packet.ReadVector3();
-                    rotation = packet.ReadQuaternion();
-                    forward = packet.ReadVector3();
+                    receivedPosition = packet.ReadVector3();
+                    receivedRotation = packet.ReadQuaternion();
+                    receivedForward = packet.ReadVector3();
 
                     if (!firstTransformReceived)
                     {
                         firstTransformReceived = true;
-                        transform.position = position;
-                        //transform.rotation = rotation;
-                        transform.forward = Vector3.ProjectOnPlane(forward, Vector3.up);
+                        transform.position = receivedPosition;
+                        transform.forward = Vector3.ProjectOnPlane(receivedForward, Vector3.up);
                     }
                     break;
                 }

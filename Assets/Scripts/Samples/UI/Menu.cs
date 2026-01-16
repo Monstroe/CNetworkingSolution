@@ -12,89 +12,11 @@ public class Menu : MonoBehaviour
     [SerializeField] private GameObject multiplayerMenu;
     [SerializeField] private GameObject singleHostMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
+
     void OnEnable()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-    }
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        ClientManager.Instance.OnNewUserCreated += NewUserCreated;
-        ClientManager.Instance.OnLobbyCreateRequested += LobbyCreateRequested;
-        ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinedRequested;
-        ClientManager.Instance.OnLobbyConnectionAccepted += LobbyConnectionAccepted;
-        ClientManager.Instance.OnLobbyConnectionRejected += LobbyConnectionRejected;
-    }
-
-    void OnDestroy()
-    {
-        ClientManager.Instance.OnNewUserCreated -= NewUserCreated;
-        ClientManager.Instance.OnLobbyCreateRequested -= LobbyCreateRequested;
-        ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinedRequested;
-        ClientManager.Instance.OnLobbyConnectionAccepted -= LobbyConnectionAccepted;
-        ClientManager.Instance.OnLobbyConnectionRejected -= LobbyConnectionRejected;
-    }
-
-    private void NewUserCreated(Guid userId)
-    {
-        Debug.Log($"New user created with ID: {userId}");
-    }
-
-    private void LobbyCreateRequested(TransportSettings serverSettings)
-    {
-        Debug.Log($"Creating lobby...");
-        if (ClientManager.Instance.NetMode == NetMode.Local)
-        {
-            Instantiate(NetResources.Instance.ServerPrefab);
-            ServerManager.Instance.RegisterTransport(TransportType.Local);
-            ClientManager.Instance.RegisterTransport(TransportType.Local);
-            return;
-        }
-
-#if CNS_SYNC_DEDICATED
-        ClientManager.Instance.RegisterTransport(TransportType.CNet);
-#elif CNS_SYNC_HOST && CNS_LOBBY_SINGLE
-        Instantiate(NetResources.Instance.ServerPrefab);
-        ServerManager.Instance.RegisterTransport(TransportType.CNet);
-        ServerManager.Instance.RegisterTransport(TransportType.Local);
-        ClientManager.Instance.RegisterTransport(TransportType.Local);
-#elif CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-        ClientManager.Instance.RegisterTransport(TransportType.LiteNetLibRelay);
-#endif
-    }
-
-    private void LobbyJoinedRequested(int lobbyId, TransportSettings serverSettings)
-    {
-        Debug.Log($"Joining lobby {lobbyId}...");
-        //ClientManager.Instance.RegisterTransport(TransportType.CNet);
-    }
-
-    private void LobbyConnectionAccepted(int lobbyId)
-    {
-        Debug.Log($"Connected to lobby {lobbyId}.");
-
-        FadeScreen.Instance.Display(true, fadeDuration, () =>
-        {
-            if (ServerManager.Instance != null)
-            {
-                SceneManager.UnloadSceneAsync(NetResources.Instance.MenuSceneName);
-                SceneManager.LoadSceneAsync(NetResources.Instance.GameSceneName, LoadSceneMode.Additive).completed += (asyncOperation) =>
-                {
-                    SceneManager.SetActiveScene(SceneManager.GetSceneByName(NetResources.Instance.GameSceneName));
-                };
-            }
-            else
-            {
-                SceneManager.LoadSceneAsync(NetResources.Instance.GameSceneName);
-            }
-        });
-    }
-
-    private void LobbyConnectionRejected(int lobbyId, LobbyRejectionType errorType)
-    {
-        Debug.Log($"Failed to connect to lobby {lobbyId}. Reason: {errorType}");
     }
 
     public void StartSinglePlayer()

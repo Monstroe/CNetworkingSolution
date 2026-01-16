@@ -15,11 +15,21 @@ public class PlayerClientService : ClientService
             case CommandType.PLAYER_SPAWN:
                 {
                     byte playerId = packet.ReadByte();
+                    Vector3 pos = packet.ReadVector3();
+                    Quaternion rot = packet.ReadQuaternion();
+                    bool walking = packet.ReadBool();
+                    bool sprinting = packet.ReadBool();
+                    bool crouching = packet.ReadBool();
+                    bool grounded = packet.ReadBool();
+                    bool jumped = packet.ReadBool();
+                    bool grabbed = packet.ReadBool();
 
                     if (lobby.CurrentUser.PlayerId == playerId)
                     {
                         Player.Instance.Owner = Player.Instance;
                         Player.Instance.User = lobby.CurrentUser;
+                        Player.Instance.transform.position = pos;
+                        Player.Instance.transform.rotation = rot;
                         Player.Instance.Init(lobby.CurrentUser.PlayerId, lobby);
                     }
                     else
@@ -27,9 +37,15 @@ public class PlayerClientService : ClientService
                         UserData user = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
                         if (!ClientPlayers.ContainsKey(user) && !lobby.GetService<ObjectClientService>().ClientObjects.ContainsKey(user.PlayerId))
                         {
-                            ClientPlayer op = Instantiate(clientPlayerPrefab.gameObject).GetComponent<ClientPlayer>();
+                            ClientPlayer op = Instantiate(clientPlayerPrefab.gameObject, pos, rot).GetComponent<ClientPlayer>();
                             op.Owner = op;
                             op.User = user;
+                            op.IsWalking = walking;
+                            op.IsSprinting = sprinting;
+                            op.IsCrouching = crouching;
+                            op.IsGrounded = grounded;
+                            op.Jumped = jumped;
+                            op.Grabbed = grabbed;
                             op.Init(user.PlayerId, lobby);
                         }
                         else

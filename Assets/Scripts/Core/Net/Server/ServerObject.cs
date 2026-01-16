@@ -61,12 +61,12 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     public abstract void UserJoinedGame(UserData joinedUser);
     public abstract void UserLeft(UserData leftUser);
 
-    protected void SendToGameClientObject(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
+    public void SendToGameClientObject(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
     {
         lobby.SendToGame(PacketBuilder.ObjectCommunication(this, packet), transportMethod, exception);
     }
 
-    protected void SendToUserClientObject(UserData user, NetPacket packet, TransportMethod transportMethod)
+    public void SendToUserClientObject(UserData user, NetPacket packet, TransportMethod transportMethod)
     {
         lobby.SendToUser(user, PacketBuilder.ObjectCommunication(this, packet), transportMethod);
     }

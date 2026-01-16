@@ -30,8 +30,7 @@ MonoBehaviour:
   - m_GUID: a8dc795f6a1ec6f46a85c1f53576b74d
     m_Address: Assets/Prefabs/Map.prefab
     m_ReadOnly: 0
-    m_SerializedLabels:
-    - CNS_Map
+    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 5bae0df7c2591ef4891617a16b261582, type: 2}

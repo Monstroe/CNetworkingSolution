@@ -16,16 +16,10 @@ MonoBehaviour:
   m_GUID: 7ba3ac2a22d7bed4ea3c1e32a8177f00
   m_SerializeEntries:
   - m_GUID: 230b8af2c1e083f498710feb0d3d9ebf
-    m_Address: Assets/GameAssets/Client/Items/ClientBasicItem.prefab
+    m_Address: Assets/GameAssets/Objects/Client/Items/ClientBasicItem.prefab
     m_ReadOnly: 0
     m_SerializedLabels:
     - CNS_ClientPrefabs
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 5aff34119230c364bbbd3716f4aa5fe6
-    m_Address: Assets/GameAssets/Client/OtherPlayer.prefab
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - CNS_ClientPlayer
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 5bae0df7c2591ef4891617a16b261582, type: 2}

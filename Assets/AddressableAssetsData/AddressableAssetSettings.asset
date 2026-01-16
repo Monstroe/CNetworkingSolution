@@ -15,7 +15,7 @@ MonoBehaviour:
   m_DefaultGroup: 6d56d296fc6dfe4418fd17ef315c3e13
   m_currentHash:
     serializedVersion: 2
-    Hash: c8ef532d39db0370eeeb50830e7b6b26
+    Hash: 00000000000000000000000000000000
   m_OptimizeCatalogSize: 0
   m_BuildRemoteCatalog: 0
   m_CatalogRequestsTimeout: 0
@@ -101,9 +101,6 @@ MonoBehaviour:
     m_ProfileVersion: 1
   m_LabelTable:
     m_LabelNames:
-    - CNS_ClientPlayer
-    - CNS_ServerPlayer
-    - CNS_Map
     - CNS_ServerPrefabs
     - CNS_ClientPrefabs
     - CNS_VFX

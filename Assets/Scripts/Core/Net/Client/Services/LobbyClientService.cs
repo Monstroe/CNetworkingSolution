@@ -44,6 +44,7 @@ public class LobbyClientService : ClientService
                     bool invokeEvent = packet.ReadBool();
                     if (invokeEvent)
                     {
+                        Debug.Log("Lobby settings updated received: " + settings.MaxUsers + " max users.");
                         OnLobbySettingsUpdated?.Invoke(settings);
                     }
                     break;
@@ -57,6 +58,7 @@ public class LobbyClientService : ClientService
                     bool invokeEvent = packet.ReadBool();
                     if (invokeEvent)
                     {
+                        Debug.Log($"User settings updated received for user {userId}: {userSettings.UserName}");
                         OnLobbyUserSettingsUpdated?.Invoke(userId, userSettings);
                     }
                     break;

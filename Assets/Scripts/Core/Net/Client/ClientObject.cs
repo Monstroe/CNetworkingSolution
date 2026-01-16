@@ -119,7 +119,7 @@ public abstract class ClientObject : ClientBehaviour, INetObject
     public abstract void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod);
     public abstract void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType);
 
-    protected void SendToServerObject(NetPacket packet, TransportMethod transportMethod)
+    public void SendToServerObject(NetPacket packet, TransportMethod transportMethod)
     {
         lobby.SendToServer(PacketBuilder.ObjectCommunication(this, packet), transportMethod);
     }

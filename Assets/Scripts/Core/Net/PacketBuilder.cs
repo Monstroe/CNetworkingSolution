@@ -16,7 +16,7 @@ public enum CommandType
     /* GAME */
     GAME_USER_JOINED, GAME_START,
     /* OBJECT */
-    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY,
+    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_TRANSFORM,
     /* FX */
     SFX_REQUEST, SFX, VFX_REQUEST, VFX,
     /* MAP */
@@ -226,6 +226,17 @@ public static class PacketBuilder
         return packet;
     }
 
+    public static NetPacket ObjectTransform(Vector3 position, Quaternion rotation, Vector3 forward)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.OBJECT);
+        packet.Write((byte)CommandType.OBJECT_TRANSFORM);
+        packet.Write(position);
+        packet.Write(rotation);
+        packet.Write(forward);
+        return packet;
+    }
+
     /* FX */
     public static NetPacket PlaySFXRequest(string path, float volume, Vector3? pos)
     {
@@ -289,12 +300,20 @@ public static class PacketBuilder
     // Nothing
 
     /* PLAYER */
-    public static NetPacket PlayerSpawn(UserData user)
+    public static NetPacket PlayerSpawn(UserData user, Vector3 pos, Quaternion rot, bool walking, bool sprinting, bool crouching, bool grounded, bool jumped, bool grabbed)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYER_SPAWN);
         packet.Write(user.PlayerId);
+        packet.Write(pos);
+        packet.Write(rot);
+        packet.Write(walking);
+        packet.Write(sprinting);
+        packet.Write(crouching);
+        packet.Write(grounded);
+        packet.Write(jumped);
+        packet.Write(grabbed);
         return packet;
     }
 
@@ -304,17 +323,6 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYER_DESTROY);
         packet.Write(user.PlayerId);
-        return packet;
-    }
-
-    public static NetPacket PlayerTransform(Vector3 position, Quaternion rotation, Vector3 forward)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.PLAYER);
-        packet.Write((byte)CommandType.PLAYER_TRANSFORM);
-        packet.Write(position);
-        packet.Write(rotation);
-        packet.Write(forward);
         return packet;
     }
 
@@ -406,17 +414,6 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.INTERACTABLE);
         packet.Write((byte)CommandType.INTERACTABLE_DROP);
         packet.Write(playerId);
-        return packet;
-    }
-
-    public static NetPacket InteractableTransform(Vector3 position, Quaternion rotation, Vector3 forward)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.INTERACTABLE);
-        packet.Write((byte)CommandType.INTERACTABLE_TRANSFORM);
-        packet.Write(position);
-        packet.Write(rotation);
-        packet.Write(forward);
         return packet;
     }
 

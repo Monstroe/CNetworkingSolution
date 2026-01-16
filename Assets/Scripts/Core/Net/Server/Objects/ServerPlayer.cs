@@ -2,12 +2,9 @@ using System;
 using System.Net;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class ServerPlayer : ServerObject
+public class ServerPlayer : ServerTransform
 {
     public UserData User { get; set; }
-
-    public Rigidbody RB { get; private set; }
 
     // Movement Data
     public bool IsGrounded { get; set; }
@@ -17,25 +14,16 @@ public class ServerPlayer : ServerObject
     public bool Jumped { get; set; }
     public bool Grabbed { get; set; }
 
-    // Location
-    private Vector3 position;
-    private Quaternion rotation;
-    private Vector3 forward;
-
     // Interactable
     public ServerInteractable CurrentInteractable { get; set; }
 
-    public void Init(ushort id, ServerLobby lobby, UserData user, Vector3 position, Quaternion rotation, Vector3 forward)
+    public void Init(ushort id, ServerLobby lobby, UserData user)
     {
         base.Init(id, lobby);
         User = user;
-        RB = GetComponent<Rigidbody>();
         RB.isKinematic = true;
-        this.position = position;
-        this.rotation = rotation;
-        this.forward = forward;
         lobby.GetService<PlayerServerService>().ServerPlayers.Add(User, this);
-        SendToGameClientObject(PacketBuilder.PlayerTransform(this.position, this.rotation, this.forward), TransportMethod.Reliable, User);
+        //SendToGameClientObject(PacketBuilder.ObjectTransform(this.receivedPosition, this.receivedRotation, this.receivedForward), TransportMethod.Reliable, User);
     }
 
     public override void Remove()
@@ -50,15 +38,9 @@ public class ServerPlayer : ServerObject
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
+        base.ReceiveData(user, packet, serviceType, commandType, transportMethod);
         switch (commandType)
         {
-            case CommandType.PLAYER_TRANSFORM:
-                {
-                    position = packet.ReadVector3();
-                    rotation = packet.ReadQuaternion();
-                    forward = packet.ReadVector3();
-                    break;
-                }
             case CommandType.PLAYER_ANIM:
                 {
                     IsWalking = packet.ReadBool();
@@ -112,33 +94,5 @@ public class ServerPlayer : ServerObject
                     break;
                 }
         }
-    }
-
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
-    {
-        // Nothing
-    }
-
-    public override void Tick()
-    {
-        RB.MovePosition(position);
-        RB.MoveRotation(rotation.normalized);
-        SendToGameClientObject(PacketBuilder.PlayerTransform(RB.position, RB.rotation, forward), TransportMethod.Unreliable, User);
-    }
-
-    public override void UserJoined(UserData joinedUser)
-    {
-        // Nothing
-    }
-
-    public override void UserJoinedGame(UserData joinedUser)
-    {
-        SendToUserClientObject(joinedUser, PacketBuilder.PlayerTransform(position, rotation, forward), TransportMethod.Reliable);
-        SendToUserClientObject(joinedUser, PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed), TransportMethod.Reliable);
-    }
-
-    public override void UserLeft(UserData leftUser)
-    {
-        // Nothing
     }
 }

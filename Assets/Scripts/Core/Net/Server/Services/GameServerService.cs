@@ -28,6 +28,7 @@ public class GameServerService : ServerService
                         return;
                     }
 
+                    user.InGame = true;
                     lobby.UserJoinedGame(user);
                     break;
                 }
@@ -67,7 +68,6 @@ public class GameServerService : ServerService
         }
 
         // Game logic here
-
     }
 
     private IEnumerator GameStartTimer()
@@ -93,7 +93,6 @@ public class GameServerService : ServerService
 
     public override void UserJoinedGame(UserData joinedUser)
     {
-        joinedUser.InGame = true;
         lobby.SendToLobby(PacketBuilder.GameUserJoined(joinedUser), TransportMethod.Reliable);
     }
 

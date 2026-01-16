@@ -34,7 +34,7 @@ public class PlayerServerService : ServerService
         // Spawning happens first in the Server Service
         foreach (ServerPlayer p in ServerPlayers.Values)
         {
-            lobby.SendToUser(joinedUser, PacketBuilder.PlayerSpawn(p.User), TransportMethod.Reliable);
+            lobby.SendToUser(joinedUser, PacketBuilder.PlayerSpawn(p.User, p.transform.position, p.transform.rotation, p.IsWalking, p.IsSprinting, p.IsCrouching, p.IsGrounded, p.Jumped, p.Grabbed), TransportMethod.Reliable);
         }
 
         // Spawn new player
@@ -42,13 +42,12 @@ public class PlayerServerService : ServerService
         Transform spawnPoint = map.GetRandomSpawnPoint(ServerPlayers.Values.Select(p => p.transform.position).ToList());
         Vector3 position = map.GetGroundPosition(spawnPoint.position);
         Quaternion rotation = spawnPoint.rotation;
-        Vector3 forward = spawnPoint.forward;
 
         ServerPlayer player = (ServerPlayer)InstantiateOnServer(serverPlayerPrefab.gameObject, position, rotation, false);
         player.Owner = player; // For server-side movement authority, this should be null
-        player.Init(joinedUser.PlayerId, lobby, joinedUser, position, rotation, forward);
+        player.Init(joinedUser.PlayerId, lobby, joinedUser);
 
-        lobby.SendToGame(PacketBuilder.PlayerSpawn(joinedUser), TransportMethod.Reliable);
+        lobby.SendToGame(PacketBuilder.PlayerSpawn(joinedUser, position, rotation, player.IsWalking, player.IsSprinting, player.IsCrouching, player.IsGrounded, player.Jumped, player.Grabbed), TransportMethod.Reliable);
     }
 
     public override void UserLeft(UserData leftUser)
