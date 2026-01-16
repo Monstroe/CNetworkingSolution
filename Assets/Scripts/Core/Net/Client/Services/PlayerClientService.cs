@@ -42,13 +42,13 @@ public class PlayerClientService : ClientService
                             ClientPlayer op = Instantiate(clientPlayerPrefab.gameObject, pos, rot).GetComponent<ClientPlayer>();
                             op.Owner = op;
                             op.User = user;
+                            op.Init(user.PlayerId, lobby);
                             op.IsWalking = walking;
                             op.IsSprinting = sprinting;
                             op.IsCrouching = crouching;
                             op.IsGrounded = grounded;
                             op.Jumped = jumped;
                             op.Grabbed = grabbed;
-                            op.Init(user.PlayerId, lobby);
                         }
                         else
                         {
