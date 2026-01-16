@@ -73,7 +73,10 @@ public class PlayerMovement : MonoBehaviour
 
     void OnDestroy()
     {
-        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= Init;
+        if (ClientManager.Instance != null && ClientManager.Instance.CurrentLobby != null)
+        {
+            ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= Init;
+        }
     }
 
     private void Init()

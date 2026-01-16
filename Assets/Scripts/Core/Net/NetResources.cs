@@ -31,6 +31,12 @@ public class NetResources : MonoBehaviour
     [SerializeField] private string menuSceneName = "Menu";
     [SerializeField] private string serverSceneName = "Server";
 
+    [Header("Asset Registries")]
+    [SerializeField] private string clientPrefabsLabel = "CNS_ClientPrefabs";
+    [SerializeField] private string serverPrefabsLabel = "CNS_ServerPrefabs";
+    [SerializeField] private string sfxLabel = "CNS_SFX";
+    [SerializeField] private string vfxLabel = "CNS_VFX";
+
     [Header("Default Settings")]
     [SerializeField] private NetMode defaultNetMode = NetMode.Online;
     [Space]
@@ -71,10 +77,10 @@ public class NetResources : MonoBehaviour
 
         InitTransports();
 
-        await InitAssetRegistry("CNS_ClientPrefabs", clientPrefabsPathToKeyMap, clientPrefabsKeyToPathMap);
-        await InitAssetRegistry("CNS_ServerPrefabs", serverPrefabsPathToKeyMap, serverPrefabsKeyToPathMap);
-        await InitAssetRegistry("CNS_SFX", sfxPathToKeyMap, sfxKeyToPathMap);
-        await InitAssetRegistry("CNS_VFX", vfxPathToKeyMap, vfxKeyToPathMap);
+        await InitAssetRegistry(clientPrefabsLabel, clientPrefabsPathToKeyMap, clientPrefabsKeyToPathMap);
+        await InitAssetRegistry(serverPrefabsLabel, serverPrefabsPathToKeyMap, serverPrefabsKeyToPathMap);
+        await InitAssetRegistry(sfxLabel, sfxPathToKeyMap, sfxKeyToPathMap);
+        await InitAssetRegistry(vfxLabel, vfxPathToKeyMap, vfxKeyToPathMap);
 
         foreach ((string path, int key) in clientPrefabsPathToKeyMap)
         {
