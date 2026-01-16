@@ -2,9 +2,9 @@ using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class LobbyManager : MonoBehaviour
+public class LobbyInitializer : MonoBehaviour
 {
-    public static LobbyManager Instance { get; private set; }
+    public static LobbyInitializer Instance { get; private set; }
 
     [SerializeField] private float fadeDuration = 1f;
 
@@ -16,7 +16,7 @@ public class LobbyManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("Multiple instances of LobbyManager detected. Destroying duplicate.");
+            Debug.LogWarning("Multiple instances of LobbyInitializer detected. Destroying duplicate.");
             Destroy(gameObject);
             return;
         }
@@ -93,21 +93,21 @@ public class LobbyManager : MonoBehaviour
         }
 
 #if CNS_SYNC_DEDICATED
-        ClientManager.Instance.RegisterTransport(TransportType.LiteNetLib);
+        ClientManager.Instance.RegisterTransport(TransportType.CNet);
 #elif CNS_SYNC_HOST && CNS_LOBBY_SINGLE
         Instantiate(NetResources.Instance.ServerPrefab);
-        ServerManager.Instance.RegisterTransport(TransportType.LiteNetLib);
+        ServerManager.Instance.RegisterTransport(TransportType.CNet);
         ServerManager.Instance.RegisterTransport(TransportType.Local);
         ClientManager.Instance.RegisterTransport(TransportType.Local);
 #elif CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-        ClientManager.Instance.RegisterTransport(TransportType.LiteNetLibRelay);
+        ClientManager.Instance.RegisterTransport(TransportType.CNetRelay);
 #endif
     }
 
     private void LobbyJoinedRequested(int lobbyId, TransportSettings serverSettings)
     {
         Debug.Log($"Joining lobby {lobbyId}...");
-        ClientManager.Instance.RegisterTransport(TransportType.LiteNetLib);
+        ClientManager.Instance.RegisterTransport(TransportType.CNet);
     }
 
     private void LobbyConnectionAccepted(int lobbyId)
