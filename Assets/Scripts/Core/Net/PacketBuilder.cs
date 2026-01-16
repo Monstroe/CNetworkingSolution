@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public enum ServiceType
 {
-    CONNECTION, LOBBY, GAME, OBJECT, FX, MAP, PLAYER, INTERACTABLE, EVENT, CHAT,
+    CONNECTION, LOBBY, GAME, OBJECT, MAP, PLAYER, FX, INTERACTABLE, EVENT, CHAT,
 }
 
 public enum CommandType
@@ -17,12 +17,12 @@ public enum CommandType
     GAME_USER_JOINED, GAME_START,
     /* OBJECT */
     OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_TRANSFORM,
-    /* FX */
-    SFX_REQUEST, SFX, VFX_REQUEST, VFX,
     /* MAP */
     // Nothing
     /* PLAYER */
     PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_TRANSFORM, PLAYER_ANIM,
+    /* FX */
+    SFX_REQUEST, SFX, VFX_REQUEST, VFX,
     PLAYER_GRAB_REQUEST, PLAYER_GRAB_DENY, PLAYER_INTERACT_REQUEST, PLAYER_INTERACT_DENY, PLAYER_DROP_REQUEST, PLAYER_DROP_DENY,
     /* INTERACTABLE */
     INTERACTABLE_GRAB, INTERACTABLE_DROP, INTERACTABLE_INTERACT, INTERACTABLE_TRANSFORM,
@@ -237,65 +237,6 @@ public static class PacketBuilder
         return packet;
     }
 
-    /* FX */
-    public static NetPacket PlaySFXRequest(string path, float volume, Vector3? pos)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.SFX_REQUEST);
-        int key = NetResources.Instance.GetSFXKeyFromPath(path);
-        if (key == 0)
-        {
-            Debug.LogError("PacketBuilder PlaySFXRequest could not find SFX key for path: " + path);
-            return null;
-        }
-        packet.Write(key);
-        packet.Write(volume);
-        if (pos != null)
-            packet.Write(pos.Value);
-        return packet;
-    }
-
-    public static NetPacket PlaySFX(int key, float volume, Vector3? pos)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.SFX);
-        packet.Write(key);
-        packet.Write(volume);
-        if (pos != null)
-            packet.Write(pos.Value);
-        return packet;
-    }
-
-    public static NetPacket PlayVFXRequest(string path, Vector3 pos, float scale)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.VFX_REQUEST);
-        int key = NetResources.Instance.GetVFXKeyFromPath(path);
-        if (key == 0)
-        {
-            Debug.LogError("PacketBuilder PlayVFXRequest could not find VFX key for path: " + path);
-            return null;
-        }
-        packet.Write(key);
-        packet.Write(pos);
-        packet.Write(scale);
-        return packet;
-    }
-
-    public static NetPacket PlayVFX(int key, Vector3 pos, float scale)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.VFX);
-        packet.Write(key);
-        packet.Write(pos);
-        packet.Write(scale);
-        return packet;
-    }
-
     /* MAP */
     // Nothing
 
@@ -386,6 +327,65 @@ public static class PacketBuilder
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.PLAYER);
         packet.Write((byte)CommandType.PLAYER_DROP_DENY);
+        return packet;
+    }
+
+    /* FX */
+    public static NetPacket PlaySFXRequest(string path, float volume, Vector3? pos)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.FX);
+        packet.Write((byte)CommandType.SFX_REQUEST);
+        int key = NetResources.Instance.GetSFXKeyFromPath(path);
+        if (key == 0)
+        {
+            Debug.LogError("PacketBuilder PlaySFXRequest could not find SFX key for path: " + path);
+            return null;
+        }
+        packet.Write(key);
+        packet.Write(volume);
+        if (pos != null)
+            packet.Write(pos.Value);
+        return packet;
+    }
+
+    public static NetPacket PlaySFX(int key, float volume, Vector3? pos)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.FX);
+        packet.Write((byte)CommandType.SFX);
+        packet.Write(key);
+        packet.Write(volume);
+        if (pos != null)
+            packet.Write(pos.Value);
+        return packet;
+    }
+
+    public static NetPacket PlayVFXRequest(string path, Vector3 pos, float scale)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.FX);
+        packet.Write((byte)CommandType.VFX_REQUEST);
+        int key = NetResources.Instance.GetVFXKeyFromPath(path);
+        if (key == 0)
+        {
+            Debug.LogError("PacketBuilder PlayVFXRequest could not find VFX key for path: " + path);
+            return null;
+        }
+        packet.Write(key);
+        packet.Write(pos);
+        packet.Write(scale);
+        return packet;
+    }
+
+    public static NetPacket PlayVFX(int key, Vector3 pos, float scale)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.FX);
+        packet.Write((byte)CommandType.VFX);
+        packet.Write(key);
+        packet.Write(pos);
+        packet.Write(scale);
         return packet;
     }
 

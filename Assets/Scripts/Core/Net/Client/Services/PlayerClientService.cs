@@ -23,6 +23,7 @@ public class PlayerClientService : ClientService
                     bool grounded = packet.ReadBool();
                     bool jumped = packet.ReadBool();
                     bool grabbed = packet.ReadBool();
+                    Debug.Log($"Spawning player with Id {playerId} at position {pos}.");
 
                     if (lobby.CurrentUser.PlayerId == playerId)
                     {
@@ -31,6 +32,7 @@ public class PlayerClientService : ClientService
                         Player.Instance.transform.position = pos;
                         Player.Instance.transform.rotation = rot;
                         Player.Instance.Init(lobby.CurrentUser.PlayerId, lobby);
+                        Debug.Log("Local player spawned.");
                     }
                     else
                     {

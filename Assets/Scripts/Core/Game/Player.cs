@@ -22,6 +22,14 @@ public class Player : ClientPlayer
         }
     }
 
+    public override void Init(ushort id, ClientLobby lobby)
+    {
+        base.Init(id, lobby);
+        Initialized = true;
+        Debug.Log("Player initialized.");
+    }
+
+    public bool Initialized { get; set; } = false;
     public bool ControlsEnabled { get; set; } = false;
 
     void OnEnable()
@@ -37,6 +45,7 @@ public class Player : ClientPlayer
         GetComponent<PlayerInput>().actions.Enable();
         ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized += () =>
         {
+            Debug.Log("Player controls enabled.");
             ControlsEnabled = true;
         };
     }

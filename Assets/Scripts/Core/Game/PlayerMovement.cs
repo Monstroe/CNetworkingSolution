@@ -67,34 +67,45 @@ public class PlayerMovement : MonoBehaviour
         cc = GetComponent<CharacterController>();
         standingHeight = cameraParent.localPosition.y;
         crouchingHeight = cameraParent.localPosition.y - crouchLower;
+
+        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized += () =>
+        {
+            SetTransform(Player.Instance.transform.position, Player.Instance.transform.rotation);
+        };
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Player.Instance.ControlsEnabled)
+        if (Player.Instance.Initialized)
         {
-            Input();
-            Rotate();
-            Animate();
-        }
-        else
-        {
-            playerMoveValue = Vector2.zero;
-            playerLookValue = Vector2.zero;
-            playerJumpValue = 0f;
-            playerSprintValue = 0f;
-            playerCrouchValue = 0f;
+            if (Player.Instance.ControlsEnabled)
+            {
+                Input();
+                Rotate();
+                Animate();
+            }
+            else
+            {
+                playerMoveValue = Vector2.zero;
+                playerLookValue = Vector2.zero;
+                playerJumpValue = 0f;
+                playerSprintValue = 0f;
+                playerCrouchValue = 0f;
+            }
         }
     }
 
     void FixedUpdate()
     {
-        Move();
-
-        if (locked)
+        if (Player.Instance.Initialized)
         {
-            locked = false;
+            Move();
+
+            if (locked)
+            {
+                locked = false;
+            }
         }
     }
 

@@ -24,7 +24,6 @@ public class GameClientService : ClientService
 
                     if (lobby.CurrentUser.PlayerId == playerId)
                     {
-                        Debug.Log("Game initialized for local player.");
                         OnGameInitialized?.Invoke();
                     }
                     else
