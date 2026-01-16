@@ -5,9 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class Menu : MonoBehaviour
 {
-    [Header("Fade Settings")]
-    [SerializeField] private float fadeDuration = 3f;
-
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject multiplayerMenu;
     [SerializeField] private GameObject singleHostMenu;
