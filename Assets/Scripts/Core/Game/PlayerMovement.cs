@@ -68,10 +68,17 @@ public class PlayerMovement : MonoBehaviour
         standingHeight = cameraParent.localPosition.y;
         crouchingHeight = cameraParent.localPosition.y - crouchLower;
 
-        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized += () =>
-        {
-            SetTransform(Player.Instance.transform.position, Player.Instance.transform.rotation);
-        };
+        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized += Init;
+    }
+
+    void OnDestroy()
+    {
+        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= Init;
+    }
+
+    private void Init()
+    {
+        SetTransform(Player.Instance.transform.position, Player.Instance.transform.rotation);
     }
 
     // Update is called once per frame
