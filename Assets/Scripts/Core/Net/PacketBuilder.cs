@@ -416,17 +416,6 @@ public static class PacketBuilder
         return packet;
     }
 
-    /* EVENT */
-    public static NetPacket EventGroundHit(byte playerId, GroundHitArgs args)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.EVENT);
-        packet.Write((byte)CommandType.EVENT_GROUND_HIT);
-        packet.Write(playerId);
-        args.Serialize(packet);
-        return packet;
-    }
-
     /* CHAT */
     public static NetPacket ChatMessage(UserData user, string message)
     {

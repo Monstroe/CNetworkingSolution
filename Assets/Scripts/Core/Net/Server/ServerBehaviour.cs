@@ -7,6 +7,16 @@ public class ServerBehaviour : MonoBehaviour
 {
     protected ServerLobby lobby;
 
+    protected virtual void OnEnable()
+    {
+        EventBus.RegisterListener(this);
+    }
+
+    protected virtual void OnDisable()
+    {
+        EventBus.UnregisterListener(this);
+    }
+
     protected ServerObject InstantiateOnServer(string originalPath, bool initAndSendToUsers = true, ServerPlayer owner = null)
     {
         var handle = Addressables.LoadAssetAsync<GameObject>(originalPath).WaitForCompletion();
