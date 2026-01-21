@@ -3,29 +3,22 @@ using UnityEngine.Events;
 
 public class EventManager : MonoBehaviour
 {
-    [HideInInspector] public UnityEvent<GroundHitArgs> OnGroundHit = new UnityEvent<GroundHitArgs>();
+    [HideInInspector] public static UnityEvent<EntityHealthChangeArgs> EntityHealthChange = new();
+    [HideInInspector] public static UnityEvent<EntityJumpArgs> EntityJump = new();
     // ADD MORE EVENTS HERE
 }
 
-public class GroundHitArgs : INetSerializable<GroundHitArgs>
+public class EntityHealthChangeArgs
 {
-    public Vector3 position;
-    public Quaternion rotation;
+    public ServerEntity Entity;
+    public float HealthChange;
+}
 
-    public GroundHitArgs Deserialize(NetPacket packet)
-    {
-        return new GroundHitArgs()
-        {
-            position = packet.ReadVector3(),
-            rotation = packet.ReadQuaternion()
-        };
-    }
-
-    public void Serialize(NetPacket packet)
-    {
-        packet.Write(position);
-        packet.Write(rotation);
-    }
+public class EntityJumpArgs
+{
+    public ServerEntity Entity;
+    public float JumpHeight;
+    public bool Canceled;
 }
 
 // ADD MORE ARGS HERE

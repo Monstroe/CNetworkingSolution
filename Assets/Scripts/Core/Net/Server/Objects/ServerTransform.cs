@@ -6,9 +6,8 @@ public class ServerTransform : ServerObject
 {
     public Rigidbody RB { get; private set; }
 
-    protected Vector3 receivedPosition;
-    protected Quaternion receivedRotation;
-    protected Vector3 receivedForward;
+    private Vector3 receivedPosition;
+    private Quaternion receivedRotation;
 
     public override void Init(ushort id, ServerLobby lobby)
     {
@@ -16,7 +15,6 @@ public class ServerTransform : ServerObject
         RB = GetComponent<Rigidbody>();
         this.receivedPosition = RB.position;
         this.receivedRotation = RB.rotation;
-        this.receivedForward = RB.transform.forward;
     }
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
@@ -29,7 +27,6 @@ public class ServerTransform : ServerObject
                     {
                         receivedPosition = packet.ReadVector3();
                         receivedRotation = packet.ReadQuaternion();
-                        receivedForward = packet.ReadVector3();
                     }
                     break;
                 }
@@ -40,8 +37,8 @@ public class ServerTransform : ServerObject
     {
         if (Owner != null)
         {
-            RB.MovePosition(receivedPosition);
-            RB.MoveRotation(receivedRotation.normalized);
+            SyncPosition(receivedPosition);
+            SyncRotation(receivedRotation);
         }
         else
         {
@@ -49,7 +46,7 @@ public class ServerTransform : ServerObject
             receivedRotation = RB.rotation;
         }
 
-        SendToGameClientObject(PacketBuilder.ObjectTransform(RB.position, RB.rotation, receivedForward), TransportMethod.Unreliable, Owner != null ? Owner.User : null);
+        SendToGameClientObject(PacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, Owner != null ? Owner.User : null);
     }
 
     public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
@@ -70,5 +67,15 @@ public class ServerTransform : ServerObject
     public override void UserLeft(UserData leftUser)
     {
         // Nothing
+    }
+
+    protected virtual void SyncPosition(Vector3 pos)
+    {
+        RB.MovePosition(pos);
+    }
+
+    protected virtual void SyncRotation(Quaternion rot)
+    {
+        RB.MoveRotation(rot.normalized);
     }
 }

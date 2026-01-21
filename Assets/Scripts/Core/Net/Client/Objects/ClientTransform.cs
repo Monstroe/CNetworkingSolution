@@ -7,18 +7,16 @@ public abstract class ClientTransform : ClientObject
     [SerializeField] protected float lerpSpeed = 15;
 
     // Movement
-    protected Vector3 receivedPosition;
-    protected Quaternion receivedRotation;
-    protected Vector3 receivedForward;
+    private Vector3 receivedPosition;
+    private Quaternion receivedRotation;
 
-    protected bool firstTransformReceived = false;
+    private bool firstTransformReceived = false;
 
     public override void Init(ushort id, ClientLobby lobby)
     {
         base.Init(id, lobby);
         receivedPosition = transform.position;
         receivedRotation = transform.rotation;
-        receivedForward = transform.forward;
     }
 
     public override void Remove()
@@ -29,8 +27,8 @@ public abstract class ClientTransform : ClientObject
     protected override void UpdateOnNonOwner()
     {
         base.UpdateOnNonOwner();
-        transform.position = Vector3.Lerp(transform.position, receivedPosition, lerpSpeed * Time.deltaTime);
-        transform.rotation = Quaternion.Slerp(transform.rotation, receivedRotation, lerpSpeed * Time.deltaTime);
+        SyncPosition(receivedPosition);
+        SyncRotation(receivedRotation);
     }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
@@ -41,16 +39,35 @@ public abstract class ClientTransform : ClientObject
                 {
                     receivedPosition = packet.ReadVector3();
                     receivedRotation = packet.ReadQuaternion();
-                    receivedForward = packet.ReadVector3();
 
                     if (!firstTransformReceived)
                     {
                         firstTransformReceived = true;
-                        transform.position = receivedPosition;
-                        transform.rotation = receivedRotation;
+                        InitPosition(receivedPosition);
+                        InitRotation(receivedRotation);
                     }
                     break;
                 }
         }
+    }
+
+    protected virtual void InitPosition(Vector3 pos)
+    {
+        transform.position = pos;
+    }
+
+    protected virtual void InitRotation(Quaternion rot)
+    {
+        transform.rotation = rot;
+    }
+
+    protected virtual void SyncPosition(Vector3 pos)
+    {
+        transform.position = Vector3.Lerp(transform.position, pos, lerpSpeed * Time.deltaTime);
+    }
+
+    protected virtual void SyncRotation(Quaternion rot)
+    {
+        transform.rotation = Quaternion.Slerp(transform.rotation, rot, lerpSpeed * Time.deltaTime);
     }
 }

@@ -226,14 +226,13 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket ObjectTransform(Vector3 position, Quaternion rotation, Vector3 forward)
+    public static NetPacket ObjectTransform(Vector3 position, Quaternion rotation)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.OBJECT);
         packet.Write((byte)CommandType.OBJECT_TRANSFORM);
         packet.Write(position);
         packet.Write(rotation);
-        packet.Write(forward);
         return packet;
     }
 

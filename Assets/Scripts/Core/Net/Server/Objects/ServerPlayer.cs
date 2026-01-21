@@ -23,7 +23,6 @@ public class ServerPlayer : ServerTransform
         User = user;
         RB.isKinematic = true;
         lobby.GetService<PlayerServerService>().ServerPlayers.Add(User, this);
-        //SendToGameClientObject(PacketBuilder.ObjectTransform(this.receivedPosition, this.receivedRotation, this.receivedForward), TransportMethod.Reliable, User);
     }
 
     public override void Remove()

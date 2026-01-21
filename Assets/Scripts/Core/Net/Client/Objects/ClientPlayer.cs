@@ -91,32 +91,11 @@ public class ClientPlayer : ClientTransform
         base.Remove();
     }
 
-    protected override void UpdateOnNonOwner()
-    {
-        //base.UpdateOnNonOwner(); // Disable base interpolation of rotation (using forward only)
-        transform.position = Vector3.Lerp(transform.position, receivedPosition, lerpSpeed * Time.deltaTime);
-        transform.forward = Vector3.Lerp(transform.forward, Vector3.ProjectOnPlane(receivedForward, Vector3.up), lerpSpeed * Time.deltaTime);
-    }
-
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         //base.ReceiveData(packet, serviceType, commandType, transportMethod); // Disabled to prevent double handling of OBJECT_TRANSFORM
         switch (commandType)
         {
-            case CommandType.OBJECT_TRANSFORM:
-                {
-                    receivedPosition = packet.ReadVector3();
-                    receivedRotation = packet.ReadQuaternion();
-                    receivedForward = packet.ReadVector3();
-
-                    if (!firstTransformReceived)
-                    {
-                        firstTransformReceived = true;
-                        transform.position = receivedPosition;
-                        transform.forward = Vector3.ProjectOnPlane(receivedForward, Vector3.up);
-                    }
-                    break;
-                }
             case CommandType.PLAYER_ANIM:
                 {
                     IsWalking = packet.ReadBool();
@@ -133,5 +112,15 @@ public class ClientPlayer : ClientTransform
     public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
     {
         // Nothing
+    }
+
+    protected override void InitRotation(Quaternion rot)
+    {
+        transform.rotation = Quaternion.Euler(0f, rot.eulerAngles.y, 0f);
+    }
+
+    protected override void SyncRotation(Quaternion rot)
+    {
+        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, rot.eulerAngles.y, 0f), lerpSpeed * Time.deltaTime);
     }
 }
