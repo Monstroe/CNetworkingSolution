@@ -63,6 +63,11 @@ public class NetPacket
         this.byteList = data;
     }
 
+    public static bool IsSupportedType(Type type)
+    {
+        return typeof(INetSerializable).IsAssignableFrom(type) || type.IsPrimitive || (type.IsArray && (type.GetElementType().IsPrimitive || typeof(INetSerializable).IsAssignableFrom(type.GetElementType()))) || type == typeof(string) || type == typeof(string[]) || type == typeof(Vector2) || type == typeof(Vector2[]) || type == typeof(Vector3) || type == typeof(Vector3[]) || type == typeof(Quaternion) || type == typeof(Quaternion[]);
+    }
+
     public void CopyTo(int packetIndex, byte[] buffer, int arrayIndex, int count)
     {
         byteList.CopyTo(packetIndex, buffer, arrayIndex, count);
@@ -473,6 +478,65 @@ public class NetPacket
         }
     }
 
+    public void Write(object value, Type parameterType = null)
+    {
+        if (parameterType != null && typeof(INetSerializable).IsAssignableFrom(parameterType))
+        {
+            ((INetSerializable)value).Serialize(this);
+            return;
+        }
+
+        if (parameterType != null && parameterType.IsArray && typeof(INetSerializable).IsAssignableFrom(parameterType.GetElementType()))
+        {
+            Array array = (Array)value;
+            Write(array.Length);
+            for (int i = 0; i < array.Length; i++)
+            {
+                INetSerializable element = (INetSerializable)array.GetValue(i);
+                element.Serialize(this);
+            }
+            return;
+        }
+
+        switch (value)
+        {
+            case byte v: this.Write(v); break;
+            case byte[] v: this.Write(v); break;
+            case sbyte v: this.Write(v); break;
+            case sbyte[] v: this.Write(v); break;
+            case bool v: this.Write(v); break;
+            case bool[] v: this.Write(v); break;
+            case char v: this.Write(v); break;
+            case char[] v: this.Write(v); break;
+            case double v: this.Write(v); break;
+            case double[] v: this.Write(v); break;
+            case float v: this.Write(v); break;
+            case float[] v: this.Write(v); break;
+            case int v: this.Write(v); break;
+            case int[] v: this.Write(v); break;
+            case long v: this.Write(v); break;
+            case long[] v: this.Write(v); break;
+            case short v: this.Write(v); break;
+            case short[] v: this.Write(v); break;
+            case uint v: this.Write(v); break;
+            case uint[] v: this.Write(v); break;
+            case ulong v: this.Write(v); break;
+            case ulong[] v: this.Write(v); break;
+            case ushort v: this.Write(v); break;
+            case ushort[] v: this.Write(v); break;
+            case string v: this.Write(v); break;
+            case string[] v: this.Write(v); break;
+            case Vector2 v: this.Write(v); break;
+            case Vector2[] v: this.Write(v); break;
+            case Vector3 v: this.Write(v); break;
+            case Vector3[] v: this.Write(v); break;
+            case Quaternion v: this.Write(v); break;
+            case Quaternion[] v: this.Write(v); break;
+            default:
+                throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
+        }
+    }
+
     // Unity Structs
     public void Write(Vector2 value)
     {
@@ -520,130 +584,6 @@ public class NetPacket
         {
             Write(item);
         }
-    }
-
-    public void Write(object value, Type parameterType = null)
-    {
-        if (parameterType != null && typeof(INetSerializable).IsAssignableFrom(parameterType))
-        {
-            ((INetSerializable)value).Serialize(this);
-            return;
-        }
-
-        if (parameterType != null && typeof(INetSerializable[]).IsAssignableFrom(parameterType))
-        {
-            Array array = (Array)value;
-            Write(array.Length);
-            for (int i = 0; i < array.Length; i++)
-            {
-                INetSerializable element = (INetSerializable)array.GetValue(i);
-                element.Serialize(this);
-            }
-            return;
-        }
-
-        switch (value)
-        {
-            case byte v: this.Write(v); break;
-            case byte[] v: this.Write(v); break;
-            case sbyte v: this.Write(v); break;
-            case sbyte[] v: this.Write(v); break;
-            case bool v: this.Write(v); break;
-            case bool[] v: this.Write(v); break;
-            case char v: this.Write(v); break;
-            case char[] v: this.Write(v); break;
-            case double v: this.Write(v); break;
-            case double[] v: this.Write(v); break;
-            case float v: this.Write(v); break;
-            case float[] v: this.Write(v); break;
-            case int v: this.Write(v); break;
-            case int[] v: this.Write(v); break;
-            case long v: this.Write(v); break;
-            case long[] v: this.Write(v); break;
-            case short v: this.Write(v); break;
-            case short[] v: this.Write(v); break;
-            case uint v: this.Write(v); break;
-            case uint[] v: this.Write(v); break;
-            case ulong v: this.Write(v); break;
-            case ulong[] v: this.Write(v); break;
-            case ushort v: this.Write(v); break;
-            case ushort[] v: this.Write(v); break;
-            case string v: this.Write(v); break;
-            case string[] v: this.Write(v); break;
-            case Vector2 v: this.Write(v); break;
-            case Vector2[] v: this.Write(v); break;
-            case Vector3 v: this.Write(v); break;
-            case Vector3[] v: this.Write(v); break;
-            case Quaternion v: this.Write(v); break;
-            case Quaternion[] v: this.Write(v); break;
-            default:
-                throw new Exception($"Unsupported RPC parameter type: {parameterType.FullName}");
-        }
-    }
-
-    public object Read(Type parameterType = null, bool moveIndexPosition = true)
-    {
-        if (parameterType != null && typeof(INetSerializable).IsAssignableFrom(parameterType))
-        {
-            int currIdx = CurrentIndex;
-            var instance = Activator.CreateInstance(parameterType);
-            MethodInfo deserializeMethod = parameterType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public);
-            object result = deserializeMethod.Invoke(instance, new object[] { this });
-            CurrentIndex = moveIndexPosition ? CurrentIndex : currIdx;
-            return result;
-        }
-
-        if (parameterType != null && typeof(INetSerializable[]).IsAssignableFrom(parameterType))
-        {
-            int currIdx = CurrentIndex;
-            Type elementType = parameterType.GetElementType();
-            int length = this.ReadInt();
-            Array array = Array.CreateInstance(elementType, length);
-            for (int i = 0; i < length; i++)
-            {
-                var instance = Activator.CreateInstance(elementType);
-                MethodInfo deserializeMethod = elementType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public);
-                object result = deserializeMethod.Invoke(instance, new object[] { this });
-                array.SetValue(result, i);
-            }
-            CurrentIndex = moveIndexPosition ? CurrentIndex : currIdx;
-            return array;
-        }
-
-        if (parameterType == typeof(byte)) return this.ReadByte(moveIndexPosition);
-        if (parameterType == typeof(byte[])) return this.ReadBytes(moveIndexPosition);
-        if (parameterType == typeof(sbyte)) return this.ReadSByte(moveIndexPosition);
-        if (parameterType == typeof(sbyte[])) return this.ReadSBytes(moveIndexPosition);
-        if (parameterType == typeof(bool)) return this.ReadBool(moveIndexPosition);
-        if (parameterType == typeof(bool[])) return this.ReadBools(moveIndexPosition);
-        if (parameterType == typeof(char)) return this.ReadChar(moveIndexPosition);
-        if (parameterType == typeof(char[])) return this.ReadChars(moveIndexPosition);
-        if (parameterType == typeof(double)) return this.ReadDouble(moveIndexPosition);
-        if (parameterType == typeof(double[])) return this.ReadDoubles(moveIndexPosition);
-        if (parameterType == typeof(float)) return this.ReadFloat(moveIndexPosition);
-        if (parameterType == typeof(float[])) return this.ReadFloats(moveIndexPosition);
-        if (parameterType == typeof(int)) return this.ReadInt(moveIndexPosition);
-        if (parameterType == typeof(int[])) return this.ReadInts(moveIndexPosition);
-        if (parameterType == typeof(long)) return this.ReadLong(moveIndexPosition);
-        if (parameterType == typeof(long[])) return this.ReadLongs(moveIndexPosition);
-        if (parameterType == typeof(short)) return this.ReadShort(moveIndexPosition);
-        if (parameterType == typeof(short[])) return this.ReadShorts(moveIndexPosition);
-        if (parameterType == typeof(uint)) return this.ReadUInt(moveIndexPosition);
-        if (parameterType == typeof(uint[])) return this.ReadUInts(moveIndexPosition);
-        if (parameterType == typeof(ulong)) return this.ReadULong(moveIndexPosition);
-        if (parameterType == typeof(ulong[])) return this.ReadULongs(moveIndexPosition);
-        if (parameterType == typeof(ushort)) return this.ReadUShort(moveIndexPosition);
-        if (parameterType == typeof(ushort[])) return this.ReadUShorts(moveIndexPosition);
-        if (parameterType == typeof(string)) return this.ReadString(moveIndexPosition);
-        if (parameterType == typeof(string[])) return this.ReadStrings(moveIndexPosition);
-        if (parameterType == typeof(Vector2)) return this.ReadVector2(moveIndexPosition);
-        if (parameterType == typeof(Vector2[])) return this.ReadVector2s(moveIndexPosition);
-        if (parameterType == typeof(Vector3)) return this.ReadVector3(moveIndexPosition);
-        if (parameterType == typeof(Vector3[])) return this.ReadVector3s(moveIndexPosition);
-        if (parameterType == typeof(Quaternion)) return this.ReadQuaternion(moveIndexPosition);
-        if (parameterType == typeof(Quaternion[])) return this.ReadQuaternions(moveIndexPosition);
-
-        throw new Exception($"Unsupported RPC parameter type: {parameterType.FullName}");
     }
 
     public byte ReadByte(bool moveIndexPosition = true)
@@ -879,6 +819,79 @@ public class NetPacket
             value[i] = ReadString();
         CurrentIndex -= moveIndexPosition ? 0 : typeSize;
         return value;
+    }
+
+    public object ReadObject(Type parameterType = null, bool moveIndexPosition = true)
+    {
+        if (parameterType != null && typeof(INetSerializable).IsAssignableFrom(parameterType))
+        {
+            int currIdx = CurrentIndex;
+            if (parameterType.GetConstructor(Type.EmptyTypes) == null)
+            {
+                throw new Exception($"{parameterType.Name} must have a parameterless constructor for deserialization.");
+            }
+            var instance = Activator.CreateInstance(parameterType);
+            MethodInfo deserializeMethod = parameterType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public);
+            object result = deserializeMethod.Invoke(instance, new object[] { this });
+            CurrentIndex = moveIndexPosition ? CurrentIndex : currIdx;
+            return result;
+        }
+
+        if (parameterType != null && parameterType.IsArray && typeof(INetSerializable).IsAssignableFrom(parameterType.GetElementType()))
+        {
+            int currIdx = CurrentIndex;
+            Type elementType = parameterType.GetElementType();
+            if (elementType.GetConstructor(Type.EmptyTypes) == null)
+            {
+                throw new Exception($"{parameterType.Name} must have a parameterless constructor for deserialization.");
+            }
+            int length = this.ReadInt();
+            Array array = Array.CreateInstance(elementType, length);
+            MethodInfo deserializeMethod = elementType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public);
+            for (int i = 0; i < length; i++)
+            {
+                var instance = Activator.CreateInstance(elementType);
+                object result = deserializeMethod.Invoke(instance, new object[] { this });
+                array.SetValue(result, i);
+            }
+            CurrentIndex = moveIndexPosition ? CurrentIndex : currIdx;
+            return array;
+        }
+
+        if (parameterType == typeof(byte)) return this.ReadByte(moveIndexPosition);
+        if (parameterType == typeof(byte[])) return this.ReadBytes(moveIndexPosition);
+        if (parameterType == typeof(sbyte)) return this.ReadSByte(moveIndexPosition);
+        if (parameterType == typeof(sbyte[])) return this.ReadSBytes(moveIndexPosition);
+        if (parameterType == typeof(bool)) return this.ReadBool(moveIndexPosition);
+        if (parameterType == typeof(bool[])) return this.ReadBools(moveIndexPosition);
+        if (parameterType == typeof(char)) return this.ReadChar(moveIndexPosition);
+        if (parameterType == typeof(char[])) return this.ReadChars(moveIndexPosition);
+        if (parameterType == typeof(double)) return this.ReadDouble(moveIndexPosition);
+        if (parameterType == typeof(double[])) return this.ReadDoubles(moveIndexPosition);
+        if (parameterType == typeof(float)) return this.ReadFloat(moveIndexPosition);
+        if (parameterType == typeof(float[])) return this.ReadFloats(moveIndexPosition);
+        if (parameterType == typeof(int)) return this.ReadInt(moveIndexPosition);
+        if (parameterType == typeof(int[])) return this.ReadInts(moveIndexPosition);
+        if (parameterType == typeof(long)) return this.ReadLong(moveIndexPosition);
+        if (parameterType == typeof(long[])) return this.ReadLongs(moveIndexPosition);
+        if (parameterType == typeof(short)) return this.ReadShort(moveIndexPosition);
+        if (parameterType == typeof(short[])) return this.ReadShorts(moveIndexPosition);
+        if (parameterType == typeof(uint)) return this.ReadUInt(moveIndexPosition);
+        if (parameterType == typeof(uint[])) return this.ReadUInts(moveIndexPosition);
+        if (parameterType == typeof(ulong)) return this.ReadULong(moveIndexPosition);
+        if (parameterType == typeof(ulong[])) return this.ReadULongs(moveIndexPosition);
+        if (parameterType == typeof(ushort)) return this.ReadUShort(moveIndexPosition);
+        if (parameterType == typeof(ushort[])) return this.ReadUShorts(moveIndexPosition);
+        if (parameterType == typeof(string)) return this.ReadString(moveIndexPosition);
+        if (parameterType == typeof(string[])) return this.ReadStrings(moveIndexPosition);
+        if (parameterType == typeof(Vector2)) return this.ReadVector2(moveIndexPosition);
+        if (parameterType == typeof(Vector2[])) return this.ReadVector2s(moveIndexPosition);
+        if (parameterType == typeof(Vector3)) return this.ReadVector3(moveIndexPosition);
+        if (parameterType == typeof(Vector3[])) return this.ReadVector3s(moveIndexPosition);
+        if (parameterType == typeof(Quaternion)) return this.ReadQuaternion(moveIndexPosition);
+        if (parameterType == typeof(Quaternion[])) return this.ReadQuaternions(moveIndexPosition);
+
+        throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
     }
 
     // Unity Structs

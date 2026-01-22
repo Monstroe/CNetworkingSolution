@@ -16,8 +16,9 @@ public enum CommandType
     /* GAME */
     GAME_USER_JOINED, GAME_START,
     /* OBJECT */
-    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_RPC, OBJECT_TRANSFORM,
+    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_TRANSFORM,
     /* RPC */
+    RPC_INVOKE,
     /* MAP */
     // Nothing
     /* PLAYER */
@@ -225,22 +226,6 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket ObjectRpc(ushort objectId, ushort methodId, params object[] args)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.OBJECT);
-        packet.Write((byte)CommandType.OBJECT_RPC);
-        packet.Write(objectId);
-        packet.Write(methodId);
-        foreach (var arg in args)
-        {
-
-        }
-
-
-        return packet;
-    }
-
     public static NetPacket ObjectTransform(Vector3 position, Quaternion rotation)
     {
         NetPacket packet = new NetPacket();
@@ -248,6 +233,21 @@ public static class PacketBuilder
         packet.Write((byte)CommandType.OBJECT_TRANSFORM);
         packet.Write(position);
         packet.Write(rotation);
+        return packet;
+    }
+
+    /* RPC */
+    public static NetPacket RpcInvoke(ushort methodId, params object[] args)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.RPC);
+        packet.Write((byte)CommandType.RPC_INVOKE);
+        packet.Write(methodId);
+        foreach (var arg in args)
+        {
+            packet.Write(arg);
+        }
+
         return packet;
     }
 

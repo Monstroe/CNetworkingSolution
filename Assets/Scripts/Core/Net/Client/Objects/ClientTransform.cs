@@ -33,6 +33,7 @@ public abstract class ClientTransform : ClientObject
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
+        base.ReceiveData(packet, serviceType, commandType, transportMethod);
         switch (commandType)
         {
             case CommandType.OBJECT_TRANSFORM:

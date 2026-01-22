@@ -16,7 +16,7 @@ public class ServerEntity : ServerTransform
             Entity = this,
             HealthChange = delta
         };
-        lobby.GetService<EventServerSerivce>().Fire(evt);
+        lobby.GetService<EventServerSerivce>().Bus.Fire(evt);
 
         if (evt.Cancelled)
         {
@@ -39,7 +39,7 @@ public class ServerEntity : ServerTransform
                 Killer = killer,
                 Killed = this
             };
-            lobby.GetService<EventServerSerivce>().Fire(killEvt);
+            lobby.GetService<EventServerSerivce>().Bus.Fire(killEvt);
 
             if (killEvt.Cancelled)
             {
@@ -51,7 +51,7 @@ public class ServerEntity : ServerTransform
         {
             Entity = this
         };
-        lobby.GetService<EventServerSerivce>().Fire(dieEvt);
+        lobby.GetService<EventServerSerivce>().Bus.Fire(dieEvt);
         if (dieEvt.Cancelled)
         {
             return;

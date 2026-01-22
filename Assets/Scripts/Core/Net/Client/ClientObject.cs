@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Net;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -22,15 +25,50 @@ public abstract class ClientObject : ClientBehaviour, INetObject
     [Tooltip("Reference to the corresponding server prefab for this client object.")]
     [SerializeField] private ServerObject serverPrefab;
 
+    private sealed class RpcMethod
+    {
+        public ushort MethodId;
+        public MethodInfo Method;
+        public RpcAttribute Attribute;
+    }
+    private Type type;
+    private static Dictionary<Type, Dictionary<string, RpcMethod>> rpcMethods = new Dictionary<Type, Dictionary<string, RpcMethod>>();
+
     public virtual void Init(ushort id, ClientLobby lobby)
     {
         Id = id;
         this.lobby = lobby;
+
+        type = GetType();
+        if (!rpcMethods.ContainsKey(type))
+        {
+            rpcMethods[type] = new Dictionary<string, RpcMethod>();
+            foreach (MethodInfo method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                if (method.GetCustomAttribute<RpcAttribute>() is RpcAttribute attr)
+                {
+                    if (rpcMethods[type].ContainsKey(method.Name))
+                    {
+                        throw new Exception($"Overloaded RPC methods are not allowed: {type.Name}.{method.Name}");
+                    }
+
+                    rpcMethods[type][method.Name] = new RpcMethod()
+                    {
+                        Method = method,
+                        Attribute = attr,
+                        MethodId = lobby.GetService<RpcClientService>().Bus.GenerateRpcMethodId(method)
+                    };
+                }
+            }
+        }
+
+        lobby.GetService<RpcClientService>().Bus.RegisterRpcContainer(this);
         lobby.GetService<ObjectClientService>().ClientObjects.Add(id, this);
     }
 
     public virtual void Remove()
     {
+        lobby.GetService<RpcClientService>().Bus.UnregisterRpcContainer(this);
         lobby.GetService<ObjectClientService>().ClientObjects.Remove(Id);
     }
 
@@ -116,16 +154,42 @@ public abstract class ClientObject : ClientBehaviour, INetObject
         }
     }
 
-    public abstract void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod);
-    public abstract void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType);
+    public virtual void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    {
+        switch (commandType)
+        {
+            case CommandType.RPC_INVOKE:
+                {
+                    ushort methodId = packet.ReadUShort();
+                    MethodInfo method = lobby.GetService<RpcClientService>().Bus.GetRpcMethod(this, methodId);
+                    ParameterInfo[] parameters = method.GetParameters();
+                    object[] args = new object[parameters.Length];
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        args[i] = packet.ReadObject(parameters[i].ParameterType);
+                    }
+
+                    method.Invoke(this, args);
+                    break;
+                }
+        }
+    }
+    public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType) { }
 
     public void SendToServerObject(NetPacket packet, TransportMethod transportMethod)
     {
         lobby.SendToServer(PacketBuilder.ObjectCommunication(this, packet), transportMethod);
     }
 
-    protected void InvokeOnServerObject(string methodName, params object[] args)
+    public void InvokeOnServerObject(string methodName, params object[] args)
     {
-
+        if (rpcMethods[type].TryGetValue(methodName, out RpcMethod method))
+        {
+            SendToServerObject(PacketBuilder.RpcInvoke(method.MethodId, args), method.Attribute.TransportMethod);
+        }
+        else
+        {
+            Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+        }
     }
 }

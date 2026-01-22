@@ -217,6 +217,7 @@ public class PlayerMovement : MonoBehaviour
     public void Jump(float height)
     {
         yVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * height);
+        Player.Instance.InvokeOnServerObject("Jump", height);
     }
 
     public void SetTransform(Vector3 position, Quaternion rotation)

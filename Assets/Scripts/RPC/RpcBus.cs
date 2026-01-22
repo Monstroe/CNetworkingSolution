@@ -3,78 +3,90 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-
-public static class RpcBus
+public class RpcBus
 {
-    private class RpcMethod
+    private class RpcMethodInfo
     {
-        public ushort Id;
+        public ushort MethodId;
+        public string MethodSignature;
         public MethodInfo Method;
-        public ParameterInfo[] Parameters;
     }
 
-    private static readonly Dictionary<Type, Dictionary<ushort, RpcMethod>> methodsByType = new Dictionary<Type, Dictionary<ushort, RpcMethod>>();
-    private static readonly Dictionary<Type, Dictionary<string, ushort>> idBySignature = new Dictionary<Type, Dictionary<string, ushort>>();
+    private readonly Dictionary<object, Dictionary<ushort, RpcMethodInfo>> instanceRpcMethodMap = new Dictionary<object, Dictionary<ushort, RpcMethodInfo>>();
+    private readonly Dictionary<Type, Dictionary<string, ushort>> rpcMethodIdByTypeAndSignature = new Dictionary<Type, Dictionary<string, ushort>>();
+    private readonly Dictionary<Type, List<RpcMethodInfo>> rpcMethodCache = new Dictionary<Type, List<RpcMethodInfo>>();
 
-    public static void RegisterRpcContainer(Type type)
+    public void RegisterRpcContainer(object instance)
     {
-        if (methodsByType.ContainsKey(type))
-        {
-            return;
-        }
+        var type = instance.GetType();
 
-        var methodMap = new Dictionary<ushort, RpcMethod>();
-        var sigMap = new Dictionary<string, ushort>();
-
-        foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        if (!rpcMethodCache.TryGetValue(type, out var methods))
         {
-            if (method.GetCustomAttribute<RpcAttribute>() is RpcAttribute attr)
+            methods = new List<RpcMethodInfo>();
+            var signatureMap = new Dictionary<string, ushort>();
+            foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                if (method.ReturnType != typeof(void))
+                if (method.GetCustomAttribute<RpcAttribute>() is RpcAttribute attr)
                 {
-                    throw new Exception($"Method {type.Name}.{method.Name} must return void for RPC.");
-                }
-
-                foreach (var p in method.GetParameters())
-                {
-                    if (!NetSerializer.CanSerialize(p.ParameterType))
+                    if (method.ReturnType != typeof(void))
                     {
-                        throw new Exception($"Method {type.Name}.{method.Name} has unserializable parameter {p.ParameterType.FullName} for RPC.");
+                        throw new Exception($"Method {type.Name}.{method.Name} has invalid return type for RPC.");
                     }
+
+                    ParameterInfo[] parameters = method.GetParameters();
+                    foreach (var p in parameters)
+                    {
+                        if (!NetPacket.IsSupportedType(p.ParameterType))
+                        {
+                            throw new Exception($"Method {type.Name}.{method.Name} has unsupported parameter type {p.ParameterType.FullName} for RPC.");
+                        }
+                    }
+
+                    ushort id = GenerateRpcMethodId(method);
+
+                    RpcMethodInfo rpcMethod = new RpcMethodInfo
+                    {
+                        MethodId = id,
+                        MethodSignature = GenerateRpcMethodSignature(method),
+                        Method = method
+                    };
+
+                    methods.Add(rpcMethod);
+                    signatureMap[rpcMethod.MethodSignature] = id;
                 }
-
-                ushort id = GenerateMethodId(type, method);
-
-                var rpc = new RpcMethod
-                {
-                    Id = id,
-                    Method = method,
-                    Parameters = method.GetParameters(),
-                    Target = attr.Target
-                };
-
-                methodMap[id] = rpc;
-                sigMap[GenerateMethodSignature(method)] = id;
             }
+            rpcMethodCache[type] = methods;
+            rpcMethodIdByTypeAndSignature[type] = signatureMap;
         }
 
-        methodsByType[type] = methodMap;
-        idBySignature[type] = sigMap;
+        var methodMap = new Dictionary<ushort, RpcMethodInfo>();
+        foreach (RpcMethodInfo method in methods)
+        {
+
+            methodMap[method.MethodId] = method;
+        }
+
+        instanceRpcMethodMap[instance] = methodMap;
     }
 
-    private static RpcMethod GetRpc(Type type, ushort id)
+    public void UnregisterRpcContainer(object instance)
     {
-        return methodsByType[type][id];
+        instanceRpcMethodMap.Remove(instance);
     }
 
-    private static ushort GetMethodId(Type type, MethodInfo method)
+    public MethodInfo GetRpcMethod(object instance, ushort methodId)
     {
-        return idBySignature[type][GenerateMethodSignature(method)];
+        return instanceRpcMethodMap[instance][methodId].Method;
     }
 
-    private static ushort GenerateMethodId(Type type, MethodInfo method)
+    public ushort GetRpcMethodId(Type type, MethodInfo method)
     {
-        string signature = type.FullName + "." + GenerateMethodSignature(method);
+        return rpcMethodIdByTypeAndSignature[type][GenerateRpcMethodSignature(method)];
+    }
+
+    public ushort GenerateRpcMethodId(MethodInfo method)
+    {
+        string signature = GenerateRpcMethodSignature(method);
 
         using MD5 md5 = MD5.Create();
         byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(signature));
@@ -82,7 +94,7 @@ public static class RpcBus
         return BitConverter.ToUInt16(hash, 0);
     }
 
-    private static string GenerateMethodSignature(MethodInfo method)
+    private string GenerateRpcMethodSignature(MethodInfo method)
     {
         StringBuilder sb = new StringBuilder();
         sb.Append(method.Name);
@@ -98,22 +110,5 @@ public static class RpcBus
 
         sb.Append(")");
         return sb.ToString();
-    }
-
-    private static void ValidateRpcMethod(MethodInfo method)
-    {
-        if (method.ReturnType != typeof(void))
-        {
-            throw new Exception($"{method.DeclaringType.Name}.{method.Name} must return void for RPC.");
-        }
-
-        foreach (var p in method.GetParameters())
-        {
-            if (!NetSerializer.CanSerialize(p.ParameterType))
-            {
-                throw new Exception(
-                    $"RPC {method.Name} has unserializable parameter {p.ParameterType.Name}");
-            }
-        }
     }
 }

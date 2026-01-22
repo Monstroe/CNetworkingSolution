@@ -13,7 +13,7 @@ public class EventBus
         public bool IgnoreCancelled;
     }
 
-    private readonly Dictionary<Type, List<EventHandler>> registeredEventHandlers = new();
+    private readonly Dictionary<Type, List<EventHandler>> registeredEventHandlers = new Dictionary<Type, List<EventHandler>>();
     private readonly Dictionary<object, List<EventHandler>> listenerHandlerMap = new Dictionary<object, List<EventHandler>>();
     private readonly Dictionary<Type, List<(MethodInfo, EventHandlerAttribute)>> listenerMethodCache = new Dictionary<Type, List<(MethodInfo, EventHandlerAttribute)>>();
 

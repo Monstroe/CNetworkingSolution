@@ -93,7 +93,7 @@ public class ClientPlayer : ClientTransform
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
-        //base.ReceiveData(packet, serviceType, commandType, transportMethod); // Disabled to prevent double handling of OBJECT_TRANSFORM
+        base.ReceiveData(packet, serviceType, commandType, transportMethod);
         switch (commandType)
         {
             case CommandType.PLAYER_ANIM:
@@ -109,11 +109,6 @@ public class ClientPlayer : ClientTransform
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
-    {
-        // Nothing
-    }
-
     protected override void InitRotation(Quaternion rot)
     {
         transform.rotation = Quaternion.Euler(0f, rot.eulerAngles.y, 0f);
@@ -122,5 +117,11 @@ public class ClientPlayer : ClientTransform
     protected override void SyncRotation(Quaternion rot)
     {
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, rot.eulerAngles.y, 0f), lerpSpeed * Time.deltaTime);
+    }
+
+    [Rpc]
+    public void Jump(float height)
+    {
+        Debug.Log($"CLIENT: Player {Id} Jumped with height {height}");
     }
 }

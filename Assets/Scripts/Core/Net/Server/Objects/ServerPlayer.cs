@@ -35,6 +35,13 @@ public class ServerPlayer : ServerTransform
         base.Remove();
     }
 
+    [Rpc]
+    public void Jump(float height)
+    {
+        Debug.Log($"SERVER: Player {Id} Jumped with height {height}");
+        InvokeOnGameClientObjects("Jump", height);
+    }
+
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(user, packet, serviceType, commandType, transportMethod);

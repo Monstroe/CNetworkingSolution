@@ -19,6 +19,7 @@ public class ServerTransform : ServerObject
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
+        base.ReceiveData(user, packet, serviceType, commandType, transportMethod);
         switch (commandType)
         {
             case CommandType.OBJECT_TRANSFORM:
@@ -47,11 +48,6 @@ public class ServerTransform : ServerObject
         }
 
         SendToGameClientObjects(PacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, Owner != null ? Owner.User : null);
-    }
-
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
-    {
-        // Nothing
     }
 
     public override void UserJoined(UserData joinedUser)
