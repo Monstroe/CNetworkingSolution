@@ -1,8 +1,8 @@
+using Unity.IO.LowLevel.Unsafe;
 using UnityEngine;
 
 public class ServerEntity : ServerTransform
 {
-
     public float MaxHealth { get { return maxHealth; } set { maxHealth = value; } }
     public float Health { get { return health; } set { health = value; } }
 
@@ -16,7 +16,7 @@ public class ServerEntity : ServerTransform
             Entity = this,
             HealthChange = delta
         };
-        EventBus.Fire(evt);
+        lobby.GetService<EventServerSerivce>().Fire(evt);
 
         if (evt.Cancelled)
         {
@@ -39,7 +39,7 @@ public class ServerEntity : ServerTransform
                 Killer = killer,
                 Killed = this
             };
-            EventBus.Fire(killEvt);
+            lobby.GetService<EventServerSerivce>().Fire(killEvt);
 
             if (killEvt.Cancelled)
             {
@@ -51,13 +51,13 @@ public class ServerEntity : ServerTransform
         {
             Entity = this
         };
-        EventBus.Fire(dieEvt);
+        lobby.GetService<EventServerSerivce>().Fire(dieEvt);
         if (dieEvt.Cancelled)
         {
             return;
         }
 
-        // Default death behavior
+        DestroyOnServer(this);
     }
 }
 

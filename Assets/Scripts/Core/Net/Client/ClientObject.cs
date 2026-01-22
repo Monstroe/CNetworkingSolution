@@ -123,4 +123,9 @@ public abstract class ClientObject : ClientBehaviour, INetObject
     {
         lobby.SendToServer(PacketBuilder.ObjectCommunication(this, packet), transportMethod);
     }
+
+    protected void InvokeOnServerObject(string methodName, params object[] args)
+    {
+
+    }
 }

@@ -1,4 +1,6 @@
+using System;
 using System.Net;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -61,7 +63,7 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     public abstract void UserJoinedGame(UserData joinedUser);
     public abstract void UserLeft(UserData leftUser);
 
-    public void SendToGameClientObject(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
+    public void SendToGameClientObjects(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
     {
         lobby.SendToGame(PacketBuilder.ObjectCommunication(this, packet), transportMethod, exception);
     }
@@ -69,5 +71,39 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     public void SendToUserClientObject(UserData user, NetPacket packet, TransportMethod transportMethod)
     {
         lobby.SendToUser(user, PacketBuilder.ObjectCommunication(this, packet), transportMethod);
+    }
+
+    protected void InvokeOnGameClientObjects(string methodName, TransportMethod transport, params object[] args)
+    {
+        Type type = GetType();
+        MethodInfo method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        ushort methodId = lobby.GetService<RpcServerService>().GetMethodId(type, method);
+
+        NetPacket packet = new NetPacket();
+        packet.Write(methodId);
+        packet.Write((byte)args.Length);
+
+        foreach (var arg in args)
+            WriteArg(packet, arg);
+
+        SendToServerObject(packet, transport);
+    }
+
+    protected void InvokeOnServer(string methodName, params object[] args)
+    {
+        ushort methodId = RpcBus.GetMethodId(GetType(),
+            GetType().GetMethod(methodName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
+
+        var packet = new NetPacket();
+        packet.WriteUShort(methodId);
+        NetSerializer.WriteArgs(packet, args);
+
+        SendToGameClientObjects(packet, TransportMethod.Reliable);
+    }
+
+    protected void InvokeOnGameClientObjects(string methodName, params object[] args)
+    {
+
     }
 }

@@ -46,7 +46,7 @@ public class ServerTransform : ServerObject
             receivedRotation = RB.rotation;
         }
 
-        SendToGameClientObject(PacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, Owner != null ? Owner.User : null);
+        SendToGameClientObjects(PacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, Owner != null ? Owner.User : null);
     }
 
     public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)

@@ -48,7 +48,7 @@ public class ServerPlayer : ServerTransform
                     IsGrounded = packet.ReadBool();
                     Jumped = packet.ReadBool();
                     Grabbed = packet.ReadBool();
-                    SendToGameClientObject(PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed), transportMethod ?? TransportMethod.Reliable, User);
+                    SendToGameClientObjects(PacketBuilder.PlayerAnim(IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed), transportMethod ?? TransportMethod.Reliable, User);
                     break;
                 }
             case CommandType.PLAYER_GRAB_REQUEST:

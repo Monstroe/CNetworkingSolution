@@ -9,12 +9,12 @@ public class ServerBehaviour : MonoBehaviour
 
     protected virtual void OnEnable()
     {
-        EventBus.RegisterListener(this);
+        lobby.GetService<EventServerSerivce>().RegisterListener(this);
     }
 
     protected virtual void OnDisable()
     {
-        EventBus.UnregisterListener(this);
+        lobby.GetService<EventServerSerivce>().UnregisterListener(this);
     }
 
     protected ServerObject InstantiateOnServer(string originalPath, bool initAndSendToUsers = true, ServerPlayer owner = null)
@@ -99,11 +99,11 @@ public class ServerBehaviour : MonoBehaviour
         }
     }
 
-    protected void DestroyOnServer(ServerObject serverObj, bool initAndSendToUsers = true)
+    protected void DestroyOnServer(ServerObject serverObj, bool sendToUsers = true)
     {
         serverObj.Remove();
         Destroy(serverObj.gameObject);
-        if (initAndSendToUsers)
+        if (sendToUsers)
         {
             lobby.SendToGame(PacketBuilder.ObjectDestroy(serverObj.Id), TransportMethod.Reliable);
         }

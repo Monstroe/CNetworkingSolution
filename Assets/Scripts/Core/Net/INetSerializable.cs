@@ -1,5 +1,9 @@
-public interface INetSerializable<T>
+public interface INetSerializable
 {
     public void Serialize(NetPacket packet);
+}
+
+public interface INetSerializable<T> : INetSerializable
+{
     public T Deserialize(NetPacket packet);
 }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public enum ServiceType
 {
-    CONNECTION, LOBBY, GAME, OBJECT, MAP, PLAYER, FX, INTERACTABLE, EVENT, CHAT,
+    CONNECTION, LOBBY, GAME, OBJECT, RPC, MAP, PLAYER, FX, INTERACTABLE, CHAT,
 }
 
 public enum CommandType
@@ -16,7 +16,8 @@ public enum CommandType
     /* GAME */
     GAME_USER_JOINED, GAME_START,
     /* OBJECT */
-    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_TRANSFORM,
+    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_RPC, OBJECT_TRANSFORM,
+    /* RPC */
     /* MAP */
     // Nothing
     /* PLAYER */
@@ -26,8 +27,6 @@ public enum CommandType
     PLAYER_GRAB_REQUEST, PLAYER_GRAB_DENY, PLAYER_INTERACT_REQUEST, PLAYER_INTERACT_DENY, PLAYER_DROP_REQUEST, PLAYER_DROP_DENY,
     /* INTERACTABLE */
     INTERACTABLE_GRAB, INTERACTABLE_DROP, INTERACTABLE_INTERACT, INTERACTABLE_TRANSFORM,
-    /* EVENT */
-    EVENT_GROUND_HIT,
     /* CHAT */
     CHAT_MESSAGE, CHAT_USER_JOINED, CHAT_USER_LEFT,
 }
@@ -223,6 +222,22 @@ public static class PacketBuilder
         packet.Write((byte)ServiceType.OBJECT);
         packet.Write((byte)CommandType.OBJECT_DESTROY);
         packet.Write(objectId);
+        return packet;
+    }
+
+    public static NetPacket ObjectRpc(ushort objectId, ushort methodId, params object[] args)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.OBJECT);
+        packet.Write((byte)CommandType.OBJECT_RPC);
+        packet.Write(objectId);
+        packet.Write(methodId);
+        foreach (var arg in args)
+        {
+
+        }
+
+
         return packet;
     }
 

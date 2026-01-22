@@ -24,7 +24,7 @@ public class ServerInteractable : ServerTransform
 #nullable enable
     public virtual void Grab(ServerPlayer interactingPlayer, UserData user, NetPacket? packet, TransportMethod? transportMethod)
     {
-        SendToGameClientObject(PacketBuilder.InteractableGrab(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
+        SendToGameClientObjects(PacketBuilder.InteractableGrab(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
         interactingPlayer.CurrentInteractable = this;
         Owner = interactingPlayer;
         RB.isKinematic = true;
@@ -32,12 +32,12 @@ public class ServerInteractable : ServerTransform
 
     public virtual void Interact(ServerPlayer interactingPlayer, UserData user, NetPacket? packet, TransportMethod? transportMethod)
     {
-        SendToGameClientObject(PacketBuilder.InteractableInteract(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
+        SendToGameClientObjects(PacketBuilder.InteractableInteract(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
     }
 
     public virtual void Drop(ServerPlayer interactingPlayer, UserData user, NetPacket? packet, TransportMethod? transportMethod)
     {
-        SendToGameClientObject(PacketBuilder.InteractableDrop(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
+        SendToGameClientObjects(PacketBuilder.InteractableDrop(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
         interactingPlayer.CurrentInteractable = null;
         Owner = null;
         RB.isKinematic = false;
