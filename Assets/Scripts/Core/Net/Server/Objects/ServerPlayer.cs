@@ -52,6 +52,11 @@ public class ServerPlayer : ServerEntity
         }
     }
 
+    void OnCollisionEnter(Collision collision)
+    {
+        Debug.Log($"SERVER: Player {Id} Collided with {collision.gameObject.name}");
+    }
+
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(user, packet, serviceType, commandType, transportMethod);

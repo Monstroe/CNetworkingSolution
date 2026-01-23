@@ -1,6 +1,5 @@
 using System.Net;
 using UnityEngine;
-using UnityEngine.VFX;
 
 public class FXServerService : ServerService
 {
