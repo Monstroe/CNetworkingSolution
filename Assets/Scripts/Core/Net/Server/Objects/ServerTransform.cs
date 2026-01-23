@@ -15,6 +15,7 @@ public class ServerTransform : ServerObject
         RB = GetComponent<Rigidbody>();
         this.receivedPosition = RB.position;
         this.receivedRotation = RB.rotation;
+        lobby.GetService<ObjectServerService>().ServerTransforms.Add(id, this);
     }
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
@@ -38,8 +39,8 @@ public class ServerTransform : ServerObject
     {
         if (Owner != null)
         {
-            SyncPosition(receivedPosition);
-            SyncRotation(receivedRotation);
+            UpdatePosition(receivedPosition);
+            UpdateRotation(receivedRotation);
         }
         else
         {
@@ -65,12 +66,12 @@ public class ServerTransform : ServerObject
         // Nothing
     }
 
-    protected virtual void SyncPosition(Vector3 pos)
+    protected virtual void UpdatePosition(Vector3 pos)
     {
         RB.MovePosition(pos);
     }
 
-    protected virtual void SyncRotation(Quaternion rot)
+    protected virtual void UpdateRotation(Quaternion rot)
     {
         RB.MoveRotation(rot.normalized);
     }

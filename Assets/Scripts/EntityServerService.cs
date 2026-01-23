@@ -1,18 +1,10 @@
+using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
-using UnityEngine.VFX;
 
-public class FXServerService : ServerService
+public class EntityServerService : ServerService
 {
-    [SerializeField] private ServerFX fxPrefab;
-
-    public ServerFX FX { get; private set; }
-
-    public override void Init(ServerLobby lobby)
-    {
-        base.Init(lobby);
-        FX = (ServerFX)InstantiateOnServer(fxPrefab.gameObject);
-    }
+    public Dictionary<ushort, ServerEntity> ServerEntities { get; private set; } = new Dictionary<ushort, ServerEntity>();
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {

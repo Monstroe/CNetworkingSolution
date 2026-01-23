@@ -7,8 +7,10 @@ using UnityEngine;
 public class ObjectServerService : ServerService
 {
     public Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
+    public Dictionary<ushort, ServerTransform> ServerTransforms { get; private set; } = new Dictionary<ushort, ServerTransform>();
 
     public RpcBus RpcBus { get; private set; } = new RpcBus();
+    public EventBus EventBus { get; private set; } = new EventBus();
 
     private List<ushort> spawnedStartingObjectIds = new List<ushort>();
     private List<ushort> destroyedStartingObjectIds = new List<ushort>();

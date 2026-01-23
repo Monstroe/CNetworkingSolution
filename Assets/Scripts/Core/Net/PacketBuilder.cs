@@ -6,7 +6,7 @@ using System;
 
 public enum ServiceType
 {
-    CONNECTION, LOBBY, GAME, OBJECT, MAP, PLAYER, FX, INTERACTABLE, CHAT,
+    CONNECTION, LOBBY, GAME, OBJECT, MAP, PLAYER, FX, ENTITY, INTERACTABLE, CHAT,
 }
 
 public enum CommandType
@@ -22,12 +22,14 @@ public enum CommandType
     /* MAP */
     // Nothing
     /* PLAYER */
-    PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_TRANSFORM, PLAYER_ANIM,
-    /* FX */
-    SFX_REQUEST, SFX, VFX_REQUEST, VFX,
+    PLAYER_SPAWN, PLAYER_DESTROY, PLAYER_ANIM,
     PLAYER_GRAB_REQUEST, PLAYER_GRAB_DENY, PLAYER_INTERACT_REQUEST, PLAYER_INTERACT_DENY, PLAYER_DROP_REQUEST, PLAYER_DROP_DENY,
+    /* FX */
+    // Nothing
+    /* ENTITY */
+    // Nothing
     /* INTERACTABLE */
-    INTERACTABLE_GRAB, INTERACTABLE_DROP, INTERACTABLE_INTERACT, INTERACTABLE_TRANSFORM,
+    INTERACTABLE_GRAB, INTERACTABLE_DROP, INTERACTABLE_INTERACT,
     /* CHAT */
     CHAT_MESSAGE, CHAT_USER_JOINED, CHAT_USER_LEFT,
 }
@@ -236,8 +238,7 @@ public static class PacketBuilder
         return packet;
     }
 
-    /* RPC */
-    public static NetPacket RpcInvoke(uint methodId, MethodInfo method, params object[] args)
+    public static NetPacket ObjectRpc(uint methodId, MethodInfo method, params object[] args)
     {
         var parameters = method.GetParameters();
         if (args.Length != parameters.Length)
@@ -351,63 +352,7 @@ public static class PacketBuilder
     }
 
     /* FX */
-    public static NetPacket PlaySFXRequest(string path, float volume, Vector3? pos)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.SFX_REQUEST);
-        int key = NetResources.Instance.GetSFXKeyFromPath(path);
-        if (key == 0)
-        {
-            Debug.LogError("PacketBuilder PlaySFXRequest could not find SFX key for path: " + path);
-            return null;
-        }
-        packet.Write(key);
-        packet.Write(volume);
-        if (pos != null)
-            packet.Write(pos.Value);
-        return packet;
-    }
-
-    public static NetPacket PlaySFX(int key, float volume, Vector3? pos)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.SFX);
-        packet.Write(key);
-        packet.Write(volume);
-        if (pos != null)
-            packet.Write(pos.Value);
-        return packet;
-    }
-
-    public static NetPacket PlayVFXRequest(string path, Vector3 pos, float scale)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.VFX_REQUEST);
-        int key = NetResources.Instance.GetVFXKeyFromPath(path);
-        if (key == 0)
-        {
-            Debug.LogError("PacketBuilder PlayVFXRequest could not find VFX key for path: " + path);
-            return null;
-        }
-        packet.Write(key);
-        packet.Write(pos);
-        packet.Write(scale);
-        return packet;
-    }
-
-    public static NetPacket PlayVFX(int key, Vector3 pos, float scale)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.FX);
-        packet.Write((byte)CommandType.VFX);
-        packet.Write(key);
-        packet.Write(pos);
-        packet.Write(scale);
-        return packet;
-    }
+    // Nothing
 
     /* INTERACTABLE */
     public static NetPacket InteractableGrab(byte playerId)

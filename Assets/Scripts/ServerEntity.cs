@@ -1,4 +1,3 @@
-using Unity.IO.LowLevel.Unsafe;
 using UnityEngine;
 
 public class ServerEntity : ServerTransform
@@ -9,29 +8,64 @@ public class ServerEntity : ServerTransform
     [SerializeField] private float maxHealth = 100f;
     [SerializeField] private float health = 100f;
 
-    public virtual void UpdateHealth(float delta, ServerEntity changer = null)
+    public override void Init(ushort id, ServerLobby lobby)
     {
-        EntityHealthChangeEvent evt = new EntityHealthChangeEvent
+        base.Init(id, lobby);
+        lobby.GetService<EntityServerService>().ServerEntities.Add(id, this);
+    }
+
+    [Rpc]
+    public virtual void UpdateHealth(float delta, ushort? changerId = null)
+    {
+        ServerEntity changer = changerId.HasValue ? lobby.GetService<EntityServerService>().ServerEntities[changerId.Value] : null;
+
+        if (changer != null && delta < 0)
+        {
+            EntityDamagedEntityEvent dmgEvt = new EntityDamagedEntityEvent()
+            {
+                Damager = changer,
+                Damaged = this,
+                DamageAmount = -delta
+            };
+            lobby.GetService<ObjectServerService>().EventBus.Fire(dmgEvt);
+
+            if (dmgEvt.Cancelled)
+            {
+                return;
+            }
+
+            delta = -dmgEvt.DamageAmount;
+        }
+
+        EntityHealthChangeEvent hpEvt = new EntityHealthChangeEvent
         {
             Entity = this,
             HealthChange = delta
         };
-        lobby.GetService<EventServerSerivce>().Bus.Fire(evt);
+        lobby.GetService<ObjectServerService>().EventBus.Fire(hpEvt);
 
-        if (evt.Cancelled)
+        if (hpEvt.Cancelled)
         {
             return;
         }
 
-        health = Mathf.Clamp(health + evt.HealthChange, 0, maxHealth);
+        delta = hpEvt.HealthChange;
+
+        health = Mathf.Clamp(health + delta, 0, maxHealth);
+        Debug.Log($"SERVER: Entity {Id} Health changing by {delta}, new health after clamp {health}");
+        InvokeOnGameClientObjects(nameof(UpdateHealth), delta, changerId);
+
         if (health <= 0)
         {
-            Die(changer);
+            Die(changerId);
         }
     }
 
-    public virtual void Die(ServerEntity killer = null)
+    [Rpc]
+    public virtual void Die(ushort? killerId = null)
     {
+        ServerEntity killer = killerId.HasValue ? lobby.GetService<EntityServerService>().ServerEntities[killerId.Value] : null;
+
         if (killer != null)
         {
             EntityKilledEntityEvent killEvt = new EntityKilledEntityEvent()
@@ -39,7 +73,7 @@ public class ServerEntity : ServerTransform
                 Killer = killer,
                 Killed = this
             };
-            lobby.GetService<EventServerSerivce>().Bus.Fire(killEvt);
+            lobby.GetService<ObjectServerService>().EventBus.Fire(killEvt);
 
             if (killEvt.Cancelled)
             {
@@ -51,31 +85,28 @@ public class ServerEntity : ServerTransform
         {
             Entity = this
         };
-        lobby.GetService<EventServerSerivce>().Bus.Fire(dieEvt);
+        lobby.GetService<ObjectServerService>().EventBus.Fire(dieEvt);
         if (dieEvt.Cancelled)
         {
             return;
         }
 
+        InvokeOnGameClientObjects(nameof(Die), killerId);
         DestroyOnServer(this);
     }
+}
+
+public class EntityDamagedEntityEvent : GameEvent
+{
+    public ServerEntity Damager;
+    public ServerEntity Damaged;
+    public float DamageAmount;
 }
 
 public class EntityHealthChangeEvent : GameEvent
 {
     public ServerEntity Entity;
     public float HealthChange;
-}
-
-public class EntityJumpEvent : GameEvent
-{
-    public ServerEntity Entity;
-    public float JumpHeight;
-}
-
-public class EntityGroundHitEvent : GameEvent
-{
-    public ServerEntity Entity;
 }
 
 public class EntityKilledEntityEvent : GameEvent

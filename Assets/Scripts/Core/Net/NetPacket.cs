@@ -1022,8 +1022,6 @@ public class NetPacket
 
     public void Write(object value, Type parameterType)
     {
-        Debug.Log($"Writing value of type {parameterType.FullName}");
-
         if (parameterType == null)
         {
             throw new ArgumentNullException(nameof(parameterType));

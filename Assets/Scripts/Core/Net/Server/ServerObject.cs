@@ -26,15 +26,15 @@ public abstract class ServerObject : ServerBehaviour, INetObject
         this.lobby = lobby;
         type = GetType();
 
-        //lobby.GetService<EventServerSerivce>().Bus.RegisterListener(this);
         lobby.GetService<ObjectServerService>().RpcBus.RegisterRpcContainer(this);
+        lobby.GetService<ObjectServerService>().EventBus.RegisterListener(this);
         lobby.GetService<ObjectServerService>().ServerObjects.Add(id, this);
     }
 
     public virtual void Remove()
     {
-        //lobby.GetService<EventServerSerivce>().Bus.UnregisterListener(this);
         lobby.GetService<ObjectServerService>().RpcBus.UnregisterRpcContainer(this);
+        lobby.GetService<ObjectServerService>().EventBus.UnregisterListener(this);
         lobby.GetService<ObjectServerService>().ServerObjects.Remove(Id);
     }
 
@@ -101,16 +101,28 @@ public abstract class ServerObject : ServerBehaviour, INetObject
         lobby.SendToGame(PacketBuilder.ObjectCommunication(this, packet), transportMethod, exception);
     }
 
+    public void InvokeOnGameClientObjects(string methodName, params object[] args)
+    {
+        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out uint methodId, out MethodInfo method, out RpcAttribute attr))
+        {
+            SendToGameClientObjects(PacketBuilder.ObjectRpc(methodId, method, args), attr.TransportMethod);
+        }
+        else
+        {
+            Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+        }
+    }
+
     public void SendToUserClientObject(UserData user, NetPacket packet, TransportMethod transportMethod)
     {
         lobby.SendToUser(user, PacketBuilder.ObjectCommunication(this, packet), transportMethod);
     }
 
-    public void InvokeOnGameClientObjects(string methodName, params object[] args)
+    public void InvokeOnUserClientObject(UserData user, string methodName, params object[] args)
     {
         if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out uint methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToGameClientObjects(PacketBuilder.RpcInvoke(methodId, method, args), attr.TransportMethod);
+            SendToUserClientObject(user, PacketBuilder.ObjectRpc(methodId, method, args), attr.TransportMethod);
         }
         else
         {

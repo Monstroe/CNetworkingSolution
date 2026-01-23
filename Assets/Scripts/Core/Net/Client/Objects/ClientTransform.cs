@@ -17,6 +17,7 @@ public abstract class ClientTransform : ClientObject
         base.Init(id, lobby);
         receivedPosition = transform.position;
         receivedRotation = transform.rotation;
+        lobby.GetService<ObjectClientService>().ClientTransforms.Add(id, this);
     }
 
     public override void Remove()
@@ -27,8 +28,8 @@ public abstract class ClientTransform : ClientObject
     protected override void UpdateOnNonOwner()
     {
         base.UpdateOnNonOwner();
-        SyncPosition(receivedPosition);
-        SyncRotation(receivedRotation);
+        UpdatePosition(receivedPosition);
+        UpdateRotation(receivedRotation);
     }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
@@ -62,12 +63,12 @@ public abstract class ClientTransform : ClientObject
         transform.rotation = rot;
     }
 
-    protected virtual void SyncPosition(Vector3 pos)
+    protected virtual void UpdatePosition(Vector3 pos)
     {
         transform.position = Vector3.Lerp(transform.position, pos, lerpSpeed * Time.deltaTime);
     }
 
-    protected virtual void SyncRotation(Quaternion rot)
+    protected virtual void UpdateRotation(Quaternion rot)
     {
         transform.rotation = Quaternion.Slerp(transform.rotation, rot, lerpSpeed * Time.deltaTime);
     }

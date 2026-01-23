@@ -1,7 +1,7 @@
 using System.Net;
 using UnityEngine;
 
-public class ClientPlayer : ClientTransform
+public class ClientPlayer : ClientEntity
 {
     public UserData User { get; set; }
 
@@ -114,14 +114,14 @@ public class ClientPlayer : ClientTransform
         transform.rotation = Quaternion.Euler(0f, rot.eulerAngles.y, 0f);
     }
 
-    protected override void SyncRotation(Quaternion rot)
+    protected override void UpdateRotation(Quaternion rot)
     {
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, rot.eulerAngles.y, 0f), lerpSpeed * Time.deltaTime);
     }
 
     [Rpc]
-    public void Jump(float height)
+    public void Jump(float height, UserData user, Vector3?[] position = null)
     {
-        Debug.Log($"CLIENT: Player {Id} Jumped with height {height}");
+        Debug.Log($"CLIENT: Player {Id} Jumped with height {height}, position {position[0]},{position[1]}, user {user.Settings.UserName}");
     }
 }

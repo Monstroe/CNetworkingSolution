@@ -7,6 +7,7 @@ using UnityEngine.AddressableAssets;
 public class ObjectClientService : ClientService
 {
     public Dictionary<ushort, ClientObject> ClientObjects { get; private set; } = new Dictionary<ushort, ClientObject>();
+    public Dictionary<ushort, ClientTransform> ClientTransforms { get; private set; } = new Dictionary<ushort, ClientTransform>();
 
     public RpcBus RpcBus { get; private set; } = new RpcBus();
 

@@ -1,9 +1,10 @@
+using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
 
-public class FXClientService : ClientService
+public class EntityClientService : ClientService
 {
-    public ClientFX FX { get; set; }
+    public Dictionary<ushort, ClientEntity> ClientEntities { get; private set; } = new Dictionary<ushort, ClientEntity>();
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {

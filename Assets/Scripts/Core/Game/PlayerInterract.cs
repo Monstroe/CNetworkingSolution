@@ -2,7 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class InteractableInteract : MonoBehaviour
+public class PlayerInteract : MonoBehaviour
 {
     [Header("Player Interaction")]
     [SerializeField] private float interactionDistance = 3f;

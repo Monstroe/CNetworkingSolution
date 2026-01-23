@@ -162,7 +162,7 @@ public abstract class ClientObject : ClientBehaviour, INetObject
     {
         if (lobby.GetService<ObjectClientService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out uint methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToServerObject(PacketBuilder.RpcInvoke(methodId, method, args), attr.TransportMethod);
+            SendToServerObject(PacketBuilder.ObjectRpc(methodId, method, args), attr.TransportMethod);
         }
         else
         {

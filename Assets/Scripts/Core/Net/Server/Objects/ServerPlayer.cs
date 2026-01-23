@@ -1,8 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
 
-public class ServerPlayer : ServerTransform
+public class ServerPlayer : ServerEntity
 {
     public UserData User { get; set; }
 
@@ -36,10 +37,19 @@ public class ServerPlayer : ServerTransform
     }
 
     [Rpc]
-    public void Jump(float height)
+    public void Jump(float height, UserData user, Vector3?[] position = null)
     {
-        Debug.Log($"SERVER: Player {Id} Jumped with height {height}");
-        InvokeOnGameClientObjects("Jump", height);
+        Debug.Log($"SERVER: Player {Id} Jumped with height {height}, position {position[0]},{position[1]}, user {user.Settings.UserName}");
+        InvokeOnGameClientObjects("Jump", height, user, position);
+    }
+
+    [EventHandler]
+    public void OnPlayerHealthChange(EntityHealthChangeEvent evt)
+    {
+        if (evt.Entity == this)
+        {
+            Debug.Log($"SERVER: Player {Id} Health changed by {evt.HealthChange}");
+        }
     }
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
