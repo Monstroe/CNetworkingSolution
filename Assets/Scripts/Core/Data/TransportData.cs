@@ -47,7 +47,9 @@ public class TransportSettings : IDeepClone<TransportSettings>
             ConnectionAddress = this.ConnectionAddress,
             ConnectionPort = this.ConnectionPort,
             ConnectionKey = this.ConnectionKey,
+#if CNS_TRANSPORT_LITENETLIB
             UnconnectedPacketsEnabled = this.UnconnectedPacketsEnabled,
+#endif
 #if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
             SteamCode = this.SteamCode
 #endif

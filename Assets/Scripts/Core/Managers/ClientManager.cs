@@ -5,7 +5,6 @@ using System.Net.Sockets;
 using UnityEngine;
 
 [RequireComponent(typeof(SingleTransportUtility))]
-[RequireComponent(typeof(ClientLobby))]
 public class ClientManager : MonoBehaviour
 {
     public delegate void NewUserCreatedEventHandler(Guid userId);
@@ -32,6 +31,9 @@ public class ClientManager : MonoBehaviour
 
     public delegate void LobbyConnectionErrorEventHandler(TransportCode code, SocketError? socketError);
     public event LobbyConnectionErrorEventHandler OnLobbyConnectionError;
+
+    [Header("Lobby Settings")]
+    [SerializeField] private ClientLobby lobbyPrefab;
 
     public static ClientManager Instance { get; private set; }
     public ClientLobby CurrentLobby { get; private set; }
@@ -68,7 +70,7 @@ public class ClientManager : MonoBehaviour
 
         transportUtility = GetComponent<SingleTransportUtility>();
         AddTransportUtilityEvents();
-        CurrentLobby = GetComponent<ClientLobby>();
+        CurrentLobby = Instantiate(lobbyPrefab, transform);
         CurrentLobby.Init(transportUtility);
         CurrentLobby.LobbyData.Settings = NetResources.Instance.DefaultLobbySettings.Clone();
         CurrentLobby.CurrentUser.Settings = NetResources.Instance.DefaultUserSettings.Clone();
