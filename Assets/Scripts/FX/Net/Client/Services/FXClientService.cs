@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class FXClientService : ClientService
 {
+    public ClientFX FX { get; set; }
+
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)

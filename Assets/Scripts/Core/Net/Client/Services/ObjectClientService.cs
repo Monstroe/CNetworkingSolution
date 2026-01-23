@@ -8,6 +8,8 @@ public class ObjectClientService : ClientService
 {
     public Dictionary<ushort, ClientObject> ClientObjects { get; private set; } = new Dictionary<ushort, ClientObject>();
 
+    public RpcBus RpcBus { get; private set; } = new RpcBus();
+
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)

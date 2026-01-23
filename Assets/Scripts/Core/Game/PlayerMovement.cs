@@ -176,7 +176,8 @@ public class PlayerMovement : MonoBehaviour
             if (footstepTimer > (Player.Instance.IsSprinting ? (.55f / sprintMultiplier) : .55f))
             {
                 footstepTimer = 0;
-                FXManager.Instance.PlaySFX("Footstep.wav", 0.5f, transform.position);
+                //FXManager.Instance.PlaySFX("Footstep.wav", 0.5f, transform.position);
+                ClientManager.Instance.CurrentLobby.GetService<FXClientService>().FX.PlaySFX("Footstep.wav", 0.5f, transform.position);
             }
         }
         footstepTimer += Time.deltaTime;

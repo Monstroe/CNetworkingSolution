@@ -8,6 +8,8 @@ public class ObjectServerService : ServerService
 {
     public Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
 
+    public RpcBus RpcBus { get; private set; } = new RpcBus();
+
     private List<ushort> spawnedStartingObjectIds = new List<ushort>();
     private List<ushort> destroyedStartingObjectIds = new List<ushort>();
 

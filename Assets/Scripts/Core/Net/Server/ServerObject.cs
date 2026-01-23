@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Reflection;
 using UnityEditor;
@@ -19,54 +18,23 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     [SerializeField, HideInInspector]
     private string prefabPath;
 
-
-    private sealed class RpcMethod
-    {
-        public ushort MethodId;
-        public MethodInfo Method;
-        public RpcAttribute Attribute;
-    }
-
     private Type type;
-    private static Dictionary<Type, Dictionary<string, RpcMethod>> rpcMethods = new Dictionary<Type, Dictionary<string, RpcMethod>>();
 
     public virtual void Init(ushort id, ServerLobby lobby)
     {
         this.Id = id;
         this.lobby = lobby;
-
         type = GetType();
-        if (!rpcMethods.ContainsKey(type))
-        {
-            rpcMethods[type] = new Dictionary<string, RpcMethod>();
-            foreach (MethodInfo method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-            {
-                if (method.GetCustomAttribute<RpcAttribute>() is RpcAttribute attr)
-                {
-                    if (rpcMethods[type].ContainsKey(method.Name))
-                    {
-                        throw new Exception($"Overloaded RPC methods are not allowed: {type.Name}.{method.Name}");
-                    }
-
-                    rpcMethods[type][method.Name] = new RpcMethod()
-                    {
-                        Method = method,
-                        Attribute = attr,
-                        MethodId = lobby.GetService<RpcServerService>().Bus.GenerateRpcMethodId(method)
-                    };
-                }
-            }
-        }
 
         //lobby.GetService<EventServerSerivce>().Bus.RegisterListener(this);
-        lobby.GetService<RpcServerService>().Bus.RegisterRpcContainer(this);
+        lobby.GetService<ObjectServerService>().RpcBus.RegisterRpcContainer(this);
         lobby.GetService<ObjectServerService>().ServerObjects.Add(id, this);
     }
 
     public virtual void Remove()
     {
         //lobby.GetService<EventServerSerivce>().Bus.UnregisterListener(this);
-        lobby.GetService<RpcServerService>().Bus.UnregisterRpcContainer(this);
+        lobby.GetService<ObjectServerService>().RpcBus.UnregisterRpcContainer(this);
         lobby.GetService<ObjectServerService>().ServerObjects.Remove(Id);
     }
 
@@ -100,18 +68,24 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     {
         switch (commandType)
         {
-            case CommandType.RPC_INVOKE:
+            case CommandType.OBJECT_RPC:
                 {
-                    ushort methodId = packet.ReadUShort();
-                    MethodInfo method = lobby.GetService<RpcServerService>().Bus.GetRpcMethod(this, methodId);
-                    ParameterInfo[] parameters = method.GetParameters();
-                    object[] args = new object[parameters.Length];
-                    for (int i = 0; i < args.Length; i++)
+                    uint methodId = packet.ReadUInt();
+                    if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method))
                     {
-                        args[i] = packet.ReadObject(parameters[i].ParameterType);
-                    }
+                        ParameterInfo[] parameters = method.GetParameters();
+                        object[] args = new object[parameters.Length];
+                        for (int i = 0; i < args.Length; i++)
+                        {
+                            args[i] = packet.ReadObject(parameters[i].ParameterType);
+                        }
 
-                    method.Invoke(this, args);
+                        method.Invoke(this, args);
+                    }
+                    else
+                    {
+                        Debug.LogError($"RPC Method with ID {methodId} not found on ServerObject {type.Name}.");
+                    }
                     break;
                 }
         }
@@ -134,9 +108,9 @@ public abstract class ServerObject : ServerBehaviour, INetObject
 
     public void InvokeOnGameClientObjects(string methodName, params object[] args)
     {
-        if (rpcMethods[type].TryGetValue(methodName, out RpcMethod method))
+        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out uint methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToGameClientObjects(PacketBuilder.RpcInvoke(method.MethodId, args), method.Attribute.TransportMethod);
+            SendToGameClientObjects(PacketBuilder.RpcInvoke(methodId, method, args), attr.TransportMethod);
         }
         else
         {

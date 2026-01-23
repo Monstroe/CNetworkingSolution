@@ -4,6 +4,16 @@ using UnityEngine.VFX;
 
 public class FXServerService : ServerService
 {
+    [SerializeField] private ServerFX fxPrefab;
+
+    public ServerFX FX { get; private set; }
+
+    public override void Init(ServerLobby lobby)
+    {
+        base.Init(lobby);
+        FX = (ServerFX)InstantiateOnServer(fxPrefab.gameObject);
+    }
+
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)

@@ -8,7 +8,7 @@ using UnityEngine;
 
 public class RpcServerService : ServerService
 {
-    public RpcBus Bus { get; private set; } = new RpcBus();
+    //public RpcBus Bus { get; private set; } = new RpcBus();
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {

@@ -1,10 +1,12 @@
 
 using UnityEngine;
 using System.Collections.Generic;
+using System.Reflection;
+using System;
 
 public enum ServiceType
 {
-    CONNECTION, LOBBY, GAME, OBJECT, RPC, MAP, PLAYER, FX, INTERACTABLE, CHAT,
+    CONNECTION, LOBBY, GAME, OBJECT, MAP, PLAYER, FX, INTERACTABLE, CHAT,
 }
 
 public enum CommandType
@@ -16,9 +18,7 @@ public enum CommandType
     /* GAME */
     GAME_USER_JOINED, GAME_START,
     /* OBJECT */
-    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_TRANSFORM,
-    /* RPC */
-    RPC_INVOKE,
+    OBJECT_COMMUNICATION, OBJECTS_INIT, OBJECT_SPAWN_REQUEST, OBJECT_SPAWN, OBJECT_DESTROY_REQUEST, OBJECT_DESTROY, OBJECT_RPC, OBJECT_TRANSFORM,
     /* MAP */
     // Nothing
     /* PLAYER */
@@ -237,17 +237,23 @@ public static class PacketBuilder
     }
 
     /* RPC */
-    public static NetPacket RpcInvoke(ushort methodId, params object[] args)
+    public static NetPacket RpcInvoke(uint methodId, MethodInfo method, params object[] args)
     {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.RPC);
-        packet.Write((byte)CommandType.RPC_INVOKE);
-        packet.Write(methodId);
-        foreach (var arg in args)
+        var parameters = method.GetParameters();
+        if (args.Length != parameters.Length)
         {
-            packet.Write(arg);
+            throw new ArgumentException("RPC argument count mismatch");
         }
 
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.OBJECT);
+        packet.Write((byte)CommandType.OBJECT_RPC);
+        packet.Write(methodId);
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            packet.Write(args[i], parameters[i].ParameterType);
+        }
         return packet;
     }
 

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class NetPacket
@@ -43,6 +42,9 @@ public class NetPacket
 
     private List<byte> byteList;
 
+    private static readonly Dictionary<Type, MethodInfo> writeMethodCache = new();
+    private static readonly Dictionary<Type, MethodInfo> readMethodCache = new();
+
     public NetPacket() : this(new List<byte>())
     {
     }
@@ -65,7 +67,43 @@ public class NetPacket
 
     public static bool IsSupportedType(Type type)
     {
-        return typeof(INetSerializable).IsAssignableFrom(type) || type.IsPrimitive || (type.IsArray && (type.GetElementType().IsPrimitive || typeof(INetSerializable).IsAssignableFrom(type.GetElementType()))) || type == typeof(string) || type == typeof(string[]) || type == typeof(Vector2) || type == typeof(Vector2[]) || type == typeof(Vector3) || type == typeof(Vector3[]) || type == typeof(Quaternion) || type == typeof(Quaternion[]);
+        if (type == null)
+        {
+            return false;
+        }
+
+        // Nullable<T>
+        Type nullableInner = Nullable.GetUnderlyingType(type);
+        if (nullableInner != null)
+        {
+            return IsSupportedType(nullableInner);
+        }
+
+        // Arrays
+        if (type.IsArray)
+        {
+            return IsSupportedType(type.GetElementType());
+        }
+
+        // INetSerializable
+        if (typeof(INetSerializable).IsAssignableFrom(type))
+        {
+            return true;
+        }
+
+        // Primitives
+        if (type.IsPrimitive)
+        {
+            return true;
+        }
+
+        // Unity structs
+        if (type == typeof(string)) return true;
+        if (type == typeof(Vector2)) return true;
+        if (type == typeof(Vector3)) return true;
+        if (type == typeof(Quaternion)) return true;
+
+        return false;
     }
 
     public void CopyTo(int packetIndex, byte[] buffer, int arrayIndex, int count)
@@ -312,15 +350,58 @@ public class NetPacket
         byteList.Add(value);
     }
 
+    public void Write(byte? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
+    }
+
     public void Write(byte[] value)
     {
         Write(value.Length);
         byteList.AddRange(value);
     }
 
+    public void Write(byte?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(sbyte value)
     {
         byteList.Add((byte)value);
+    }
+
+    public void Write(sbyte? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(sbyte[] value)
@@ -329,9 +410,39 @@ public class NetPacket
         byteList.AddRange(Array.ConvertAll(value, b => (byte)b));
     }
 
+    public void Write(sbyte?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(bool value)
     {
         byteList.Add((byte)(value ? 1 : 0));
+    }
+
+    public void Write(bool? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(bool[] value)
@@ -340,9 +451,39 @@ public class NetPacket
         byteList.AddRange(Array.ConvertAll(value, b => (byte)(b ? 1 : 0)));
     }
 
+    public void Write(bool?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(char value)
     {
         byteList.Add((byte)value);
+    }
+
+    public void Write(char? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(char[] value)
@@ -351,9 +492,39 @@ public class NetPacket
         byteList.AddRange(Array.ConvertAll(value, b => (byte)b));
     }
 
+    public void Write(char?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(double value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(double? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(double[] value)
@@ -365,9 +536,39 @@ public class NetPacket
         }
     }
 
+    public void Write(double?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(float value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(float? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(float[] value)
@@ -379,9 +580,39 @@ public class NetPacket
         }
     }
 
+    public void Write(float?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(int value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(int? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(int[] value)
@@ -393,9 +624,39 @@ public class NetPacket
         }
     }
 
+    public void Write(int?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(long value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(long? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(long[] value)
@@ -407,9 +668,39 @@ public class NetPacket
         }
     }
 
+    public void Write(long?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(short value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(short? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(short[] value)
@@ -421,9 +712,39 @@ public class NetPacket
         }
     }
 
+    public void Write(short?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(uint value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(uint? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(uint[] value)
@@ -435,9 +756,39 @@ public class NetPacket
         }
     }
 
+    public void Write(uint?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(ulong value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(ulong? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(ulong[] value)
@@ -449,9 +800,39 @@ public class NetPacket
         }
     }
 
+    public void Write(ulong?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(ushort value)
     {
         byteList.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(ushort? value)
+    {
+        if (value.HasValue)
+        {
+            Write(true);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(ushort[] value)
@@ -463,8 +844,30 @@ public class NetPacket
         }
     }
 
+    public void Write(ushort?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(string value)
     {
+        if (value == null)
+        {
+            Write(-1);
+            return;
+        }
         Write(value.Length);
         byteList.AddRange(Encoding.ASCII.GetBytes(value));
     }
@@ -478,70 +881,24 @@ public class NetPacket
         }
     }
 
-    public void Write(object value, Type parameterType = null)
-    {
-        if (parameterType != null && typeof(INetSerializable).IsAssignableFrom(parameterType))
-        {
-            ((INetSerializable)value).Serialize(this);
-            return;
-        }
-
-        if (parameterType != null && parameterType.IsArray && typeof(INetSerializable).IsAssignableFrom(parameterType.GetElementType()))
-        {
-            Array array = (Array)value;
-            Write(array.Length);
-            for (int i = 0; i < array.Length; i++)
-            {
-                INetSerializable element = (INetSerializable)array.GetValue(i);
-                element.Serialize(this);
-            }
-            return;
-        }
-
-        switch (value)
-        {
-            case byte v: this.Write(v); break;
-            case byte[] v: this.Write(v); break;
-            case sbyte v: this.Write(v); break;
-            case sbyte[] v: this.Write(v); break;
-            case bool v: this.Write(v); break;
-            case bool[] v: this.Write(v); break;
-            case char v: this.Write(v); break;
-            case char[] v: this.Write(v); break;
-            case double v: this.Write(v); break;
-            case double[] v: this.Write(v); break;
-            case float v: this.Write(v); break;
-            case float[] v: this.Write(v); break;
-            case int v: this.Write(v); break;
-            case int[] v: this.Write(v); break;
-            case long v: this.Write(v); break;
-            case long[] v: this.Write(v); break;
-            case short v: this.Write(v); break;
-            case short[] v: this.Write(v); break;
-            case uint v: this.Write(v); break;
-            case uint[] v: this.Write(v); break;
-            case ulong v: this.Write(v); break;
-            case ulong[] v: this.Write(v); break;
-            case ushort v: this.Write(v); break;
-            case ushort[] v: this.Write(v); break;
-            case string v: this.Write(v); break;
-            case string[] v: this.Write(v); break;
-            case Vector2 v: this.Write(v); break;
-            case Vector2[] v: this.Write(v); break;
-            case Vector3 v: this.Write(v); break;
-            case Vector3[] v: this.Write(v); break;
-            case Quaternion v: this.Write(v); break;
-            case Quaternion[] v: this.Write(v); break;
-            default:
-                throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
-        }
-    }
-
     // Unity Structs
     public void Write(Vector2 value)
     {
         Write(value.x);
         Write(value.y);
+    }
+
+    public void Write(Vector2? value)
+    {
+        if (value.HasValue)
+        {
+            Write(value.HasValue);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(Vector2[] value)
@@ -553,11 +910,41 @@ public class NetPacket
         }
     }
 
+    public void Write(Vector2?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(Vector3 value)
     {
         Write(value.x);
         Write(value.y);
         Write(value.z);
+    }
+
+    public void Write(Vector3? value)
+    {
+        if (value.HasValue)
+        {
+            Write(value.HasValue);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(Vector3[] value)
@@ -569,12 +956,42 @@ public class NetPacket
         }
     }
 
+    public void Write(Vector3?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
     public void Write(Quaternion value)
     {
         Write(value.x);
         Write(value.y);
         Write(value.z);
         Write(value.w);
+    }
+
+    public void Write(Quaternion? value)
+    {
+        if (value.HasValue)
+        {
+            Write(value.HasValue);
+            Write(value.Value);
+        }
+        else
+        {
+            Write(false);
+        }
     }
 
     public void Write(Quaternion[] value)
@@ -586,11 +1003,157 @@ public class NetPacket
         }
     }
 
+    public void Write(Quaternion?[] value)
+    {
+        Write(value.Length);
+        foreach (var item in value)
+        {
+            if (item.HasValue)
+            {
+                Write(item.HasValue);
+                Write(item.Value);
+            }
+            else
+            {
+                Write(false);
+            }
+        }
+    }
+
+    public void Write(object value, Type parameterType)
+    {
+        Debug.Log($"Writing value of type {parameterType.FullName}");
+
+        if (parameterType == null)
+        {
+            throw new ArgumentNullException(nameof(parameterType));
+        }
+
+        // Nullable<T>
+        Type nullableInner = Nullable.GetUnderlyingType(parameterType);
+        if (nullableInner != null)
+        {
+            bool hasValue = value != null;
+            Write(hasValue);
+            if (hasValue)
+            {
+                Write(value, nullableInner);
+            }
+            return;
+        }
+
+        // Arrays
+        if (parameterType.IsArray)
+        {
+            if (value == null)
+            {
+                Write(-1);
+                return;
+            }
+
+            Array array = (Array)value;
+            int length = array.Length;
+            Write(length);
+
+            Type elementType = parameterType.GetElementType();
+            Type elementNullableInner = Nullable.GetUnderlyingType(elementType);
+            Type effectiveElementType = elementNullableInner ?? elementType;
+
+            // INetSerializable array
+            if (typeof(INetSerializable).IsAssignableFrom(effectiveElementType))
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    object element = array.GetValue(i);
+                    bool hasElement = element != null;
+                    Write(hasElement);
+
+                    if (hasElement)
+                    {
+                        ((INetSerializable)element).Serialize(this);
+                    }
+                }
+
+                return;
+            }
+
+            // Primitive array
+            for (int i = 0; i < length; i++)
+            {
+                Write(array.GetValue(i), elementType);
+            }
+
+            return;
+        }
+
+        // INetSerializable
+        if (typeof(INetSerializable).IsAssignableFrom(parameterType))
+        {
+            bool hasValue = value != null;
+            Write(hasValue);
+            if (hasValue)
+            {
+                ((INetSerializable)value).Serialize(this);
+            }
+            return;
+        }
+
+        // Primitives
+        if (parameterType == typeof(byte)) { Write((byte)value); return; }
+        if (parameterType == typeof(byte[])) { Write((byte[])value); return; }
+        if (parameterType == typeof(sbyte)) { Write((sbyte)value); return; }
+        if (parameterType == typeof(sbyte[])) { Write((sbyte[])value); return; }
+        if (parameterType == typeof(bool)) { Write((bool)value); return; }
+        if (parameterType == typeof(bool[])) { Write((bool[])value); return; }
+        if (parameterType == typeof(char)) { Write((char)value); return; }
+        if (parameterType == typeof(char[])) { Write((char[])value); return; }
+        if (parameterType == typeof(double)) { Write((double)value); return; }
+        if (parameterType == typeof(double[])) { Write((double[])value); return; }
+        if (parameterType == typeof(float)) { Write((float)value); return; }
+        if (parameterType == typeof(float[])) { Write((float[])value); return; }
+        if (parameterType == typeof(int)) { Write((int)value); return; }
+        if (parameterType == typeof(int[])) { Write((int[])value); return; }
+        if (parameterType == typeof(long)) { Write((long)value); return; }
+        if (parameterType == typeof(long[])) { Write((long[])value); return; }
+        if (parameterType == typeof(short)) { Write((short)value); return; }
+        if (parameterType == typeof(short[])) { Write((short[])value); return; }
+        if (parameterType == typeof(uint)) { Write((uint)value); return; }
+        if (parameterType == typeof(uint[])) { Write((uint[])value); return; }
+        if (parameterType == typeof(ulong)) { Write((ulong)value); return; }
+        if (parameterType == typeof(ulong[])) { Write((ulong[])value); return; }
+        if (parameterType == typeof(ushort)) { Write((ushort)value); return; }
+        if (parameterType == typeof(ushort[])) { Write((ushort[])value); return; }
+        if (parameterType == typeof(string)) { Write((string)value); return; }
+        if (parameterType == typeof(string[])) { Write((string[])value); return; }
+        if (parameterType == typeof(Vector2)) { Write((Vector2)value); return; }
+        if (parameterType == typeof(Vector2[])) { Write((Vector2[])value); return; }
+        if (parameterType == typeof(Vector3)) { Write((Vector3)value); return; }
+        if (parameterType == typeof(Vector3[])) { Write((Vector3[])value); return; }
+        if (parameterType == typeof(Quaternion)) { Write((Quaternion)value); return; }
+        if (parameterType == typeof(Quaternion[])) { Write((Quaternion[])value); return; }
+
+        throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
+    }
+
     public byte ReadByte(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(byte);
         var value = byteList[CurrentIndex];
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public byte? ReadNullableByte(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        byte value = ReadByte();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(byte) + sizeof(bool);
         return value;
     }
 
@@ -602,11 +1165,39 @@ public class NetPacket
         return value;
     }
 
+    public byte?[] ReadNullableBytes(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new byte?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableByte();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public sbyte ReadSByte(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(sbyte);
         var value = (sbyte)byteList[CurrentIndex];
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public sbyte? ReadNullableSByte(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        sbyte value = ReadSByte();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(sbyte) + sizeof(bool);
         return value;
     }
 
@@ -618,11 +1209,39 @@ public class NetPacket
         return value;
     }
 
+    public sbyte?[] ReadNullableSBytes(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new sbyte?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableSByte();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public bool ReadBool(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(bool);
         var value = byteList[CurrentIndex] != 0;
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public bool? ReadNullableBool(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        bool value = ReadBool();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool) + sizeof(bool);
         return value;
     }
 
@@ -634,11 +1253,39 @@ public class NetPacket
         return value;
     }
 
+    public bool?[] ReadNullableBools(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new bool?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableBool();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public char ReadChar(bool moveIndexPosition = true)
     {
         int typeSize = 1;
         var value = (char)byteList[CurrentIndex];
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public char? ReadNullableChar(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        char value = ReadChar();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(char) + sizeof(bool);
         return value;
     }
 
@@ -650,11 +1297,39 @@ public class NetPacket
         return value;
     }
 
+    public char?[] ReadNullableChars(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new char?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableChar();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public double ReadDouble(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(double);
         var value = BitConverter.ToDouble(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public double? ReadNullableDouble(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        double value = ReadDouble();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(double) + sizeof(bool);
         return value;
     }
 
@@ -669,11 +1344,39 @@ public class NetPacket
         return value;
     }
 
+    public double?[] ReadNullableDoubles(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new double?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableDouble();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public float ReadFloat(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(float);
         var value = BitConverter.ToSingle(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public float? ReadNullableFloat(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        float value = ReadFloat();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(float) + sizeof(bool);
         return value;
     }
 
@@ -688,11 +1391,39 @@ public class NetPacket
         return value;
     }
 
+    public float?[] ReadNullableFloats(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new float?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableFloat();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public int ReadInt(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(int);
         var value = BitConverter.ToInt32(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public int? ReadNullableInt(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        int value = ReadInt();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(int) + sizeof(bool);
         return value;
     }
 
@@ -707,11 +1438,39 @@ public class NetPacket
         return value;
     }
 
+    public int?[] ReadNullableInts(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new int?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableInt();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public long ReadLong(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(long);
         var value = BitConverter.ToInt64(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public long? ReadNullableLong(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        long value = ReadLong();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(long) + sizeof(bool);
         return value;
     }
 
@@ -726,11 +1485,39 @@ public class NetPacket
         return value;
     }
 
+    public long?[] ReadNullableLongs(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new long?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableLong();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public short ReadShort(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(short);
         var value = BitConverter.ToInt16(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public short? ReadNullableShort(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        short value = ReadShort();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(short) + sizeof(bool);
         return value;
     }
 
@@ -745,11 +1532,39 @@ public class NetPacket
         return value;
     }
 
+    public short?[] ReadNullableShorts(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new short?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableShort();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public uint ReadUInt(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(uint);
         var value = BitConverter.ToUInt32(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public uint? ReadNullableUInt(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        uint value = ReadUInt();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(uint) + sizeof(bool);
         return value;
     }
 
@@ -764,11 +1579,39 @@ public class NetPacket
         return value;
     }
 
+    public uint?[] ReadNullableUInts(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new uint?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableUInt();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public ulong ReadULong(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(ulong);
         var value = BitConverter.ToUInt64(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public ulong? ReadNullableULong(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        ulong value = ReadULong();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(ulong) + sizeof(bool);
         return value;
     }
 
@@ -783,11 +1626,39 @@ public class NetPacket
         return value;
     }
 
+    public ulong?[] ReadNullableULongs(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new ulong?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableULong();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public ushort ReadUShort(bool moveIndexPosition = true)
     {
         int typeSize = sizeof(short);
         var value = BitConverter.ToUInt16(byteList.GetRange(CurrentIndex, typeSize).ToArray());
         CurrentIndex += moveIndexPosition ? typeSize : 0;
+        return value;
+    }
+
+    public ushort? ReadNullableUShort(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        ushort value = ReadUShort();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(ushort) + sizeof(bool);
         return value;
     }
 
@@ -802,9 +1673,28 @@ public class NetPacket
         return value;
     }
 
+    public ushort?[] ReadNullableUShorts(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new ushort?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableUShort();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public string ReadString(bool moveIndexPosition = true)
     {
         int strLen = ReadInt(false);
+        if (strLen == -1)
+        {
+            CurrentIndex += moveIndexPosition ? sizeof(int) : 0;
+            return null;
+        }
         var value = Encoding.ASCII.GetString(byteList.GetRange(CurrentIndex + 4, strLen).ToArray());
         CurrentIndex += moveIndexPosition ? strLen + 4 : 0;
         return value;
@@ -821,79 +1711,6 @@ public class NetPacket
         return value;
     }
 
-    public object ReadObject(Type parameterType = null, bool moveIndexPosition = true)
-    {
-        if (parameterType != null && typeof(INetSerializable).IsAssignableFrom(parameterType))
-        {
-            int currIdx = CurrentIndex;
-            if (parameterType.GetConstructor(Type.EmptyTypes) == null)
-            {
-                throw new Exception($"{parameterType.Name} must have a parameterless constructor for deserialization.");
-            }
-            var instance = Activator.CreateInstance(parameterType);
-            MethodInfo deserializeMethod = parameterType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public);
-            object result = deserializeMethod.Invoke(instance, new object[] { this });
-            CurrentIndex = moveIndexPosition ? CurrentIndex : currIdx;
-            return result;
-        }
-
-        if (parameterType != null && parameterType.IsArray && typeof(INetSerializable).IsAssignableFrom(parameterType.GetElementType()))
-        {
-            int currIdx = CurrentIndex;
-            Type elementType = parameterType.GetElementType();
-            if (elementType.GetConstructor(Type.EmptyTypes) == null)
-            {
-                throw new Exception($"{parameterType.Name} must have a parameterless constructor for deserialization.");
-            }
-            int length = this.ReadInt();
-            Array array = Array.CreateInstance(elementType, length);
-            MethodInfo deserializeMethod = elementType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public);
-            for (int i = 0; i < length; i++)
-            {
-                var instance = Activator.CreateInstance(elementType);
-                object result = deserializeMethod.Invoke(instance, new object[] { this });
-                array.SetValue(result, i);
-            }
-            CurrentIndex = moveIndexPosition ? CurrentIndex : currIdx;
-            return array;
-        }
-
-        if (parameterType == typeof(byte)) return this.ReadByte(moveIndexPosition);
-        if (parameterType == typeof(byte[])) return this.ReadBytes(moveIndexPosition);
-        if (parameterType == typeof(sbyte)) return this.ReadSByte(moveIndexPosition);
-        if (parameterType == typeof(sbyte[])) return this.ReadSBytes(moveIndexPosition);
-        if (parameterType == typeof(bool)) return this.ReadBool(moveIndexPosition);
-        if (parameterType == typeof(bool[])) return this.ReadBools(moveIndexPosition);
-        if (parameterType == typeof(char)) return this.ReadChar(moveIndexPosition);
-        if (parameterType == typeof(char[])) return this.ReadChars(moveIndexPosition);
-        if (parameterType == typeof(double)) return this.ReadDouble(moveIndexPosition);
-        if (parameterType == typeof(double[])) return this.ReadDoubles(moveIndexPosition);
-        if (parameterType == typeof(float)) return this.ReadFloat(moveIndexPosition);
-        if (parameterType == typeof(float[])) return this.ReadFloats(moveIndexPosition);
-        if (parameterType == typeof(int)) return this.ReadInt(moveIndexPosition);
-        if (parameterType == typeof(int[])) return this.ReadInts(moveIndexPosition);
-        if (parameterType == typeof(long)) return this.ReadLong(moveIndexPosition);
-        if (parameterType == typeof(long[])) return this.ReadLongs(moveIndexPosition);
-        if (parameterType == typeof(short)) return this.ReadShort(moveIndexPosition);
-        if (parameterType == typeof(short[])) return this.ReadShorts(moveIndexPosition);
-        if (parameterType == typeof(uint)) return this.ReadUInt(moveIndexPosition);
-        if (parameterType == typeof(uint[])) return this.ReadUInts(moveIndexPosition);
-        if (parameterType == typeof(ulong)) return this.ReadULong(moveIndexPosition);
-        if (parameterType == typeof(ulong[])) return this.ReadULongs(moveIndexPosition);
-        if (parameterType == typeof(ushort)) return this.ReadUShort(moveIndexPosition);
-        if (parameterType == typeof(ushort[])) return this.ReadUShorts(moveIndexPosition);
-        if (parameterType == typeof(string)) return this.ReadString(moveIndexPosition);
-        if (parameterType == typeof(string[])) return this.ReadStrings(moveIndexPosition);
-        if (parameterType == typeof(Vector2)) return this.ReadVector2(moveIndexPosition);
-        if (parameterType == typeof(Vector2[])) return this.ReadVector2s(moveIndexPosition);
-        if (parameterType == typeof(Vector3)) return this.ReadVector3(moveIndexPosition);
-        if (parameterType == typeof(Vector3[])) return this.ReadVector3s(moveIndexPosition);
-        if (parameterType == typeof(Quaternion)) return this.ReadQuaternion(moveIndexPosition);
-        if (parameterType == typeof(Quaternion[])) return this.ReadQuaternions(moveIndexPosition);
-
-        throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
-    }
-
     // Unity Structs
     public Vector2 ReadVector2(bool moveIndexPosition = true)
     {
@@ -901,6 +1718,20 @@ public class NetPacket
         float y = ReadFloat();
         CurrentIndex -= moveIndexPosition ? 0 : sizeof(float) * 2;
         return new Vector2(x, y);
+    }
+
+    public Vector2? ReadNullableVector2(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        Vector2 value = ReadVector2();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(float) * 2 + sizeof(bool);
+        return value;
     }
 
     public Vector2[] ReadVector2s(bool moveIndexPosition = true)
@@ -914,6 +1745,20 @@ public class NetPacket
         return value;
     }
 
+    public Vector2?[] ReadNullableVector2s(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new Vector2?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableVector2();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public Vector3 ReadVector3(bool moveIndexPosition = true)
     {
         float x = ReadFloat();
@@ -921,6 +1766,20 @@ public class NetPacket
         float z = ReadFloat();
         CurrentIndex -= moveIndexPosition ? 0 : sizeof(float) * 3;
         return new Vector3(x, y, z);
+    }
+
+    public Vector3? ReadNullableVector3(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        Vector3 value = ReadVector3();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(float) * 3 + sizeof(bool);
+        return value;
     }
 
     public Vector3[] ReadVector3s(bool moveIndexPosition = true)
@@ -934,6 +1793,20 @@ public class NetPacket
         return value;
     }
 
+    public Vector3?[] ReadNullableVector3s(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new Vector3?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableVector3();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
     public Quaternion ReadQuaternion(bool moveIndexPosition = true)
     {
         float x = ReadFloat();
@@ -942,6 +1815,20 @@ public class NetPacket
         float w = ReadFloat();
         CurrentIndex -= moveIndexPosition ? 0 : sizeof(float) * 4;
         return new Quaternion(x, y, z, w);
+    }
+
+    public Quaternion? ReadNullableQuaternion(bool moveIndexPosition = true)
+    {
+        bool hasValue = ReadBool();
+        if (!hasValue)
+        {
+            CurrentIndex -= moveIndexPosition ? 0 : sizeof(bool);
+            return null;
+        }
+
+        Quaternion value = ReadQuaternion();
+        CurrentIndex -= moveIndexPosition ? 0 : sizeof(float) * 4 + sizeof(bool);
+        return value;
     }
 
     public Quaternion[] ReadQuaternions(bool moveIndexPosition = true)
@@ -953,5 +1840,159 @@ public class NetPacket
             value[i] = ReadQuaternion();
         CurrentIndex -= moveIndexPosition ? 0 : typeSize;
         return value;
+    }
+
+    public Quaternion?[] ReadNullableQuaternions(bool moveIndexPosition = true)
+    {
+        int cachedIdx = CurrentIndex;
+        int length = ReadInt();
+        var value = new Quaternion?[length];
+        for (int i = 0; i < length; i++)
+        {
+            var v = ReadNullableQuaternion();
+            value[i] = v;
+        }
+        CurrentIndex = moveIndexPosition ? CurrentIndex : cachedIdx;
+        return value;
+    }
+
+    public object ReadObject(Type parameterType, bool moveIndexPosition = true)
+    {
+        if (parameterType == null)
+        {
+            throw new ArgumentNullException(nameof(parameterType));
+        }
+
+        int startIndex = CurrentIndex;
+
+        try
+        {
+            Type nullableInner = Nullable.GetUnderlyingType(parameterType);
+            // Nullable<T>
+            if (nullableInner != null)
+            {
+                bool hasValue = ReadBool();
+                if (!hasValue)
+                {
+                    return null;
+                }
+
+                return ReadObject(nullableInner, true);
+            }
+
+            // Array
+            if (parameterType.IsArray)
+            {
+                int length = ReadInt();
+                if (length < 0)
+                {
+                    return null;
+                }
+
+                Type elementType = parameterType.GetElementType();
+                Type elementNullableInner = Nullable.GetUnderlyingType(elementType);
+                Type effectiveElementType = elementNullableInner ?? elementType;
+
+                Array array = Array.CreateInstance(elementType, length);
+
+                // INetSerializable array
+                if (typeof(INetSerializable).IsAssignableFrom(effectiveElementType))
+                {
+                    MethodInfo deserializeMethod = effectiveElementType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public) ?? throw new Exception($"{effectiveElementType.Name} must implement Deserialize(NetPacket).");
+
+                    if (effectiveElementType.GetConstructor(Type.EmptyTypes) == null)
+                    {
+                        throw new Exception($"{effectiveElementType.Name} must have a parameterless constructor.");
+                    }
+
+                    for (int i = 0; i < length; i++)
+                    {
+                        bool hasElement = ReadBool();
+                        if (!hasElement)
+                        {
+                            array.SetValue(null, i);
+                            continue;
+                        }
+
+                        object instance = Activator.CreateInstance(effectiveElementType);
+                        object value = deserializeMethod.Invoke(instance, new object[] { this });
+                        array.SetValue(value, i);
+                    }
+
+                    return array;
+                }
+
+                // Primitive array
+                for (int i = 0; i < length; i++)
+                {
+                    array.SetValue(ReadObject(elementType, true), i);
+                }
+
+                return array;
+            }
+
+            // INetSerializable
+            if (typeof(INetSerializable).IsAssignableFrom(parameterType))
+            {
+                bool hasValue = ReadBool();
+                if (!hasValue)
+                {
+                    return null;
+                }
+
+                MethodInfo deserializeMethod = parameterType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public) ?? throw new Exception($"{parameterType.Name} must implement Deserialize(NetPacket).");
+
+                if (parameterType.GetConstructor(Type.EmptyTypes) == null)
+                {
+                    throw new Exception($"{parameterType.Name} must have a parameterless constructor.");
+                }
+
+                object instance = Activator.CreateInstance(parameterType);
+                return deserializeMethod.Invoke(instance, new object[] { this });
+            }
+
+            // Primitives
+            if (parameterType == typeof(byte)) return ReadByte();
+            if (parameterType == typeof(byte[])) return ReadBytes();
+            if (parameterType == typeof(sbyte)) return ReadSByte();
+            if (parameterType == typeof(sbyte[])) return ReadSBytes();
+            if (parameterType == typeof(bool)) return ReadBool();
+            if (parameterType == typeof(bool[])) return ReadBools();
+            if (parameterType == typeof(char)) return ReadChar();
+            if (parameterType == typeof(char[])) return ReadChars();
+            if (parameterType == typeof(double)) return ReadDouble();
+            if (parameterType == typeof(double[])) return ReadDoubles();
+            if (parameterType == typeof(float)) return ReadFloat();
+            if (parameterType == typeof(float[])) return ReadFloats();
+            if (parameterType == typeof(int)) return ReadInt();
+            if (parameterType == typeof(int[])) return ReadInts();
+            if (parameterType == typeof(long)) return ReadLong();
+            if (parameterType == typeof(long[])) return ReadLongs();
+            if (parameterType == typeof(short)) return ReadShort();
+            if (parameterType == typeof(short[])) return ReadShorts();
+            if (parameterType == typeof(uint)) return ReadUInt();
+            if (parameterType == typeof(uint[])) return ReadUInts();
+            if (parameterType == typeof(ulong)) return ReadULong();
+            if (parameterType == typeof(ulong[])) return ReadULongs();
+            if (parameterType == typeof(ushort)) return ReadUShort();
+            if (parameterType == typeof(ushort[])) return ReadUShorts();
+            if (parameterType == typeof(string)) return ReadString();
+            if (parameterType == typeof(string[])) return ReadStrings();
+            if (parameterType == typeof(Vector2)) return ReadVector2();
+            if (parameterType == typeof(Vector2[])) return ReadVector2s();
+            if (parameterType == typeof(Vector3)) return ReadVector3();
+            if (parameterType == typeof(Vector3[])) return ReadVector3s();
+            if (parameterType == typeof(Quaternion)) return ReadQuaternion();
+            if (parameterType == typeof(Quaternion[])) return ReadQuaternions();
+
+            throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
+        }
+        finally
+        {
+            if (!moveIndexPosition)
+            {
+                CurrentIndex = startIndex;
+            }
+        }
     }
 }
