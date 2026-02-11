@@ -109,14 +109,14 @@ public class ClientPlayer : ClientEntity
         }
     }
 
-    protected override void InitRotation(Quaternion rot)
+    protected override void InitTransform(Vector3 pos, Quaternion rot)
     {
-        transform.rotation = Quaternion.Euler(0f, rot.eulerAngles.y, 0f);
+        transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, rot.eulerAngles.y, 0f));
     }
 
-    protected override void UpdateRotation(Quaternion rot)
+    protected override void ReceiveTransform(Vector3 pos, Quaternion rot)
     {
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, rot.eulerAngles.y, 0f), lerpSpeed * Time.deltaTime);
+        transform.SetPositionAndRotation(Vector3.Lerp(transform.position, pos, lerpSpeed * Time.deltaTime), Quaternion.Slerp(transform.rotation, Quaternion.Euler(0f, rot.eulerAngles.y, 0f), lerpSpeed * Time.deltaTime));
     }
 
     [Rpc]

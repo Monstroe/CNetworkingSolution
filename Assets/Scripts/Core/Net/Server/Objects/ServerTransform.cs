@@ -6,8 +6,15 @@ public class ServerTransform : ServerObject
 {
     public Rigidbody RB { get; private set; }
 
+    [Header("ServerTransform Settings")]
+    [Range(0f, 1f)]
+    [Tooltip("Speed at which this object syncs it's position and rotation (relative to FixedUpdate)")]
+    [SerializeField] private float transformSyncSpeed = 1f;
+
     private Vector3 receivedPosition;
     private Quaternion receivedRotation;
+
+    private float timer = 0f;
 
     public override void Init(ushort id, ServerLobby lobby)
     {
@@ -16,6 +23,12 @@ public class ServerTransform : ServerObject
         this.receivedPosition = RB.position;
         this.receivedRotation = RB.rotation;
         lobby.GetService<ObjectServerService>().ServerTransforms.Add(id, this);
+    }
+
+    public override void Remove()
+    {
+        base.Remove();
+        lobby.GetService<ObjectServerService>().ServerTransforms.Remove(Id);
     }
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
@@ -39,8 +52,7 @@ public class ServerTransform : ServerObject
     {
         if (Owner != null)
         {
-            UpdatePosition(receivedPosition);
-            UpdateRotation(receivedRotation);
+            ReceiveTransform(receivedPosition, receivedRotation);
         }
         else
         {
@@ -48,7 +60,12 @@ public class ServerTransform : ServerObject
             receivedRotation = RB.rotation;
         }
 
-        SendToGameClientObjects(PacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, Owner != null ? Owner.User : null);
+        timer += transformSyncSpeed;
+        if (timer >= 1)
+        {
+            timer = 0;
+            SendToGameClientObjects(PacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, Owner != null ? Owner.User : null);
+        }
     }
 
     public override void UserJoined(UserData joinedUser)
@@ -66,13 +83,10 @@ public class ServerTransform : ServerObject
         // Nothing
     }
 
-    protected virtual void UpdatePosition(Vector3 pos)
+    protected virtual void ReceiveTransform(Vector3 pos, Quaternion rot)
     {
         RB.MovePosition(pos);
-    }
-
-    protected virtual void UpdateRotation(Quaternion rot)
-    {
         RB.MoveRotation(rot.normalized);
+        Debug.Log($"[SERVER] Received transform {pos},{rot}");
     }
 }

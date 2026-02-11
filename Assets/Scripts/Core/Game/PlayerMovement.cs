@@ -183,7 +183,8 @@ public class PlayerMovement : MonoBehaviour
         footstepTimer += Time.deltaTime;
 
         // Networking
-        Player.Instance.SendToServerObject(PacketBuilder.ObjectTransform(transform.position, cameraParent.rotation), TransportMethod.Unreliable);
+        //Player.Instance.SendToServerObject(PacketBuilder.ObjectTransform(transform.position, cameraParent.rotation), TransportMethod.Unreliable);
+        //Player.Instance.SendTransformToServerObject(transform.position, cameraParent.rotation);
     }
 
     void Rotate()

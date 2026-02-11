@@ -45,9 +45,9 @@ public class PlayerServerService : ServerService
 
         ServerPlayer player = (ServerPlayer)InstantiateOnServer(serverPlayerPrefab.gameObject, position, rotation, false);
         player.Owner = player; // For server-side movement authority, this should be null
-        player.Init(joinedUser.PlayerId, lobby, joinedUser);
 
         lobby.SendToGame(PacketBuilder.PlayerSpawn(joinedUser, position, rotation, player.IsWalking, player.IsSprinting, player.IsCrouching, player.IsGrounded, player.Jumped, player.Grabbed), TransportMethod.Reliable);
+        player.Init(joinedUser.PlayerId, lobby, joinedUser);
     }
 
     public override void UserLeft(UserData leftUser)

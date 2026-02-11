@@ -23,7 +23,7 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     public virtual void Init(ushort id, ServerLobby lobby)
     {
         this.Id = id;
-        this.lobby = lobby;
+        base.Init(lobby);
         type = GetType();
 
         lobby.GetService<ObjectServerService>().RpcBus.RegisterRpcContainer(this);

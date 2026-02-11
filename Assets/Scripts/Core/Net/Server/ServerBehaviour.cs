@@ -7,6 +7,11 @@ public class ServerBehaviour : MonoBehaviour
 {
     protected ServerLobby lobby;
 
+    public virtual void Init(ServerLobby lobby)
+    {
+        this.lobby = lobby;
+    }
+
     protected ServerObject InstantiateOnServer(string originalPath, bool initAndSendToUsers = true, ServerPlayer owner = null)
     {
         var handle = Addressables.LoadAssetAsync<GameObject>(originalPath).WaitForCompletion();
@@ -79,12 +84,13 @@ public class ServerBehaviour : MonoBehaviour
             instance.Owner = owner;
             if (initAndSendToUsers)
             {
-                instance.Init(lobby.GenerateObjectId(), lobby);
+                ushort id = lobby.GenerateObjectId();
                 Tuple<int, string> clientPrefabInfo = NetResources.Instance.GetClientPrefabFromServerKey(instance.PrefabKey);
                 if (clientPrefabInfo != null)
                 {
-                    lobby.SendToGame(PacketBuilder.ObjectSpawn(instance.Id, clientPrefabInfo.Item1, instance.transform.position, instance.transform.rotation, instance.Owner ? (byte?)instance.Owner.Id : null), TransportMethod.Reliable);
+                    lobby.SendToGame(PacketBuilder.ObjectSpawn(id, clientPrefabInfo.Item1, instance.transform.position, instance.transform.rotation, instance.Owner ? (byte?)instance.Owner.Id : null), TransportMethod.Reliable);
                 }
+                instance.Init(id, lobby);
             }
         }
     }

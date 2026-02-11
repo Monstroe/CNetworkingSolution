@@ -8,9 +8,9 @@ public abstract class ClientService : ClientBehaviour
     [Header("Client Service Settings")]
     [SerializeField] private ServiceType serviceType;
 
-    public virtual void Init(ClientLobby lobby)
+    public override void Init(ClientLobby lobby)
     {
-        this.lobby = lobby;
+        base.Init(lobby);
         lobby.RegisterService(this);
     }
 

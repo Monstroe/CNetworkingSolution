@@ -4,6 +4,11 @@ public class ClientBehaviour : MonoBehaviour
 {
     protected ClientLobby lobby;
 
+    public virtual void Init(ClientLobby lobby)
+    {
+        this.lobby = lobby;
+    }
+
     protected void InstantiateOnNetwork(string originalPath, Vector3 position, Quaternion rotation, bool setThisPlayerAsOwner = true)
     {
         SendObjectSpawnRequest(originalPath, position, rotation, setThisPlayerAsOwner);

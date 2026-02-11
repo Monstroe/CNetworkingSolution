@@ -136,16 +136,18 @@ public class ObjectServerService : ServerService
         if (serverPrefabInfo != null)
         {
             ServerObject serverObj = InstantiateOnServer(serverPrefabInfo.Item2, position, rotation, false, setThisPlayerAsOwner ? lobby.GetService<PlayerServerService>().ServerPlayers[spawningUser] : null);
-            serverObj.Init(lobby.GenerateObjectId(), lobby);
+            ushort id = lobby.GenerateObjectId();
 
             if (isStartingObject)
             {
-                spawnedStartingObjectIds.Add(serverObj.Id);
+                spawnedStartingObjectIds.Add(id);
             }
             else
             {
-                lobby.SendToGame(PacketBuilder.ObjectSpawn(serverObj.Id, clientPrefabKey, serverObj.transform.position, serverObj.transform.rotation, serverObj.Owner ? (byte?)serverObj.Owner.Id : null), transportMethod ?? TransportMethod.Reliable);
+                lobby.SendToGame(PacketBuilder.ObjectSpawn(id, clientPrefabKey, serverObj.transform.position, serverObj.transform.rotation, serverObj.Owner ? (byte?)serverObj.Owner.Id : null), transportMethod ?? TransportMethod.Reliable);
             }
+
+            serverObj.Init(id, lobby);
         }
     }
 

@@ -10,9 +10,9 @@ public abstract class ServerService : ServerBehaviour
     [SerializeField] private ServiceType serviceType;
     [SerializeField] protected int executionOrder = 0;
 
-    public virtual void Init(ServerLobby lobby)
+    public override void Init(ServerLobby lobby)
     {
-        this.lobby = lobby; ;
+        base.Init(lobby);
         lobby.RegisterService(this);
     }
 
