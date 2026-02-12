@@ -25,6 +25,21 @@ public class Chat : MonoBehaviour
         }
     }
 
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameUserJoined += AddUserJoinedMessage;
+        ClientManager.Instance.CurrentLobby.GetService<LobbyClientService>().OnLobbyUserLeft += AddUserLeftMessage;
+        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().Chat.OnChatMessageReceived += ReceivedMessage;
+    }
+
+    void OnDestroy()
+    {
+        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameUserJoined -= AddUserJoinedMessage;
+        ClientManager.Instance.CurrentLobby.GetService<LobbyClientService>().OnLobbyUserLeft -= AddUserLeftMessage;
+        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().Chat.OnChatMessageReceived -= ReceivedMessage;
+    }
+
     // Update is called once per frame
     void Update()
     {
@@ -38,7 +53,7 @@ public class Chat : MonoBehaviour
             {
                 if (inputField.text.Length > 0)
                 {
-                    SubmitMessage(inputField.text);
+                    ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().Chat.SendChat(inputField.text);
                 }
                 DeactivateChat();
             }
@@ -66,21 +81,21 @@ public class Chat : MonoBehaviour
         Player.Instance.ControlsEnabled = true;
     }
 
-    public void SubmitMessage(string message)
+    private void AddUserJoinedMessage(UserData user)
     {
-        ClientManager.Instance.CurrentLobby.SendToServer(PacketBuilder.ChatMessage(ClientManager.Instance.CurrentLobby.CurrentUser, message), TransportMethod.Reliable);
-    }
-
-    public void AddUserJoinedMessage(string userName)
-    {
-        string message = $"{userName} has joined the game.";
+        string message = $"{user.Settings.UserName} has joined the game.";
         AddChatMessage(message, Color.green);
     }
 
-    public void AddUserLeftMessage(string userName)
+    private void AddUserLeftMessage(UserData user)
     {
-        string message = $"{userName} has left the game.";
+        string message = $"{user.Settings.UserName} has left the game.";
         AddChatMessage(message, Color.red);
+    }
+
+    private void ReceivedMessage(UserData user, string message)
+    {
+        AddChatMessage($"{user.Settings.UserName}: {message}", Color.white);
     }
 
     public void AddChatMessage(string message, Color color)

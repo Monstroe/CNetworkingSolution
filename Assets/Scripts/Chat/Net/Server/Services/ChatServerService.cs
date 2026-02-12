@@ -3,22 +3,11 @@ using UnityEngine;
 
 public class ChatServerService : ServerService
 {
+    public ServerChat Chat { get; set; }
+
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
-        switch (commandType)
-        {
-            case CommandType.CHAT_MESSAGE:
-                {
-                    byte playerId = packet.ReadByte();
-                    UserData thisUser = lobby.LobbyData.LobbyUsers.Find(u => u.PlayerId == playerId);
-                    if (thisUser != null && thisUser.PlayerId == user.PlayerId)
-                    {
-                        string message = packet.ReadString();
-                        lobby.SendToGame(PacketBuilder.ChatMessage(user, message), TransportMethod.Reliable);
-                    }
-                    break;
-                }
-        }
+        // Nothing
     }
 
     public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
