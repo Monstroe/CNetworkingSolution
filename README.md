@@ -1,6 +1,6 @@
 # CNetworkingSolution
 
-Higher level abstracted networking system for multiplayer games. Relies on a specific transport. After years of networking debates, this is the singularity.
+High level modular networking system for multiplayer games. Relies on a specific transport. After years of networking debates, this is the singularity.
 
 ## Features
 
@@ -9,11 +9,15 @@ Here is a list of some of the features it contains:
   - All custom packets can be stored in the `PacketBuilder` static class
 - Plug and play transport system where you can easily swap between between different low-level transports (CNet, LiteNetLib, Steamworks, etc.) and not have to make ANY changes to your codebase
   - You can also create your own transports by inheriting from the `NetTransport` abstract class
-- Fully functioning lobby creation and joining system
+- Fully functioning lobby creation and joining system (lobby matchmaking)
   - This can be run in multiple modes by changing Scripting Define Symbols, see more below
   - You may need a [web server](https://github.com/Monstroe/CNSWebServer) to act as a lobby brokerage system/load balancer depending on how you're running your system
 - Robust service and command system where you can send packets to different services, allowing you to change how you read the data based off what service and command was sent
   - This data can also be sent to specific networked objects (objects that have inherited from either `ServerObject` or `ClientObject`)
+- Remote Procedure Calls (RPCs) allowing the server and its clients to directly call functions over the network
+  - Scripts must inherit from either `ServerObject` or `ClientObject` to use this functionality
+- Server-side event handling for easily updating state across the server
+  - This state can then be synced on the clients with the different methodologies above
 - An example project with many important game functions already synced, such as:
   - Lobby settings
   - User settings
