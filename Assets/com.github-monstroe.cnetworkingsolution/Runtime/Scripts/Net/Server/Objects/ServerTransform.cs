@@ -1,4 +1,3 @@
-using System.Net;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -31,9 +30,9 @@ public class ServerTransform : ServerObject
         lobby.GetService<ObjectServerService>().ServerTransforms.Remove(Id);
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
-        base.ReceiveData(user, packet, serviceType, commandType, transportMethod);
+        base.ReceiveData(user, packet, commandType, transportMethod);
         switch (commandType)
         {
             case CommandType.OBJECT_TRANSFORM:

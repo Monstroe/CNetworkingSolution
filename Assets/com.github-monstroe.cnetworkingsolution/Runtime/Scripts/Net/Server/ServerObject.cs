@@ -101,7 +101,7 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     }
 #endif
 
-    public virtual void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public virtual void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -127,7 +127,7 @@ public abstract class ServerObject : ServerBehaviour, INetObject
                 }
         }
     }
-    public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType) { }
+    public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType) { }
     public abstract void Tick();
     public abstract void UserJoined(UserData joinedUser);
     public abstract void UserJoinedGame(UserData joinedUser);

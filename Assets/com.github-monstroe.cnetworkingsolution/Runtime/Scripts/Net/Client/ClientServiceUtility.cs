@@ -1,46 +1,47 @@
 using System;
 using System.Collections.Generic;
 
-public class ClientServiceUtility
+public class ClientServiceUtility : ServiceUtility
 {
-    private Dictionary<ServiceType, ClientService> services = new Dictionary<ServiceType, ClientService>();
-    private Dictionary<Type, ServiceType> serviceTypeCache = new Dictionary<Type, ServiceType>();
+    private Dictionary<uint, ClientService> services = new Dictionary<uint, ClientService>();
+    private Dictionary<Type, uint> serviceTypeCache = new Dictionary<Type, uint>();
 
-    public bool RegisterService<T>(T service) where T : ClientService
+    public uint? RegisterService<T>(T service) where T : ClientService
     {
-        ServiceType serviceType = service.ServiceType;
-        if (!services.ContainsKey(serviceType))
+        uint serviceId = GenerateServiceId(service.GetType());
+        if (!services.ContainsKey(serviceId))
         {
-            services[serviceType] = service;
-            serviceTypeCache[service.GetType()] = serviceType;
+            services[serviceId] = service;
+            serviceTypeCache[service.GetType()] = serviceId;
+            return serviceId;
+        }
+        return null;
+    }
+
+    public bool UnregisterService<T>(out uint serviceId) where T : ClientService
+    {
+        serviceId = serviceTypeCache[typeof(T)];
+        if (services.TryGetValue(serviceId, out ClientService service))
+        {
+            services.Remove(serviceId);
+            serviceTypeCache.Remove(service.GetType());
             return true;
         }
         return false;
     }
 
-    public bool UnregisterService<T>(out ServiceType serviceType) where T : ClientService
+    public T GetService<T>(out uint serviceId) where T : ClientService
     {
-        serviceType = serviceTypeCache[typeof(T)];
-        if (services.ContainsKey(serviceType))
-        {
-            services.Remove(serviceType);
-            return true;
-        }
-        return false;
-    }
-
-    public T GetService<T>(out ServiceType serviceType) where T : ClientService
-    {
-        if (serviceTypeCache.TryGetValue(typeof(T), out serviceType) && services.TryGetValue(serviceType, out ClientService service))
+        if (serviceTypeCache.TryGetValue(typeof(T), out serviceId) && services.TryGetValue(serviceId, out ClientService service))
         {
             return (T)service;
         }
         return null;
     }
 
-    public bool GetService(ServiceType serviceType, out ClientService service)
+    public bool GetService(uint serviceId, out ClientService service)
     {
-        if (services.TryGetValue(serviceType, out service))
+        if (services.TryGetValue(serviceId, out service))
         {
             return true;
         }

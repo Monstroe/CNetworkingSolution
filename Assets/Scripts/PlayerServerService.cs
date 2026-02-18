@@ -12,12 +12,12 @@ public class PlayerServerService : ServerService
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private float minDistanceFromPlayers = 5f;
 
-    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         // Nothing
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
     {
         // Nothing
     }

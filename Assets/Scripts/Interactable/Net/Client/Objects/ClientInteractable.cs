@@ -69,9 +69,9 @@ public abstract class ClientInteractable : ClientTransform
         base.UpdateOnNonOwner();
     }
 
-    public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
-        base.ReceiveData(packet, serviceType, commandType, transportMethod);
+        base.ReceiveData(packet, commandType, transportMethod);
         switch (commandType)
         {
             case CommandType.INTERACTABLE_GRAB:
@@ -101,7 +101,7 @@ public abstract class ClientInteractable : ClientTransform
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
     {
         // Nothing
     }

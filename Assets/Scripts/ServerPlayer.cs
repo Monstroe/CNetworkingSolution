@@ -57,7 +57,7 @@ public class ServerPlayer : ServerEntity
         Debug.Log($"SERVER: Player {Id} Collided with {collision.gameObject.name}");
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(user, packet, serviceType, commandType, transportMethod);
         switch (commandType)

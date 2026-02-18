@@ -11,12 +11,12 @@ public class LobbyServerService : ServerService
         base.Init(lobby);
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
 #if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
-            case CommandType.LOBBY_SETTINGS:
+            /*case CommandType.LOBBY_SETTINGS:
                 {
                     if (!user.IsHost(lobby.LobbyData))
                     {
@@ -34,7 +34,7 @@ public class LobbyServerService : ServerService
                     }
 #endif
                     break;
-                }
+                }*/
             case CommandType.LOBBY_USER_KICK:
                 {
                     if (!user.IsHost(lobby.LobbyData))
@@ -57,30 +57,30 @@ public class LobbyServerService : ServerService
                     break;
                 }
 #endif
-            case CommandType.LOBBY_USER_SETTINGS:
-                {
-                    ulong userId = packet.ReadULong();
-                    if (userId != user.UserId)
+                /*case CommandType.LOBBY_USER_SETTINGS:
                     {
-                        Debug.LogWarning($"User {user.UserId} tried to set settings for user {userId}, but only the user themselves can set their own settings.");
-                        return;
-                    }
+                        ulong userId = packet.ReadULong();
+                        if (userId != user.UserId)
+                        {
+                            Debug.LogWarning($"User {user.UserId} tried to set settings for user {userId}, but only the user themselves can set their own settings.");
+                            return;
+                        }
 
-                    UserSettings userSettings = new UserSettings().Deserialize(packet);
-                    user.Settings = userSettings;
-                    lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings, true), TransportMethod.Reliable);
-#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-                    if (NetResources.Instance.NetMode != NetMode.Local)
-                    {
-                        ServerManager.Instance.Database.UpdateUserMetadataAsync(user);
-                    }
-#endif
-                    break;
-                }
+                        UserSettings userSettings = new UserSettings().Deserialize(packet);
+                        user.Settings = userSettings;
+                        lobby.SendToLobby(PacketBuilder.LobbyUserSettings(user, userSettings, true), TransportMethod.Reliable);
+    #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
+                        if (NetResources.Instance.NetMode != NetMode.Local)
+                        {
+                            ServerManager.Instance.Database.UpdateUserMetadataAsync(user);
+                        }
+    #endif
+                        break;
+                    }*/
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
     {
         // Nothing
     }
@@ -92,7 +92,7 @@ public class LobbyServerService : ServerService
 
     public override void UserJoined(UserData joinedUser)
     {
-        lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings, false), TransportMethod.Reliable);
+        //lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings, false), TransportMethod.Reliable);
         lobby.SendToUser(joinedUser, PacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
         lobby.SendToUser(joinedUser, PacketBuilder.LobbyTick(lobby.ServerTick, true), TransportMethod.Reliable);
         lobby.SendToLobby(PacketBuilder.LobbyUserJoined(joinedUser), TransportMethod.Reliable, joinedUser);

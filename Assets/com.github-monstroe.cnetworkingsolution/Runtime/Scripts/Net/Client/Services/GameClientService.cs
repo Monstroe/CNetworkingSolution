@@ -12,7 +12,7 @@ public class GameClientService : ClientService
     public delegate void GameUserJoinedEventHandler(UserData user);
     public event GameUserJoinedEventHandler OnGameUserJoined;
 
-    public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -40,7 +40,7 @@ public class GameClientService : ClientService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
     {
         // Nothing
     }

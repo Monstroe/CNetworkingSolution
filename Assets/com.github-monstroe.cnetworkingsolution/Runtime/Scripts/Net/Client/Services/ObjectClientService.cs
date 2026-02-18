@@ -26,19 +26,18 @@ public class ObjectClientService : ClientService
         mapInstance = mapObj;
     }
 
-    public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
             case CommandType.OBJECT_COMMUNICATION:
                 {
                     ushort objectId = packet.ReadUShort();
-                    ServiceType objectServiceType = (ServiceType)packet.ReadByte();
                     CommandType objectCommand = (CommandType)packet.ReadByte();
                     ClientObjects.TryGetValue(objectId, out ClientObject clientObject);
                     if (clientObject != null)
                     {
-                        clientObject.ReceiveData(packet, objectServiceType, objectCommand, transportMethod);
+                        clientObject.ReceiveData(packet, objectCommand, transportMethod);
                     }
                     break;
                 }
@@ -105,19 +104,18 @@ public class ObjectClientService : ClientService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
     {
         switch (commandType)
         {
             case CommandType.OBJECT_COMMUNICATION:
                 {
                     ushort objectId = packet.ReadUShort();
-                    ServiceType objectServiceType = (ServiceType)packet.ReadByte();
                     CommandType objectCommand = (CommandType)packet.ReadByte();
                     ClientObjects.TryGetValue(objectId, out ClientObject clientObject);
                     if (clientObject != null)
                     {
-                        clientObject.ReceiveDataUnconnected(ipEndPoint, packet, objectServiceType, objectCommand);
+                        clientObject.ReceiveDataUnconnected(ipEndPoint, packet, objectCommand);
                     }
                     break;
                 }

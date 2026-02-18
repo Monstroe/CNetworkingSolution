@@ -64,108 +64,93 @@ public class ClientLobby : MonoBehaviour
         transportUtility.DisconnectTransports();
     }
 
+#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
+    public void KickUser(UserData user, LobbyRejectionType rejectionType)
+    {
+        if (user.UserId == CurrentUser.UserId)
+        {
+            Debug.LogWarning("You cannot kick yourself from the lobby.");
+            return;
+        }
+
+        SendToServer(PacketBuilder.LobbyUserKick(user, rejectionType), TransportMethod.Reliable);
+    }
+#endif
+
     public void ReceiveData(NetPacket packet, TransportMethod? transportMethod)
     {
-        ServiceType serviceType = (ServiceType)packet.ReadByte();
+        uint serviceId = packet.ReadUInt();
         CommandType commandType = (CommandType)packet.ReadByte();
 
-        if (services.GetService(serviceType, out ClientService service))
+        if (services.GetService(serviceId, out ClientService service))
         {
-            service.ReceiveData(packet, serviceType, commandType, transportMethod);
+            service.ReceiveData(packet, commandType, transportMethod);
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for type {serviceType}. Command {commandType} will not be processed.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for id {serviceId}. Command {commandType} will not be processed.");
         }
     }
 
     public void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
     {
-        ServiceType serviceType = (ServiceType)packet.ReadByte();
+        uint serviceId = packet.ReadUInt();
         CommandType commandType = (CommandType)packet.ReadByte();
 
-        if (unconnectedServices.GetService(serviceType, out ClientService unconnectedService))
+        if (unconnectedServices.GetService(serviceId, out ClientService unconnectedService))
         {
-            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, serviceType, commandType);
+            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for type {serviceType}. Command {commandType} will not be processed.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for id {serviceId}. Command {commandType} will not be processed.");
         }
     }
 
-    public void RegisterService<T>(T service) where T : ClientService
+    public uint? RegisterService<T>(T service) where T : ClientService
     {
-        if (services.RegisterService(service))
-        {
-            Debug.Log($"<color=green><b>CNS</b></color>: Registered ClientService {service.ServiceType}.");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {service.ServiceType} is already registered.");
-        }
+        return services.RegisterService(service);
     }
 
-    public void UnregisterService<T>() where T : ClientService
+    public bool UnregisterService<T>() where T : ClientService
     {
-        if (services.UnregisterService<T>(out ServiceType serviceType))
-        {
-            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered ClientService {serviceType}.");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {serviceType} is not registered.");
-        }
+        return services.UnregisterService<T>(out _);
     }
 
     public T GetService<T>() where T : ClientService
     {
-        ClientService service = services.GetService<T>(out ServiceType serviceType);
+        ClientService service = services.GetService<T>(out uint serviceId);
         if (service != null)
         {
             return (T)service;
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {serviceType} not found.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService with id {serviceId} not found.");
             return null;
         }
     }
 
-    public void RegisterUnconnectedService<T>(T service) where T : ClientService
+    public uint? RegisterUnconnectedService<T>(T service) where T : ClientService
     {
-        if (unconnectedServices.RegisterService(service))
-        {
-            Debug.Log($"<color=green><b>CNS</b></color>: Registered unconnected ClientService {service.ServiceType}.");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {service.ServiceType} is already registered.");
-        }
+        return unconnectedServices.RegisterService(service);
     }
 
-    public void UnregisterUnconnectedService<T>() where T : ClientService
+    public bool UnregisterUnconnectedService<T>() where T : ClientService
     {
-        if (unconnectedServices.UnregisterService<T>(out ServiceType serviceType))
-        {
-            Debug.Log($"<color=green><b>CNS</b></color>: Unregistered unconnected ClientService {serviceType}.");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {serviceType} is not registered.");
-        }
+        return unconnectedServices.UnregisterService<T>(out _);
     }
 
     public T GetUnconnectedService<T>() where T : ClientService
     {
-        ClientService service = unconnectedServices.GetService<T>(out ServiceType serviceType);
+        ClientService service = unconnectedServices.GetService<T>(out uint serviceId);
         if (service != null)
         {
             return (T)service;
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {serviceType} not found.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService with id {serviceId} not found.");
             return null;
         }
     }

@@ -153,7 +153,7 @@ public abstract class ClientObject : ClientBehaviour, INetObject
         }
     }
 
-    public virtual void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public virtual void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -179,7 +179,7 @@ public abstract class ClientObject : ClientBehaviour, INetObject
                 }
         }
     }
-    public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType) { }
+    public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType) { }
 
     public void SendToServerObject(NetPacket packet, TransportMethod transportMethod)
     {

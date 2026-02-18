@@ -7,11 +7,11 @@ public class LobbyClientService : ClientService
     public delegate void LobbyInitializedEventHandler(ulong tick, LobbyData lobbyData);
     public event LobbyInitializedEventHandler OnLobbyInitialized;
 
-    public delegate void LobbySettingsUpdatedEventHandler(LobbySettings settings);
+    /*public delegate void LobbySettingsUpdatedEventHandler(LobbySettings settings);
     public event LobbySettingsUpdatedEventHandler OnLobbySettingsUpdated;
 
     public delegate void LobbyUserSettingsUpdatedEventHandler(ulong userId, UserSettings settings);
-    public event LobbyUserSettingsUpdatedEventHandler OnLobbyUserSettingsUpdated;
+    public event LobbyUserSettingsUpdatedEventHandler OnLobbyUserSettingsUpdated;*/
 
     public delegate void LobbyUserJoinedEventHandler(UserData user);
     public event LobbyUserJoinedEventHandler OnLobbyUserJoined;
@@ -22,7 +22,7 @@ public class LobbyClientService : ClientService
     public delegate void LobbyUserKickedEventHandler(ulong userId, LobbyRejectionType rejectionType);
     public event LobbyUserKickedEventHandler OnLobbyUserKicked;
 
-    public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -37,7 +37,7 @@ public class LobbyClientService : ClientService
                     }
                     break;
                 }
-            case CommandType.LOBBY_SETTINGS:
+            /*case CommandType.LOBBY_SETTINGS:
                 {
                     LobbySettings settings = new LobbySettings().Deserialize(packet);
                     lobby.LobbyData.Settings = settings;
@@ -47,8 +47,8 @@ public class LobbyClientService : ClientService
                         OnLobbySettingsUpdated?.Invoke(settings);
                     }
                     break;
-                }
-            case CommandType.LOBBY_USER_SETTINGS:
+                }*/
+            /*case CommandType.LOBBY_USER_SETTINGS:
                 {
                     ulong userId = packet.ReadULong();
                     UserData user = lobby.LobbyData.LobbyUsers.Find(u => u.UserId == userId);
@@ -60,7 +60,7 @@ public class LobbyClientService : ClientService
                         OnLobbyUserSettingsUpdated?.Invoke(userId, userSettings);
                     }
                     break;
-                }
+                }*/
             case CommandType.LOBBY_USERS_LIST:
                 {
                     int userCount = packet.ReadByte();
@@ -99,7 +99,7 @@ public class LobbyClientService : ClientService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
     {
         // Nothing
     }

@@ -99,7 +99,6 @@ public class RpcBus
     {
         using MD5 md5 = MD5.Create();
         byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(method.Name));
-
         return BitConverter.ToUInt32(hash, 0);
     }
 }

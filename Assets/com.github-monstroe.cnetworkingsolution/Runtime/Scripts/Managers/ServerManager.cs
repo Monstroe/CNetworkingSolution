@@ -115,11 +115,6 @@ public class ServerManager : MonoBehaviour
         onInitialized?.Invoke();
     }
 
-    public void KickUser(UserData user)
-    {
-        transportUtility.KickRemote(user.UserId);
-    }
-
     public void RemoveTransport(TransportType transportType)
     {
         NetTransport transport = transportUtility.Transports.Find(t => t.TransportData.TransportType == transportType);
@@ -191,7 +186,7 @@ public class ServerManager : MonoBehaviour
                     if (connectionData == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {remoteId}.");
-                        KickUser(remoteUser);
+                        transportUtility.KickRemote(remoteUser.UserId);
                         return;
                     }
 
@@ -200,7 +195,7 @@ public class ServerManager : MonoBehaviour
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {remoteId} cannot join.");
                         transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
-                        KickUser(remoteUser);
+                        transportUtility.KickRemote(remoteUser.UserId);
                         return;
                     }
 
@@ -208,7 +203,7 @@ public class ServerManager : MonoBehaviour
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {remoteId} cannot join.");
                         transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
-                        KickUser(remoteUser);
+                        transportUtility.KickRemote(remoteUser.UserId);
                         return;
                     }
 
@@ -218,7 +213,7 @@ public class ServerManager : MonoBehaviour
                 else
                 {
                     Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {remoteId} is not in any active lobby.");
-                    KickUser(remoteUser);
+                    transportUtility.KickRemote(remoteUser.UserId);
                 }
             }
 #if !UNITY_EDITOR
@@ -226,7 +221,7 @@ public class ServerManager : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {remoteId}: {ex.Message}");
-                KickUser(remoteUser);
+                transportUtility.KickRemote(remoteUser.UserId);
             }
 #endif
         }

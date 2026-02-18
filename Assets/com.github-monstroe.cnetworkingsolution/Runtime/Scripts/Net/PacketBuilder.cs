@@ -70,7 +70,7 @@ public static class PacketBuilder
     }
 
     /* LOBBY */
-    public static NetPacket LobbySettings(LobbySettings settings, bool invokeEvent = false)
+    /*public static NetPacket LobbySettings(LobbySettings settings, bool invokeEvent = false)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
@@ -78,9 +78,9 @@ public static class PacketBuilder
         settings.Serialize(packet);
         packet.Write(invokeEvent);
         return packet;
-    }
+    }*/
 
-    public static NetPacket LobbyUserSettings(UserData user, UserSettings settings, bool invokeEvent = false)
+    /*public static NetPacket LobbyUserSettings(UserData user, UserSettings settings, bool invokeEvent = false)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
@@ -89,7 +89,7 @@ public static class PacketBuilder
         settings.Serialize(packet);
         packet.Write(invokeEvent);
         return packet;
-    }
+    }*/
 
     public static NetPacket LobbyUsersList(List<UserData> users)
     {

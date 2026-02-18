@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 
-public class ServerServiceUtility
+public class ServerServiceUtility : ServiceUtility
 {
-    private Dictionary<ServiceType, ServerService> services = new Dictionary<ServiceType, ServerService>();
-    private Dictionary<Type, ServiceType> serviceTypeCache = new Dictionary<Type, ServiceType>();
+    private Dictionary<uint, ServerService> services = new Dictionary<uint, ServerService>();
+    private Dictionary<Type, uint> serviceTypeCache = new Dictionary<Type, uint>();
     private SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
 
     public void UserJoined(UserData user)
@@ -51,14 +51,14 @@ public class ServerServiceUtility
         }
     }
 
-    public bool RegisterService<T>(T service) where T : ServerService
+    public uint? RegisterService<T>(T service) where T : ServerService
     {
-        ServiceType serviceType = service.ServiceType;
+        uint serviceId = GenerateServiceId(service.GetType());
         int executionOrder = service.ExecutionOrder;
-        if (!services.ContainsKey(serviceType))
+        if (!services.ContainsKey(serviceId))
         {
-            services[serviceType] = service;
-            serviceTypeCache[service.GetType()] = serviceType;
+            services[serviceId] = service;
+            serviceTypeCache[service.GetType()] = serviceId;
 
             if (!serviceOrderCache.TryGetValue(executionOrder, out List<ServerService> list))
             {
@@ -66,34 +66,41 @@ public class ServerServiceUtility
                 serviceOrderCache[executionOrder] = list;
             }
             list.Add(service);
-            return true;
+            return serviceId;
         }
-        return false;
+        return null;
     }
 
-    public bool UnregisterService<T>(out ServiceType serviceType) where T : ServerService
+    public bool UnregisterService<T>(out uint serviceId) where T : ServerService
     {
-        serviceType = serviceTypeCache[typeof(T)];
-        if (services.ContainsKey(serviceType))
+        serviceId = serviceTypeCache[typeof(T)];
+        if (services.TryGetValue(serviceId, out ServerService service))
         {
-            services.Remove(serviceType);
+            services.Remove(serviceId);
+            serviceTypeCache.Remove(service.GetType());
+            List<ServerService> executionList = serviceOrderCache[service.ExecutionOrder];
+            executionList.Remove(service);
+            if (executionList.Count == 0)
+            {
+                serviceOrderCache.Remove(service.ExecutionOrder);
+            }
             return true;
         }
         return false;
     }
 
-    public T GetService<T>(out ServiceType serviceType) where T : ServerService
+    public T GetService<T>(out uint serviceId) where T : ServerService
     {
-        if (serviceTypeCache.TryGetValue(typeof(T), out serviceType) && services.TryGetValue(serviceType, out ServerService service))
+        if (serviceTypeCache.TryGetValue(typeof(T), out serviceId) && services.TryGetValue(serviceId, out ServerService service))
         {
             return (T)service;
         }
         return null;
     }
 
-    public bool GetService(ServiceType serviceType, out ServerService service)
+    public bool GetService(uint serviceId, out ServerService service)
     {
-        if (services.TryGetValue(serviceType, out service))
+        if (services.TryGetValue(serviceId, out service))
         {
             return true;
         }
