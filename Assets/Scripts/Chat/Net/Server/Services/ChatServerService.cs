@@ -3,7 +3,12 @@ using UnityEngine;
 
 public class ChatServerService : ServerService
 {
-    public ServerChat Chat { get; set; }
+    public ServerChat Chat { get; private set; }
+
+    public void SetChat(ServerChat chat)
+    {
+        Chat = chat;
+    }
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {

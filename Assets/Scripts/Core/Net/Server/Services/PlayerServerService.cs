@@ -8,6 +8,9 @@ public class PlayerServerService : ServerService
     public Dictionary<UserData, ServerPlayer> ServerPlayers { get; private set; } = new Dictionary<UserData, ServerPlayer>();
 
     [SerializeField] private ServerPlayer serverPlayerPrefab;
+    [Space]
+    [SerializeField] private Transform[] spawnPoints;
+    [SerializeField] private float minDistanceFromPlayers = 5f;
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {
@@ -31,17 +34,13 @@ public class PlayerServerService : ServerService
 
     public override void UserJoinedGame(UserData joinedUser)
     {
-        // Spawning happens first in the Server Service
-        foreach (ServerPlayer p in ServerPlayers.Values)
-        {
-            lobby.SendToUser(joinedUser, PacketBuilder.PlayerSpawn(p.User, p.transform.position, p.transform.rotation, p.IsWalking, p.IsSprinting, p.IsCrouching, p.IsGrounded, p.Jumped, p.Grabbed), TransportMethod.Reliable);
-        }
 
         // Spawn new player
-        Map map = lobby.GetService<MapServerService>().Map;
-        Transform spawnPoint = map.GetRandomSpawnPoint(ServerPlayers.Values.Select(p => p.transform.position).ToList());
-        Vector3 position = map.GetGroundPosition(spawnPoint.position);
+        Transform spawnPoint = GetRandomSpawnPoint();
+        Vector3 position = GetGroundPosition(spawnPoint.position);
         Quaternion rotation = spawnPoint.rotation;
+
+        ServerPlayer player = (ServerPlayer)InstantiateOnServerAsPlayer(serverPlayerPrefab.gameObject, position, rotation);
 
         ServerPlayer player = (ServerPlayer)InstantiateOnServer(serverPlayerPrefab.gameObject, position, rotation, false);
         player.Owner = player; // For server-side movement authority, this should be null
@@ -58,5 +57,26 @@ public class PlayerServerService : ServerService
             Destroy(player.gameObject);
             lobby.SendToGame(PacketBuilder.PlayerDestroy(leftUser), TransportMethod.Reliable);
         }
+    }
+
+    private Transform GetRandomSpawnPoint()
+    {
+        List<Vector3> playerPositions = ServerPlayers.Values.Select(p => p.transform.position).ToList();
+        Transform spawnPoint;
+        do
+        {
+            spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        } while (playerPositions.Exists(pos => Vector3.Distance(pos, spawnPoint.position) < minDistanceFromPlayers));
+        return spawnPoint;
+    }
+
+    public Vector3 GetGroundPosition(Vector3 position)
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(position + Vector3.up * 100, Vector3.down, out hit, 200f, GameResources.Instance.GroundMask))
+        {
+            return hit.point;
+        }
+        return position;
     }
 }

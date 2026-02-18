@@ -1,0 +1,16 @@
+{
+  "name": "com.github-monstroe.cnetworkingsolution",
+  "displayName": "CNetworkingSolution (CNS)",
+  "version": "1.0.0",
+  "description": "High level modular networking system for Unity",
+  "unity": "6000.3",
+  "keywords": [
+    "multiplayer",
+    "networking",
+    "unity"
+  ],
+  "license": "MIT",
+  "licensesUrl": "https://github.com/Monstroe/CNetworkingSolution/blob/main/LICENSE",
+  "changelogUrl": "https://github.com/Monstroe/CNetworkingSolution/releases",
+  "documentationUrl": "https://github.com/Monstroe/CNetworkingSolution"
+}

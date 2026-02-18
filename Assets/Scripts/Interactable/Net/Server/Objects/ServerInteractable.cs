@@ -12,13 +12,13 @@ public class ServerInteractable : ServerTransform
 
     public override void Remove()
     {
-        if (Owner != null)
+        /*if (Owner != null)
         {
             Drop(Owner, Owner.User, null, TransportMethod.Reliable);
         }
 
         lobby.GetService<InteractableServerService>().ServerInteractables.Remove(Id);
-        base.Remove();
+        base.Remove();*/
     }
 
 #nullable enable
@@ -26,7 +26,7 @@ public class ServerInteractable : ServerTransform
     {
         SendToGameClientObjects(PacketBuilder.InteractableGrab(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
         interactingPlayer.CurrentInteractable = this;
-        Owner = interactingPlayer;
+        //Owner = interactingPlayer;
         RB.isKinematic = true;
     }
 
@@ -39,7 +39,7 @@ public class ServerInteractable : ServerTransform
     {
         SendToGameClientObjects(PacketBuilder.InteractableDrop(user.PlayerId), transportMethod ?? TransportMethod.Reliable);
         interactingPlayer.CurrentInteractable = null;
-        Owner = null;
+        //Owner = null;
         RB.isKinematic = false;
     }
 #nullable disable
@@ -48,9 +48,9 @@ public class ServerInteractable : ServerTransform
     {
         base.UserJoinedGame(joinedUser);
 
-        if (Owner != null)
+        /*if (Owner != null)
         {
             SendToUserClientObject(joinedUser, PacketBuilder.InteractableGrab(Owner.User.PlayerId), TransportMethod.Reliable);
-        }
+        }*/
     }
 }

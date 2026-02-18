@@ -1,0 +1,19 @@
+{
+    "name": "Monstroe.CNetworkingSolution.Runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:9e24947de15b9834991c9d8411ea37cf",
+        "GUID:84651a3751eca9349aac36a66bba901b",
+        "GUID:0a89add7764fcaf4dafc38f437de752d",
+        "GUID:2d19ab8e6b631d04991836a52b5b00f3"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

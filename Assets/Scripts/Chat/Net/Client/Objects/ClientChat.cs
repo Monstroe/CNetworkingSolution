@@ -8,7 +8,7 @@ public class ClientChat : ClientObject
     public override void Init(ushort id, ClientLobby lobby)
     {
         base.Init(id, lobby);
-        lobby.GetService<ChatClientService>().Chat = this;
+        lobby.GetService<ChatClientService>().SetChat(this);
     }
 
     public void SendChat(string message)

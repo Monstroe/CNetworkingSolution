@@ -6,7 +6,7 @@ public class ServerChat : ServerObject
     public override void Init(ushort id, ServerLobby lobby)
     {
         base.Init(id, lobby);
-        lobby.GetService<ChatServerService>().Chat = this;
+        lobby.GetService<ChatServerService>().SetChat(this);
     }
 
     [Rpc]

@@ -6,6 +6,12 @@ public class ServerFX : ServerObject
     [SerializeField] private string sfxDirectory = "Assets/GameAssets/SFX/";
     [SerializeField] private string vfxDirectory = "Assets/GameAssets/VFX/";
 
+    public override void Init(ushort id, ServerLobby lobby)
+    {
+        base.Init(id, lobby);
+        lobby.GetService<FXServerService>().SetFX(this);
+    }
+
     public void PlaySFX(string name, float volume, Vector3? pos = null)
     {
         int key = NetResources.Instance.GetSFXKeyFromPath(sfxDirectory + name);

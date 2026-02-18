@@ -2,7 +2,12 @@ using System.Net;
 
 public class FXClientService : ClientService
 {
-    public ClientFX FX { get; set; }
+    public ClientFX FX { get; private set; }
+
+    public void SetFX(ClientFX fx)
+    {
+        FX = fx;
+    }
 
     public override void ReceiveData(NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
     {

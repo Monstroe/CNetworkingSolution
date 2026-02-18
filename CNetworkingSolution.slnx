@@ -1,0 +1,7 @@
+﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="CNet.csproj" />
+  <Project Path="LiteNetLib.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Runtime.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+</Solution>

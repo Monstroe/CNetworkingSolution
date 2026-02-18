@@ -1,0 +1,192 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using UnityEngine;
+
+public class ObjectServerService : ServerService
+{
+    public Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
+    public Dictionary<ushort, ServerTransform> ServerTransforms { get; private set; } = new Dictionary<ushort, ServerTransform>();
+
+    public RpcBus RpcBus { get; private set; } = new RpcBus();
+    public EventBus EventBus { get; private set; } = new EventBus();
+    public NetMap Map { get; private set; }
+
+    [Tooltip("The map prefab to be instantiated on the server.")]
+    [SerializeField] private NetMap mapPrefab;
+
+    private bool startingObjectsInitialized = false;
+    private List<ushort> spawnedStartingObjectIds = new List<ushort>();
+    private List<ushort> destroyedStartingObjectIds = new List<ushort>();
+
+    // The object server service is special because it handles all networked object communication
+    // Server services should run first (with the exception of the game and lobby service), then server objects
+    public override void Init(ServerLobby lobby)
+    {
+        base.Init(lobby);
+        // Init Map
+        Map = Instantiate(mapPrefab, Vector3.zero, Quaternion.identity).GetComponent<NetMap>();
+        Map.transform.SetParent(this.transform);
+        foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+        {
+            r.enabled = false;
+        }
+        foreach (ClientObject obj in Map.GetComponentsInChildren<ClientObject>(true))
+        {
+            obj.gameObject.TryGetComponent(out Collider objCollider);
+            if (objCollider != null)
+            {
+                objCollider.enabled = false;
+            }
+            obj.enabled = false;
+        }
+    }
+
+    public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
+    {
+        switch (commandType)
+        {
+            case CommandType.OBJECT_COMMUNICATION:
+                {
+                    ushort objectId = packet.ReadUShort();
+                    ServiceType objectServiceType = (ServiceType)packet.ReadByte();
+                    CommandType objectCommand = (CommandType)packet.ReadByte();
+                    ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
+                    if (serverObject != null)
+                    {
+                        serverObject.ReceiveData(user, packet, objectServiceType, objectCommand, transportMethod);
+                    }
+                    break;
+                }
+            case CommandType.OBJECT_SPAWN_REQUEST:
+                {
+                    int clientPrefabKey = packet.ReadInt();
+                    Vector3 position = packet.ReadVector3();
+                    Quaternion rotation = packet.ReadQuaternion();
+                    SpawnObject(user, clientPrefabKey, position, rotation, transportMethod, false, false);
+                    break;
+                }
+            case CommandType.OBJECT_DESTROY_REQUEST:
+                {
+                    ushort objectId = packet.ReadUShort();
+                    if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject) && user.PlayerId == serverObject.OwnerId)
+                    {
+                        DestroyObject(serverObject);
+                    }
+                    break;
+                }
+        }
+    }
+
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ServiceType serviceType, CommandType commandType)
+    {
+        switch (commandType)
+        {
+            case CommandType.OBJECT_COMMUNICATION:
+                {
+                    ushort objectId = packet.ReadUShort();
+                    ServiceType objectServiceType = (ServiceType)packet.ReadByte();
+                    CommandType objectCommand = (CommandType)packet.ReadByte();
+                    ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
+                    if (serverObject != null)
+                    {
+                        serverObject.ReceiveDataUnconnected(ipEndPoint, packet, objectServiceType, objectCommand);
+                    }
+                    break;
+                }
+        }
+    }
+
+    public override void Tick()
+    {
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.Tick();
+        }
+    }
+
+    public override void UserJoined(UserData joinedUser)
+    {
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.UserJoined(joinedUser);
+        }
+    }
+
+    public override void UserJoinedGame(UserData joinedUser)
+    {
+        if (!startingObjectsInitialized)
+        {
+            foreach (ClientObject clientObj in Map.GetStartingClientObjects())
+            {
+                SpawnObject(joinedUser, clientObj.PrefabKey, clientObj.transform.position, clientObj.transform.rotation, null, true, false);
+            }
+            startingObjectsInitialized = true;
+        }
+
+        // Initialize starting objects (AKA objects already placed on the map) for the joining user
+        lobby.SendToUser(joinedUser, PacketBuilder.ObjectsInit(spawnedStartingObjectIds.ToArray()), TransportMethod.Reliable);
+        // Destroy any starting objects that have already been destroyed by other players
+        foreach (ushort destroyedObjectId in destroyedStartingObjectIds)
+        {
+            lobby.SendToUser(joinedUser, PacketBuilder.ObjectDestroy(destroyedObjectId), TransportMethod.Reliable);
+        }
+
+        // Spawn the rest of the objects for the joining user (not starting objects and not player objects)
+        // Spawning happens first in the Server Service
+        foreach (ServerObject obj in ServerObjects.Values.Where(o => !spawnedStartingObjectIds.Contains(o.Id)))// && o.Id >= byte.MaxValue))
+        {
+            Tuple<int, string> clientPrefabInfo = NetResources.Instance.GetClientPrefabFromServerKey(obj.PrefabKey);
+            if (clientPrefabInfo != null)
+            {
+                lobby.SendToUser(joinedUser, PacketBuilder.ObjectSpawn(obj.Id, clientPrefabInfo.Item1, obj.transform.position, obj.transform.rotation, obj.Id <= byte.MaxValue, obj.OwnerId), TransportMethod.Reliable);
+            }
+        }
+
+        // Handle UserJoinedGame for all existing objects
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.UserJoinedGame(joinedUser);
+        }
+    }
+
+    public override void UserLeft(UserData leftUser)
+    {
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.UserLeft(leftUser);
+        }
+    }
+
+    public void SpawnObject(UserData spawningUser, int clientPrefabKey, Vector3 position, Quaternion rotation, TransportMethod? transportMethod, bool isStartingObject, bool setThisPlayerAsOwner)
+    {
+        Tuple<int, string> serverPrefabInfo = NetResources.Instance.GetServerPrefabFromClientKey(clientPrefabKey);
+        if (serverPrefabInfo != null)
+        {
+            ServerObject serverObj = InstantiateOnServer(serverPrefabInfo.Item2, position, rotation, setThisPlayerAsOwner ? spawningUser.PlayerId : null, false);
+            ushort id = lobby.GenerateObjectId();
+
+            if (isStartingObject)
+            {
+                spawnedStartingObjectIds.Add(id);
+            }
+            else
+            {
+                lobby.SendToGame(PacketBuilder.ObjectSpawn(id, clientPrefabKey, serverObj.transform.position, serverObj.transform.rotation, false, serverObj.OwnerId), transportMethod ?? TransportMethod.Reliable);
+            }
+
+            serverObj.Init(id, lobby);
+        }
+    }
+
+    public void DestroyObject(ServerObject serverObj)
+    {
+        if (spawnedStartingObjectIds.Contains(serverObj.Id))
+        {
+            destroyedStartingObjectIds.Add(serverObj.Id);
+        }
+
+        DestroyOnServer(serverObj, true);
+    }
+}

@@ -15,7 +15,7 @@ public class ClientFX : ClientObject
     public override void Init(ushort id, ClientLobby lobby)
     {
         base.Init(id, lobby);
-        lobby.GetService<FXClientService>().FX = this;
+        lobby.GetService<FXClientService>().SetFX(this);
     }
 
     public void PlaySFX(string name, float volume, Vector3? pos = null)

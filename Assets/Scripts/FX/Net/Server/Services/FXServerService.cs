@@ -1,16 +1,12 @@
 using System.Net;
-using UnityEngine;
 
 public class FXServerService : ServerService
 {
-    [SerializeField] private ServerFX fxPrefab;
-
     public ServerFX FX { get; private set; }
 
-    public override void Init(ServerLobby lobby)
+    public void SetFX(ServerFX fx)
     {
-        base.Init(lobby);
-        FX = (ServerFX)InstantiateOnServer(fxPrefab.gameObject);
+        FX = fx;
     }
 
     public override void ReceiveData(UserData user, NetPacket packet, ServiceType serviceType, CommandType commandType, TransportMethod? transportMethod)
