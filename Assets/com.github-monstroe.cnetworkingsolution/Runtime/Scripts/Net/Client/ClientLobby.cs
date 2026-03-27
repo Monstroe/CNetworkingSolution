@@ -65,7 +65,7 @@ public class ClientLobby : MonoBehaviour
     }
 
 #if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
-    public void KickUser(UserData user, LobbyRejectionType rejectionType)
+    public void KickUser(UserData user, string reason)
     {
         if (user.UserId == CurrentUser.UserId)
         {
@@ -73,7 +73,7 @@ public class ClientLobby : MonoBehaviour
             return;
         }
 
-        SendToServer(PacketBuilder.LobbyUserKick(user, rejectionType), TransportMethod.Reliable);
+        SendToServer(LobbyClientService.LobbyUserKick(user, reason), TransportMethod.Reliable);
     }
 #endif
 
@@ -107,7 +107,7 @@ public class ClientLobby : MonoBehaviour
         }
     }
 
-    public uint? RegisterService<T>(T service) where T : ClientService
+    public bool RegisterService<T>(T service) where T : ClientService
     {
         return services.RegisterService(service);
     }
@@ -119,7 +119,7 @@ public class ClientLobby : MonoBehaviour
 
     public T GetService<T>() where T : ClientService
     {
-        ClientService service = services.GetService<T>(out uint serviceId);
+        ClientService service = services.GetService<T>(out ulong serviceId);
         if (service != null)
         {
             return (T)service;
@@ -131,7 +131,7 @@ public class ClientLobby : MonoBehaviour
         }
     }
 
-    public uint? RegisterUnconnectedService<T>(T service) where T : ClientService
+    public bool RegisterUnconnectedService<T>(T service) where T : ClientService
     {
         return unconnectedServices.RegisterService(service);
     }
@@ -143,7 +143,7 @@ public class ClientLobby : MonoBehaviour
 
     public T GetUnconnectedService<T>() where T : ClientService
     {
-        ClientService service = unconnectedServices.GetService<T>(out uint serviceId);
+        ClientService service = unconnectedServices.GetService<T>(out ulong serviceId);
         if (service != null)
         {
             return (T)service;

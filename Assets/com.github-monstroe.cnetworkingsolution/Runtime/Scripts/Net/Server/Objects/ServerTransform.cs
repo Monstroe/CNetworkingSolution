@@ -63,7 +63,7 @@ public class ServerTransform : ServerObject
         if (timer >= 1)
         {
             timer = 0;
-            SendToGameClientObjects(PacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, OwnerId != null ? Owner : null);
+            SendToGameClientObjects(ObjectServerService.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, OwnerId != null ? Owner : null);
         }
     }
 

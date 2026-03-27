@@ -45,7 +45,7 @@ public abstract class ClientTransform : ClientObject
                 sentPosition = transform.position;
                 sentRotation = transform.rotation;
             }
-            SendToServerObject(PacketBuilder.ObjectTransform(sentPosition, sentRotation), TransportMethod.Unreliable);
+            SendToServerObject(ObjectClientService.ObjectTransform(sentPosition, sentRotation), TransportMethod.Unreliable);
             sentCustomTransform = false;
         }
     }

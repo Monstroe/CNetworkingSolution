@@ -8,8 +8,8 @@ public class ConnectionData : INetSerializable<ConnectionData>
     public int LobbyId { get; set; }
     public LobbyConnectionType LobbyConnectionType { get; set; }
     public Guid UserGuid { get; set; }
-    public UserSettings UserSettings { get; set; }
-    public LobbySettings LobbySettings { get; set; }
+    //public UserSettings UserSettings { get; set; }
+    //public LobbySettings LobbySettings { get; set; }
 
     public ConnectionData Deserialize(NetPacket packet)
     {
@@ -21,8 +21,8 @@ public class ConnectionData : INetSerializable<ConnectionData>
             LobbyId = packet.ReadInt(),
             LobbyConnectionType = (LobbyConnectionType)packet.ReadByte(),
             UserGuid = Guid.Parse(packet.ReadString()),
-            UserSettings = new UserSettings().Deserialize(packet),
-            LobbySettings = new LobbySettings().Deserialize(packet)
+            //UserSettings = new UserSettings().Deserialize(packet),
+            //LobbySettings = new LobbySettings().Deserialize(packet)
         };
     }
 
@@ -34,8 +34,8 @@ public class ConnectionData : INetSerializable<ConnectionData>
         packet.Write(LobbyId);
         packet.Write((byte)LobbyConnectionType);
         packet.Write(UserGuid.ToString());
-        UserSettings.Serialize(packet);
-        LobbySettings.Serialize(packet);
+        //UserSettings.Serialize(packet);
+        //LobbySettings.Serialize(packet);
     }
 }
 
@@ -45,10 +45,10 @@ public enum LobbyConnectionType
     Join,
 }
 
-public enum LobbyRejectionType
+/*public enum LobbyRejectionType
 {
     LobbyFull,
     LobbyNotFound,
     LobbyClosed,
     KickedByHost,
-}
+}*/

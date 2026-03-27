@@ -1,24 +1,24 @@
 using System;
 using System.Collections.Generic;
 
-public class ClientServiceUtility : ServiceUtility
+public class ClientServiceUtility
 {
-    private Dictionary<uint, ClientService> services = new Dictionary<uint, ClientService>();
-    private Dictionary<Type, uint> serviceTypeCache = new Dictionary<Type, uint>();
+    private Dictionary<ulong, ClientService> services = new Dictionary<ulong, ClientService>();
+    private Dictionary<Type, ulong> serviceTypeCache = new Dictionary<Type, ulong>();
 
-    public uint? RegisterService<T>(T service) where T : ClientService
+    public bool RegisterService<T>(T service) where T : ClientService
     {
-        uint serviceId = GenerateServiceId(service.GetType());
+        ulong serviceId = service.ServiceId;
         if (!services.ContainsKey(serviceId))
         {
             services[serviceId] = service;
             serviceTypeCache[service.GetType()] = serviceId;
-            return serviceId;
+            return true;
         }
-        return null;
+        return false;
     }
 
-    public bool UnregisterService<T>(out uint serviceId) where T : ClientService
+    public bool UnregisterService<T>(out ulong serviceId) where T : ClientService
     {
         serviceId = serviceTypeCache[typeof(T)];
         if (services.TryGetValue(serviceId, out ClientService service))
@@ -30,7 +30,7 @@ public class ClientServiceUtility : ServiceUtility
         return false;
     }
 
-    public T GetService<T>(out uint serviceId) where T : ClientService
+    public T GetService<T>(out ulong serviceId) where T : ClientService
     {
         if (serviceTypeCache.TryGetValue(typeof(T), out serviceId) && services.TryGetValue(serviceId, out ClientService service))
         {
@@ -39,7 +39,7 @@ public class ClientServiceUtility : ServiceUtility
         return null;
     }
 
-    public bool GetService(uint serviceId, out ClientService service)
+    public bool GetService(ulong serviceId, out ClientService service)
     {
         if (services.TryGetValue(serviceId, out service))
         {

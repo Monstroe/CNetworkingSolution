@@ -2,10 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using UnityEngine;
 
 public class ObjectServerService : ServerService
 {
+    public delegate void ObjectSpawnedEventHandler(ServerObject obj);
+    public event ObjectSpawnedEventHandler OnObjectSpawned;
+
+    public delegate void ObjectDestroyedEventHandler(ServerObject obj);
+    public event ObjectDestroyedEventHandler OnObjectDestroyed;
+
     public Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
     public Dictionary<ushort, ServerTransform> ServerTransforms { get; private set; } = new Dictionary<ushort, ServerTransform>();
 
@@ -124,11 +131,11 @@ public class ObjectServerService : ServerService
         }
 
         // Initialize starting objects (AKA objects already placed on the map) for the joining user
-        lobby.SendToUser(joinedUser, PacketBuilder.ObjectsInit(spawnedStartingObjectIds.ToArray()), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, ObjectsInit(spawnedStartingObjectIds.ToArray()), TransportMethod.Reliable);
         // Destroy any starting objects that have already been destroyed by other players
         foreach (ushort destroyedObjectId in destroyedStartingObjectIds)
         {
-            lobby.SendToUser(joinedUser, PacketBuilder.ObjectDestroy(destroyedObjectId), TransportMethod.Reliable);
+            lobby.SendToUser(joinedUser, ObjectDestroy(destroyedObjectId), TransportMethod.Reliable);
         }
 
         // Spawn the rest of the objects for the joining user (not starting objects and not player objects)
@@ -138,7 +145,7 @@ public class ObjectServerService : ServerService
             Tuple<int, string> clientPrefabInfo = NetResources.Instance.GetClientPrefabFromServerKey(obj.PrefabKey);
             if (clientPrefabInfo != null)
             {
-                lobby.SendToUser(joinedUser, PacketBuilder.ObjectSpawn(obj.Id, clientPrefabInfo.Item1, obj.transform.position, obj.transform.rotation, obj.Id <= byte.MaxValue, obj.OwnerId), TransportMethod.Reliable);
+                lobby.SendToUser(joinedUser, ObjectSpawn(obj.Id, clientPrefabInfo.Item1, obj.transform.position, obj.transform.rotation, obj.Id <= byte.MaxValue, obj.OwnerId), TransportMethod.Reliable);
             }
         }
 
@@ -171,10 +178,11 @@ public class ObjectServerService : ServerService
             }
             else
             {
-                lobby.SendToGame(PacketBuilder.ObjectSpawn(id, clientPrefabKey, serverObj.transform.position, serverObj.transform.rotation, false, serverObj.OwnerId), transportMethod ?? TransportMethod.Reliable);
+                lobby.SendToGame(ObjectSpawn(id, clientPrefabKey, serverObj.transform.position, serverObj.transform.rotation, false, serverObj.OwnerId), transportMethod ?? TransportMethod.Reliable);
             }
 
             serverObj.Init(id, lobby);
+            OnObjectSpawned?.Invoke(serverObj);
         }
     }
 
@@ -185,6 +193,92 @@ public class ObjectServerService : ServerService
             destroyedStartingObjectIds.Add(serverObj.Id);
         }
 
+        OnObjectDestroyed?.Invoke(serverObj);
         DestroyOnServer(serverObj, true);
+    }
+
+    /* PACKETS */
+
+    public enum ObjectCommandType
+    {
+        OBJECT_SPAWN_REQUEST,
+        OBJECT_DESTROY_REQUEST,
+        OBJECT_COMMUNICATION,
+        OBJECT_SPAWN,
+        OBJECT_DESTROY,
+        OBJECT_TRANSFORM,
+        OBJECT_RPC,
+        OBJECTS_INIT
+    }
+
+    public static NetPacket ObjectCommunication(INetObject netObject, NetPacket packet)
+    {
+        packet.Insert(0, NetResources.GenerateServiceId<ObjectClientService>());
+        packet.Insert(1, (byte)ObjectCommandType.OBJECT_COMMUNICATION);
+        packet.Insert(2, netObject.Id);
+        return packet;
+    }
+
+    public static NetPacket ObjectsInit(ushort[] startingObjectIds)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
+        packet.Write((byte)ObjectCommandType.OBJECTS_INIT);
+        packet.Write(startingObjectIds);
+        return packet;
+    }
+
+    public static NetPacket ObjectSpawn(ushort objectId, int clientPrefabKey, Vector3 pos, Quaternion rot, bool isPlayer, byte? ownerId)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
+        packet.Write((byte)ObjectCommandType.OBJECT_SPAWN);
+        packet.Write(objectId);
+        packet.Write(clientPrefabKey);
+        packet.Write(pos);
+        packet.Write(rot);
+        packet.Write(isPlayer);
+        if (ownerId != null)
+            packet.Write(ownerId.Value);
+        return packet;
+    }
+
+    public static NetPacket ObjectDestroy(ushort objectId)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
+        packet.Write((byte)ObjectCommandType.OBJECT_DESTROY);
+        packet.Write(objectId);
+        return packet;
+    }
+
+    public static NetPacket ObjectTransform(Vector3 position, Quaternion rotation)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
+        packet.Write((byte)ObjectCommandType.OBJECT_TRANSFORM);
+        packet.Write(position);
+        packet.Write(rotation);
+        return packet;
+    }
+
+    public static NetPacket ObjectRpc(ulong methodId, MethodInfo method, params object[] args)
+    {
+        var parameters = method.GetParameters();
+        if (args.Length != parameters.Length)
+        {
+            throw new ArgumentException("RPC argument count mismatch");
+        }
+
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
+        packet.Write((byte)ObjectCommandType.OBJECT_RPC);
+        packet.Write(methodId);
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            packet.Write(args[i], parameters[i].ParameterType);
+        }
+        return packet;
     }
 }

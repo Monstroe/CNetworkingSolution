@@ -146,7 +146,7 @@ public class ServerLobby : MonoBehaviour
         ServerTick++;
     }
 
-    public uint? RegisterService<T>(T service) where T : ServerService
+    public bool RegisterService<T>(T service) where T : ServerService
     {
         return services.RegisterService(service);
     }
@@ -158,7 +158,7 @@ public class ServerLobby : MonoBehaviour
 
     public T GetService<T>() where T : ServerService
     {
-        ServerService service = services.GetService<T>(out uint serviceId);
+        ServerService service = services.GetService<T>(out ulong serviceId);
         if (service != null)
         {
             return (T)service;
@@ -170,7 +170,7 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
-    public uint? RegisterUnconnectedService<T>(T service) where T : ServerService
+    public bool RegisterUnconnectedService<T>(T service) where T : ServerService
     {
         return unconnectedServices.RegisterService(service);
     }
@@ -182,7 +182,7 @@ public class ServerLobby : MonoBehaviour
 
     public T GetUnconnectedService<T>() where T : ServerService
     {
-        ServerService service = unconnectedServices.GetService<T>(out uint serviceId);
+        ServerService service = unconnectedServices.GetService<T>(out ulong serviceId);
         if (service != null)
         {
             return (T)service;

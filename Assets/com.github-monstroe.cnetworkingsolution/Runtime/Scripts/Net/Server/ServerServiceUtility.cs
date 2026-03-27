@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 
-public class ServerServiceUtility : ServiceUtility
+public class ServerServiceUtility
 {
-    private Dictionary<uint, ServerService> services = new Dictionary<uint, ServerService>();
-    private Dictionary<Type, uint> serviceTypeCache = new Dictionary<Type, uint>();
+    private Dictionary<ulong, ServerService> services = new Dictionary<ulong, ServerService>();
+    private Dictionary<Type, ulong> serviceTypeCache = new Dictionary<Type, ulong>();
     private SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
 
     public void UserJoined(UserData user)
@@ -51,9 +51,9 @@ public class ServerServiceUtility : ServiceUtility
         }
     }
 
-    public uint? RegisterService<T>(T service) where T : ServerService
+    public bool RegisterService<T>(T service) where T : ServerService
     {
-        uint serviceId = GenerateServiceId(service.GetType());
+        ulong serviceId = service.ServiceId;
         int executionOrder = service.ExecutionOrder;
         if (!services.ContainsKey(serviceId))
         {
@@ -66,12 +66,12 @@ public class ServerServiceUtility : ServiceUtility
                 serviceOrderCache[executionOrder] = list;
             }
             list.Add(service);
-            return serviceId;
+            return true;
         }
-        return null;
+        return false;
     }
 
-    public bool UnregisterService<T>(out uint serviceId) where T : ServerService
+    public bool UnregisterService<T>(out ulong serviceId) where T : ServerService
     {
         serviceId = serviceTypeCache[typeof(T)];
         if (services.TryGetValue(serviceId, out ServerService service))
@@ -89,7 +89,7 @@ public class ServerServiceUtility : ServiceUtility
         return false;
     }
 
-    public T GetService<T>(out uint serviceId) where T : ServerService
+    public T GetService<T>(out ulong serviceId) where T : ServerService
     {
         if (serviceTypeCache.TryGetValue(typeof(T), out serviceId) && services.TryGetValue(serviceId, out ServerService service))
         {
@@ -98,7 +98,7 @@ public class ServerServiceUtility : ServiceUtility
         return null;
     }
 
-    public bool GetService(uint serviceId, out ServerService service)
+    public bool GetService(ulong serviceId, out ServerService service)
     {
         if (services.TryGetValue(serviceId, out service))
         {

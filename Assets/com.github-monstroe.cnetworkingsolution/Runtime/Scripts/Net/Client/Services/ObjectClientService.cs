@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -91,8 +93,8 @@ public class ObjectClientService : ClientService
                     ushort objectId = packet.ReadUShort();
                     if (ClientObjects.TryGetValue(objectId, out ClientObject obj))
                     {
-                        obj.Remove();
                         OnObjectDestroyed?.Invoke(obj);
+                        obj.Remove();
                         Destroy(obj.gameObject);
                     }
                     else
@@ -120,5 +122,71 @@ public class ObjectClientService : ClientService
                     break;
                 }
         }
+    }
+
+    /* PACKETS */
+
+    public static NetPacket ObjectCommunication(INetObject netObject, NetPacket packet)
+    {
+        packet.Insert(0, NetResources.GenerateServiceId<ObjectServerService>());
+        packet.Insert(1, (byte)ObjectServerService.ObjectCommandType.OBJECT_COMMUNICATION);
+        packet.Insert(2, netObject.Id);
+        return packet;
+    }
+
+    public static NetPacket ObjectSpawnRequest(string clientPrefabPath, Vector3 pos, Quaternion rot)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectServerService>());
+        packet.Write((byte)ObjectServerService.ObjectCommandType.OBJECT_SPAWN_REQUEST);
+        int key = NetResources.Instance.GetClientPrefabKeyFromPath(clientPrefabPath);
+        if (key == 0)
+        {
+            Debug.LogError("ObjectSpawnRequest could not find client prefab key for path: " + clientPrefabPath);
+            return null;
+        }
+        packet.Write(key);
+        packet.Write(pos);
+        packet.Write(rot);
+        return packet;
+    }
+
+    public static NetPacket ObjectDestroyRequest(ushort objectId)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectServerService>());
+        packet.Write((byte)ObjectServerService.ObjectCommandType.OBJECT_DESTROY_REQUEST);
+        packet.Write(objectId);
+        return packet;
+    }
+
+    public static NetPacket ObjectTransform(Vector3 position, Quaternion rotation)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectServerService>());
+        packet.Write((byte)ObjectServerService.ObjectCommandType.OBJECT_TRANSFORM);
+        packet.Write(position);
+        packet.Write(rotation);
+        return packet;
+    }
+
+    public static NetPacket ObjectRpc(ulong methodId, MethodInfo method, params object[] args)
+    {
+        var parameters = method.GetParameters();
+        if (args.Length != parameters.Length)
+        {
+            throw new ArgumentException("RPC argument count mismatch");
+        }
+
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<ObjectServerService>());
+        packet.Write((byte)ObjectServerService.ObjectCommandType.OBJECT_RPC);
+        packet.Write(methodId);
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            packet.Write(args[i], parameters[i].ParameterType);
+        }
+        return packet;
     }
 }

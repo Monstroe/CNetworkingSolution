@@ -19,7 +19,7 @@ public class LobbyClientService : ClientService
     public delegate void LobbyUserLeftEventHandler(UserData user);
     public event LobbyUserLeftEventHandler OnLobbyUserLeft;
 
-    public delegate void LobbyUserKickedEventHandler(ulong userId, LobbyRejectionType rejectionType);
+    public delegate void LobbyUserKickedEventHandler(ulong userId, string kickReason);
     public event LobbyUserKickedEventHandler OnLobbyUserKicked;
 
     public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
@@ -92,8 +92,8 @@ public class LobbyClientService : ClientService
             case CommandType.LOBBY_USER_KICK:
                 {
                     ulong userId = packet.ReadULong();
-                    LobbyRejectionType rejectionType = (LobbyRejectionType)packet.ReadByte();
-                    OnLobbyUserKicked?.Invoke(userId, rejectionType);
+                    string kickReason = packet.ReadString();
+                    OnLobbyUserKicked?.Invoke(userId, kickReason);
                     break;
                 }
         }
@@ -103,4 +103,18 @@ public class LobbyClientService : ClientService
     {
         // Nothing
     }
+
+    /* PACKETS */
+
+#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
+    public static NetPacket LobbyUserKick(UserData user, string reason)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<LobbyServerService>());
+        packet.Write((byte)LobbyServerService.LobbyCommandType.LOBBY_USER_KICK);
+        packet.Write(user.UserId);
+        packet.Write(reason);
+        return packet;
+    }
+#endif
 }

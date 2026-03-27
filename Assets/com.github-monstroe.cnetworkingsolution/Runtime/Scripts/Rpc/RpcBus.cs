@@ -1,18 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
+
 public class RpcBus
 {
     public sealed class RpcMethodInfo
     {
-        public uint MethodId;
+        public ulong MethodId;
         public MethodInfo Method;
         public RpcAttribute Attribute;
     }
 
-    private readonly Dictionary<object, Dictionary<uint, RpcMethodInfo>> instanceRpcMethodMap = new Dictionary<object, Dictionary<uint, RpcMethodInfo>>();
+    private readonly Dictionary<object, Dictionary<ulong, RpcMethodInfo>> instanceRpcMethodMap = new Dictionary<object, Dictionary<ulong, RpcMethodInfo>>();
     private readonly Dictionary<Type, Dictionary<string, RpcMethodInfo>> rpcMethodByTypeAndSignature = new Dictionary<Type, Dictionary<string, RpcMethodInfo>>();
     private readonly Dictionary<Type, List<RpcMethodInfo>> rpcMethodCache = new Dictionary<Type, List<RpcMethodInfo>>();
 
@@ -47,7 +46,7 @@ public class RpcBus
                         }
                     }
 
-                    uint id = GenerateRpcMethodId(method);
+                    ulong id = NetResources.GenerateHashKey(method.Name);
 
                     RpcMethodInfo rpcMethod = new RpcMethodInfo
                     {
@@ -64,7 +63,7 @@ public class RpcBus
             rpcMethodByTypeAndSignature[type] = signatureMap;
         }
 
-        var methodMap = new Dictionary<uint, RpcMethodInfo>();
+        var methodMap = new Dictionary<ulong, RpcMethodInfo>();
         foreach (RpcMethodInfo method in methods)
         {
 
@@ -79,26 +78,19 @@ public class RpcBus
         instanceRpcMethodMap.Remove(instance);
     }
 
-    public bool TryGetRpcMethodByInstanceAndId(object instance, uint methodId, out MethodInfo method)
+    public bool TryGetRpcMethodByInstanceAndId(object instance, ulong methodId, out MethodInfo method)
     {
         var rpcMethodInfo = instanceRpcMethodMap.TryGetValue(instance, out var methods) && methods.TryGetValue(methodId, out var info) ? info : null;
         method = rpcMethodInfo?.Method;
         return method != null;
     }
 
-    public bool TryGetRpcMethodByTypeAndName(Type type, string methodName, out uint methodId, out MethodInfo method, out RpcAttribute attribute)
+    public bool TryGetRpcMethodByTypeAndName(Type type, string methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attribute)
     {
         var rpcMethod = rpcMethodByTypeAndSignature.TryGetValue(type, out var map) && map.TryGetValue(methodName, out var info) ? info : null;
         methodId = rpcMethod?.MethodId ?? 0;
         method = rpcMethod?.Method;
         attribute = rpcMethod?.Attribute;
         return rpcMethod != null;
-    }
-
-    private uint GenerateRpcMethodId(MethodInfo method)
-    {
-        using MD5 md5 = MD5.Create();
-        byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(method.Name));
-        return BitConverter.ToUInt32(hash, 0);
     }
 }

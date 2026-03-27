@@ -151,7 +151,7 @@ public class ServerBehaviour : MonoBehaviour
                 Tuple<int, string> clientPrefabInfo = NetResources.Instance.GetClientPrefabFromServerKey(instance.PrefabKey);
                 if (clientPrefabInfo != null)
                 {
-                    lobby.SendToGame(PacketBuilder.ObjectSpawn(id, clientPrefabInfo.Item1, instance.transform.position, instance.transform.rotation, isPlayer, ownerId), TransportMethod.Reliable);
+                    lobby.SendToGame(ObjectServerService.ObjectSpawn(id, clientPrefabInfo.Item1, instance.transform.position, instance.transform.rotation, isPlayer, ownerId), TransportMethod.Reliable);
                 }
                 instance.Init(id, lobby);
             }
@@ -164,7 +164,7 @@ public class ServerBehaviour : MonoBehaviour
         Destroy(serverObj.gameObject);
         if (sendToUsers)
         {
-            lobby.SendToGame(PacketBuilder.ObjectDestroy(serverObj.Id), TransportMethod.Reliable);
+            lobby.SendToGame(ObjectServerService.ObjectDestroy(serverObj.Id), TransportMethod.Reliable);
         }
     }
 }

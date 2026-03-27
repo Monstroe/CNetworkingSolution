@@ -44,4 +44,23 @@ public class GameClientService : ClientService
     {
         // Nothing
     }
+
+    /* PACKETS */
+
+    public static NetPacket GameStart()
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<GameServerService>());
+        packet.Write((byte)GameServerService.GameCommandType.GAME_START);
+        return packet;
+    }
+
+    public static NetPacket GameUserJoined(UserData user)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<GameServerService>());
+        packet.Write((byte)GameServerService.GameCommandType.GAME_USER_JOINED);
+        packet.Write(user.PlayerId);
+        return packet;
+    }
 }

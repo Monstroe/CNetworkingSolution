@@ -178,9 +178,8 @@ public class ServerManager : MonoBehaviour
             }
             else
             {
-                ServiceType serviceType = (ServiceType)packet.ReadByte();
-                CommandType commandType = (CommandType)packet.ReadByte();
-                if (serviceType == ServiceType.CONNECTION && commandType == CommandType.CONNECTION_REQUEST)
+                ConnectionCommandType commandType = (ConnectionCommandType)packet.ReadByte();
+                if (commandType == ConnectionCommandType.CONNECTION_REQUEST)
                 {
                     ConnectionData connectionData = GetConnectionData(packet);
                     if (connectionData == null)
@@ -583,4 +582,10 @@ public class ServerManager : MonoBehaviour
 
         return Convert.ToBase64String(keyBytes);
     }
+}
+
+public enum ConnectionCommandType
+{
+    CONNECTION_REQUEST,
+    CONNECTION_RESPONSE
 }

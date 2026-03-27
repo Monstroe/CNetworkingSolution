@@ -183,14 +183,14 @@ public abstract class ClientObject : ClientBehaviour, INetObject
 
     public void SendToServerObject(NetPacket packet, TransportMethod transportMethod)
     {
-        lobby.SendToServer(PacketBuilder.ObjectCommunication(this, packet), transportMethod);
+        lobby.SendToServer(ObjectClientService.ObjectCommunication(this, packet), transportMethod);
     }
 
     public void InvokeOnServerObject(string methodName, params object[] args)
     {
-        if (lobby.GetService<ObjectClientService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out uint methodId, out MethodInfo method, out RpcAttribute attr))
+        if (lobby.GetService<ObjectClientService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToServerObject(PacketBuilder.ObjectRpc(methodId, method, args), attr.TransportMethod);
+            SendToServerObject(ObjectClientService.ObjectRpc(methodId, method, args), attr.TransportMethod);
         }
         else
         {

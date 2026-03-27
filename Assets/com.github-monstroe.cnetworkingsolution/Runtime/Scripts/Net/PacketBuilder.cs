@@ -122,13 +122,13 @@ public static class PacketBuilder
         return packet;
     }
 
-    public static NetPacket LobbyUserKick(UserData user, LobbyRejectionType reason)
+    public static NetPacket LobbyUserKick(UserData user, string reason)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.LOBBY);
         packet.Write((byte)CommandType.LOBBY_USER_KICK);
         packet.Write(user.UserId);
-        packet.Write((byte)reason);
+        packet.Write(reason);
         return packet;
     }
 

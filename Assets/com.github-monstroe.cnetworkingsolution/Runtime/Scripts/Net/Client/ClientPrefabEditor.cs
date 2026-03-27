@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEngine;
 
 [CustomEditor(typeof(ClientObject), true)]
-public class ClientPrefab : Editor
+public class ClientPrefabEditor : Editor
 {
     public override void OnInspectorGUI()
     {

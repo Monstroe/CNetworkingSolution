@@ -256,6 +256,20 @@ public class NetResources : MonoBehaviour
             return BitConverter.ToInt32(hash, 0);
         }
     }
+
+    public static ulong GenerateServiceId<T>()
+    {
+        return GenerateHashKey(typeof(T).FullName);
+    }
+
+    public static ulong GenerateHashKey(string input)
+    {
+        using (var md5 = System.Security.Cryptography.MD5.Create())
+        {
+            byte[] hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+            return BitConverter.ToUInt64(hash, 0);
+        }
+    }
 }
 
 public enum NetMode

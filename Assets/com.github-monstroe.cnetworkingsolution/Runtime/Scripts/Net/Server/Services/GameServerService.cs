@@ -4,10 +4,20 @@ using UnityEngine;
 
 public class GameServerService : ServerService
 {
-    [Tooltip("Delay in seconds before the game starts after the host initiates the start. This allows players time to join the game.")]
-    [SerializeField] private float gameStartDelay = 15f;
+    public delegate void GameStartedEventHandler();
+    public event GameStartedEventHandler OnGameStarted;
+
+    public delegate void GameUserJoinedEventHandler(UserData user);
+    public event GameUserJoinedEventHandler OnGameUserJoined;
 
     private bool gameStarted = false;
+
+    // The game service is special because it handles when users join the game and when the game starts
+    // It needs to run last (but before the lobby service)
+    public override void Init(ServerLobby lobby)
+    {
+        base.Init(lobby);
+    }
 
     public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
     {
@@ -29,6 +39,7 @@ public class GameServerService : ServerService
                     }
 
                     user.InGame = true;
+                    OnGameUserJoined?.Invoke(user);
                     lobby.UserJoinedGame(user);
                     break;
                 }
@@ -46,34 +57,12 @@ public class GameServerService : ServerService
                         return;
                     }
 
-                    StartCoroutine(GameLoop());
-                    StartCoroutine(GameStartTimer());
-                    lobby.SendToLobby(PacketBuilder.GameStart(), TransportMethod.Reliable);
+                    gameStarted = true;
+                    OnGameStarted?.Invoke();
+                    lobby.SendToLobby(GameStart(), TransportMethod.Reliable);
                     break;
                 }
         }
-    }
-
-    private IEnumerator GameLoop()
-    {
-        yield return new WaitUntil(() => lobby.LobbyData.GameUsers.Count == lobby.LobbyData.LobbyUsers.Count || gameStarted);
-
-        foreach (var user in lobby.LobbyData.LobbyUsers)
-        {
-            if (!user.InGame)
-            {
-                Debug.LogWarning($"User {user.UserId} did not join the game in time. Kicking from lobby.");
-                lobby.KickUser(user);
-            }
-        }
-
-        // Game logic here
-    }
-
-    private IEnumerator GameStartTimer()
-    {
-        yield return new WaitForSeconds(gameStartDelay);
-        gameStarted = true;
     }
 
     public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
@@ -93,11 +82,36 @@ public class GameServerService : ServerService
 
     public override void UserJoinedGame(UserData joinedUser)
     {
-        lobby.SendToLobby(PacketBuilder.GameUserJoined(joinedUser), TransportMethod.Reliable);
+        lobby.SendToLobby(GameUserJoined(joinedUser), TransportMethod.Reliable);
     }
 
     public override void UserLeft(UserData leftUser)
     {
         // Nothing
+    }
+
+    /* PACKETS */
+
+    public enum GameCommandType
+    {
+        GAME_START,
+        GAME_USER_JOINED
+    }
+
+    public static NetPacket GameStart()
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<GameClientService>());
+        packet.Write((byte)GameCommandType.GAME_START);
+        return packet;
+    }
+
+    public static NetPacket GameUserJoined(UserData user)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write(NetResources.GenerateServiceId<GameClientService>());
+        packet.Write((byte)GameCommandType.GAME_USER_JOINED);
+        packet.Write(user.PlayerId);
+        return packet;
     }
 }

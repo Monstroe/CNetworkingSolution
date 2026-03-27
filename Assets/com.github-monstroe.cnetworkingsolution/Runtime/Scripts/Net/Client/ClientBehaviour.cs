@@ -35,14 +35,14 @@ public class ClientBehaviour : MonoBehaviour
             return;
         }
 
-        lobby.SendToServer(PacketBuilder.ObjectSpawnRequest(originalPath, position, rotation), TransportMethod.Reliable);
+        lobby.SendToServer(ObjectClientService.ObjectSpawnRequest(originalPath, position, rotation), TransportMethod.Reliable);
     }
 
     protected void DestroyOnNetwork(ClientObject clientObj)
     {
         if (clientObj.OwnerId == lobby.CurrentUser.PlayerId)
         {
-            lobby.SendToServer(PacketBuilder.ObjectDestroyRequest(clientObj.Id), TransportMethod.Reliable);
+            lobby.SendToServer(ObjectClientService.ObjectDestroyRequest(clientObj.Id), TransportMethod.Reliable);
         }
         else
         {

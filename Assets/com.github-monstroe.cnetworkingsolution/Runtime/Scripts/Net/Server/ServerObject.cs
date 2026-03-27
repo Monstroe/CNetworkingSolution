@@ -135,14 +135,14 @@ public abstract class ServerObject : ServerBehaviour, INetObject
 
     public void SendToGameClientObjects(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
     {
-        lobby.SendToGame(PacketBuilder.ObjectCommunication(this, packet), transportMethod, exception);
+        lobby.SendToGame(ObjectServerService.ObjectCommunication(this, packet), transportMethod, exception);
     }
 
     public void InvokeOnGameClientObjects(string methodName, params object[] args)
     {
-        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out uint methodId, out MethodInfo method, out RpcAttribute attr))
+        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToGameClientObjects(PacketBuilder.ObjectRpc(methodId, method, args), attr.TransportMethod);
+            SendToGameClientObjects(ObjectServerService.ObjectRpc(methodId, method, args), attr.TransportMethod);
         }
         else
         {
@@ -152,14 +152,14 @@ public abstract class ServerObject : ServerBehaviour, INetObject
 
     public void SendToUserClientObject(UserData user, NetPacket packet, TransportMethod transportMethod)
     {
-        lobby.SendToUser(user, PacketBuilder.ObjectCommunication(this, packet), transportMethod);
+        lobby.SendToUser(user, ObjectServerService.ObjectCommunication(this, packet), transportMethod);
     }
 
     public void InvokeOnUserClientObject(UserData user, string methodName, params object[] args)
     {
-        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out uint methodId, out MethodInfo method, out RpcAttribute attr))
+        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToUserClientObject(user, PacketBuilder.ObjectRpc(methodId, method, args), attr.TransportMethod);
+            SendToUserClientObject(user, ObjectServerService.ObjectRpc(methodId, method, args), attr.TransportMethod);
         }
         else
         {
