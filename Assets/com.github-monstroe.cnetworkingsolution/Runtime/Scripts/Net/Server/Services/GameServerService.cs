@@ -4,13 +4,8 @@ using UnityEngine;
 
 public class GameServerService : ServerService
 {
-    public delegate void GameStartedEventHandler();
-    public event GameStartedEventHandler OnGameStarted;
-
     public delegate void GameUserJoinedEventHandler(UserData user);
     public event GameUserJoinedEventHandler OnGameUserJoined;
-
-    private bool gameStarted = false;
 
     // The game service is special because it handles when users join the game and when the game starts
     // It needs to run last (but before the lobby service)
@@ -41,25 +36,6 @@ public class GameServerService : ServerService
                     user.InGame = true;
                     OnGameUserJoined?.Invoke(user);
                     lobby.UserJoinedGame(user);
-                    break;
-                }
-            case CommandType.GAME_START:
-                {
-                    if (gameStarted)
-                    {
-                        Debug.LogWarning($"User {user.UserId} tried to start the game, but the game has already started.");
-                        return;
-                    }
-
-                    if (!user.IsHost(lobby.LobbyData))
-                    {
-                        Debug.LogWarning($"User {user.UserId} tried to start the game, but only the host can start the game.");
-                        return;
-                    }
-
-                    gameStarted = true;
-                    OnGameStarted?.Invoke();
-                    lobby.SendToLobby(GameStart(), TransportMethod.Reliable);
                     break;
                 }
         }
@@ -94,16 +70,7 @@ public class GameServerService : ServerService
 
     public enum GameCommandType
     {
-        GAME_START,
         GAME_USER_JOINED
-    }
-
-    public static NetPacket GameStart()
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<GameClientService>());
-        packet.Write((byte)GameCommandType.GAME_START);
-        return packet;
     }
 
     public static NetPacket GameUserJoined(UserData user)

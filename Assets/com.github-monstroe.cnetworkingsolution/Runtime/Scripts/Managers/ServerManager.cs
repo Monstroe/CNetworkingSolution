@@ -182,6 +182,9 @@ public class ServerManager : MonoBehaviour
                 if (commandType == ConnectionCommandType.CONNECTION_REQUEST)
                 {
                     ConnectionData connectionData = GetConnectionData(packet);
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
+                    remoteUser.GlobalGuid = connectionData.UserGuid;
+#endif
                     if (connectionData == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {remoteId}.");
@@ -193,20 +196,16 @@ public class ServerManager : MonoBehaviour
                     if (newLobby == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {remoteId} cannot join.");
-                        transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyNotFound), TransportMethod.Reliable);
+                        transportUtility.SendToRemote(remoteUser.UserId, ConnectionResponse(false, connectionData.LobbyId), TransportMethod.Reliable);
                         transportUtility.KickRemote(remoteUser.UserId);
                         return;
                     }
 
-                    if (newLobby.LobbyData.UserCount >= connectionData.LobbySettings.MaxUsers)
-                    {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} is full. User {remoteId} cannot join.");
-                        transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(false, connectionData.LobbyId, LobbyRejectionType.LobbyFull), TransportMethod.Reliable);
-                        transportUtility.KickRemote(remoteUser.UserId);
-                        return;
-                    }
-
-                    transportUtility.SendToRemote(remoteUser.UserId, PacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
+                    transportUtility.SendToRemote(remoteUser.UserId, ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
+#elif CNS_SERVER_SINGLE || CNS_SYNC_HOST
+                    transportUtility.SendToRemote(remoteUser.UserId, ConnectionResponse(true, connectionData.LobbyId, ConnectionUserGuid(remoteUser.GlobalGuid)), TransportMethod.Reliable);
+#endif
                     await AddUserToLobby(remoteUser, newLobby, connectionData);
                 }
                 else
@@ -285,16 +284,13 @@ public class ServerManager : MonoBehaviour
         connectionData = TokenVerifier.VerifyToken(packet.ReadString());
 #elif CNS_SERVER_SINGLE || CNS_SYNC_HOST
         connectionData = new ConnectionData().Deserialize(packet);
-#else
-        connectionData = null;
 #endif
 
 #if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
         connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create ? GenerateLobbyId() : connectionData.LobbyId;
 #elif CNS_SERVER_SINGLE && CNS_LOBBY_SINGLE
-        connectionData.LobbyConnectionType = LobbyConnectionType.Join;
         connectionData.LobbyId = NetResources.Instance.DefaultLobbyId;
-        connectionData.LobbySettings = NetResources.Instance.DefaultLobbySettings.Clone();
+        connectionData.LobbyConnectionType = LobbyConnectionType.Join;
 #endif
         return connectionData;
     }
@@ -315,7 +311,6 @@ public class ServerManager : MonoBehaviour
         if (connectionData.LobbyConnectionType == LobbyConnectionType.Join && ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
         {
             lobby = ServerData.ActiveLobbies[connectionData.LobbyId];
-            connectionData.LobbySettings = lobby.LobbyData.Settings;
         }
         else if (connectionData.LobbyConnectionType == LobbyConnectionType.Create)
         {
@@ -331,13 +326,13 @@ public class ServerManager : MonoBehaviour
     {
         UserData user = new UserData
         {
+#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
             GlobalGuid = Guid.Empty,
+#elif CNS_SERVER_SINGLE || CNS_SYNC_HOST
+            GlobalGuid = GenerateUserGuid(),
+#endif
             LobbyId = -1,
-            UserId = userId,
-            Settings = new UserSettings()
-            {
-                UserName = $"UnverifiedUser_{userId}"
-            }
+            UserId = userId
         };
         ServerData.ConnectedUsers[user.UserId] = user;
 
@@ -404,7 +399,6 @@ public class ServerManager : MonoBehaviour
         lobby.name = $"Lobby_{connectionData.LobbyId}";
         lobby.Init(transportUtility, lobbyScene);
         lobby.LobbyData.LobbyId = connectionData.LobbyId;
-        lobby.LobbyData.Settings = connectionData.LobbySettings;
         ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
         SceneManager.SetActiveScene(previousScene);
 
@@ -444,8 +438,6 @@ public class ServerManager : MonoBehaviour
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
         user.LobbyId = connectionData.LobbyId;
-        user.GlobalGuid = connectionData.UserGuid;
-        user.Settings = connectionData.UserSettings;
         lobby.LobbyData.LobbyUsers.Add(user);
 
 #if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
@@ -560,6 +552,26 @@ public class ServerManager : MonoBehaviour
     }
 #endif
 
+    private static NetPacket ConnectionResponse(bool accepted, int lobbyId, NetPacket errorPkt = null)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ConnectionCommandType.CONNECTION_RESPONSE);
+        packet.Write(accepted);
+        packet.Write(lobbyId);
+        if (errorPkt != null)
+            packet.Write(errorPkt.ByteArray);
+        return packet;
+    }
+#if CNS_SERVER_SINGLE || CNS_SYNC_HOST
+    private static NetPacket ConnectionUserGuid(Guid userGuid)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ConnectionCommandType.CONNECTION_USER_GUID);
+        packet.Write(userGuid.ToString());
+        return packet;
+    }
+#endif
+
 #if CNS_SERVER_SINGLE && CNS_LOBBY_MULTIPLE && CNS_SYNC_DEDICATED
     private int GenerateLobbyId()
     {
@@ -569,6 +581,12 @@ public class ServerManager : MonoBehaviour
             newLobbyId = UnityEngine.Random.Range(100000, 1000000);
         } while (ServerData.ActiveLobbies.ContainsKey(newLobbyId));
         return newLobbyId;
+    }
+#endif
+#if CNS_SERVER_SINGLE || CNS_SYNC_HOST
+    private Guid GenerateUserGuid()
+    {
+        return Guid.NewGuid();
     }
 #endif
 
@@ -587,5 +605,8 @@ public class ServerManager : MonoBehaviour
 public enum ConnectionCommandType
 {
     CONNECTION_REQUEST,
-    CONNECTION_RESPONSE
+    CONNECTION_RESPONSE,
+#if CNS_SERVER_SINGLE || CNS_SYNC_HOST
+    CONNECTION_USER_GUID
+#endif
 }

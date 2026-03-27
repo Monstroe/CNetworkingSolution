@@ -4,12 +4,10 @@ public class ConnectionData : INetSerializable<ConnectionData>
 {
 #if CNS_SERVER_MULTIPLE
     public Guid TokenId { get; set; }
+    public Guid UserGuid { get; set; }
 #endif
     public int LobbyId { get; set; }
     public LobbyConnectionType LobbyConnectionType { get; set; }
-    public Guid UserGuid { get; set; }
-    //public UserSettings UserSettings { get; set; }
-    //public LobbySettings LobbySettings { get; set; }
 
     public ConnectionData Deserialize(NetPacket packet)
     {
@@ -17,12 +15,10 @@ public class ConnectionData : INetSerializable<ConnectionData>
         {
 #if CNS_SERVER_MULTIPLE
             TokenId = Guid.Parse(packet.ReadString()),
+            UserGuid = Guid.Parse(packet.ReadString()),
 #endif
             LobbyId = packet.ReadInt(),
-            LobbyConnectionType = (LobbyConnectionType)packet.ReadByte(),
-            UserGuid = Guid.Parse(packet.ReadString()),
-            //UserSettings = new UserSettings().Deserialize(packet),
-            //LobbySettings = new LobbySettings().Deserialize(packet)
+            LobbyConnectionType = (LobbyConnectionType)packet.ReadByte()
         };
     }
 
@@ -30,12 +26,10 @@ public class ConnectionData : INetSerializable<ConnectionData>
     {
 #if CNS_SERVER_MULTIPLE
         packet.Write(TokenId.ToString());
+        packet.Write(UserGuid.ToString());
 #endif
         packet.Write(LobbyId);
         packet.Write((byte)LobbyConnectionType);
-        packet.Write(UserGuid.ToString());
-        //UserSettings.Serialize(packet);
-        //LobbySettings.Serialize(packet);
     }
 }
 
@@ -44,11 +38,3 @@ public enum LobbyConnectionType
     Create,
     Join,
 }
-
-/*public enum LobbyRejectionType
-{
-    LobbyFull,
-    LobbyNotFound,
-    LobbyClosed,
-    KickedByHost,
-}*/
