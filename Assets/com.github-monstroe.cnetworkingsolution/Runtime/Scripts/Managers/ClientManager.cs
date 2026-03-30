@@ -72,8 +72,6 @@ public class ClientManager : MonoBehaviour
         AddTransportUtilityEvents();
         CurrentLobby = Instantiate(lobbyPrefab, transform);
         CurrentLobby.Init(transportUtility);
-        CurrentLobby.LobbyData.Settings = NetResources.Instance.DefaultLobbySettings.Clone();
-        CurrentLobby.CurrentUser.Settings = NetResources.Instance.DefaultUserSettings.Clone();
         NetMode = NetResources.Instance.DefaultNetMode;
 #if CNS_SERVER_MULTIPLE
         WebAPI = new ClientWebAPI(lobbyApiUrl);
@@ -203,30 +201,29 @@ public class ClientManager : MonoBehaviour
         OnLobbyConnectionError?.Invoke(code, socketError);
     }
 
-    public void CreateNewUser(UserSettings userSettings = null, bool invokeEvent = true)
+    public void CreateNewUser(bool invokeEvent = true)
     {
         if (NetMode == NetMode.Local)
         {
-            CreateUser(Guid.NewGuid(), userSettings ?? NetResources.Instance.DefaultUserSettings.Clone(), invokeEvent);
+            CreateUser(Guid.Empty, invokeEvent);
             return;
         }
 
 #if CNS_SERVER_MULTIPLE
         StartCoroutine(WebAPI.CreateUserCoroutine(userSettings ?? NetResources.Instance.DefaultUserSettings.Clone(), (userGuid, settings) =>
         {
-            CreateUser(userGuid, settings, invokeEvent);
+            CreateUser(userGuid, invokeEvent);
         }));
 #elif CNS_SERVER_SINGLE
-        CreateUser(Guid.NewGuid(), userSettings ?? NetResources.Instance.DefaultUserSettings.Clone(), invokeEvent);
+        CreateUser(Guid.Empty, invokeEvent);
 #endif
     }
 
-    private void CreateUser(Guid userGuid, UserSettings userSettings, bool invokeEvent)
+    private void CreateUser(Guid userGuid, bool invokeEvent)
     {
-        UserData userData = new UserData
+        UserData userData = new UserData()
         {
-            GlobalGuid = userGuid,
-            Settings = userSettings
+            GlobalGuid = userGuid
         };
         CurrentLobby.CurrentUser = userData;
         if (invokeEvent)
@@ -452,5 +449,14 @@ public class ClientManager : MonoBehaviour
         transportUtility.OnSingleReceived -= HandleNetworkReceived;
         transportUtility.OnSingleReceivedUnconnected -= HandleNetworkReceivedUnconnected;
         transportUtility.OnSingleError -= HandleNetworkError;
+    }
+
+    private static NetPacket ConnectionRequest(ConnectionData connectionData)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ServiceType.CONNECTION);
+        packet.Write((byte)CommandType.CONNECTION_REQUEST);
+        connectionData.Serialize(packet);
+        return packet;
     }
 }

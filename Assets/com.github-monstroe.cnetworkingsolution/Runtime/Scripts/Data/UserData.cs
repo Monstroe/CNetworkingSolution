@@ -2,12 +2,14 @@ using System;
 
 public class UserData : INetSerializable<UserData>
 {
-    public Guid GlobalGuid { get; set; }
-    public ulong UserId { get; set; }
-    public byte PlayerId { get; set; }
-    public int LobbyId { get; set; } = -1;
-    public bool InLobby { get { return LobbyId > -1; } }
-    public bool InGame { get; set; } = false;
+    public Guid GlobalGuid { get; internal set; }
+    public ulong UserId { get; internal set; }
+    public byte PlayerId { get; internal set; }
+    public int LobbyId { get; internal set; } = -1;
+    public bool InLobby => LobbyId > -1;
+    public bool InGame { get; internal set; } = false;
+
+    internal UserData() { }
 
     public bool IsHost(LobbyData lobby)
     {

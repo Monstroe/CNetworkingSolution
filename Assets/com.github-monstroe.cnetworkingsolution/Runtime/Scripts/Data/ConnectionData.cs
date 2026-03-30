@@ -1,40 +1,55 @@
 using System;
+using System.Collections.Generic;
 
 public class ConnectionData : INetSerializable<ConnectionData>
 {
-#if CNS_SERVER_MULTIPLE
-    public Guid TokenId { get; set; }
-    public Guid UserGuid { get; set; }
-#endif
     public int LobbyId { get; set; }
-    public LobbyConnectionType LobbyConnectionType { get; set; }
+    public LobbyConnectionType LobbyConnectionType { get; internal set; }
+    public byte[] Payload { get; set; }
+
+    public void SetPayload<T>(T data) where T : INetSerializable
+    {
+        var packet = new NetPacket();
+        data.Serialize(packet);
+        Payload = packet.ByteArray;
+    }
+
+    public T GetPayload<T>() where T : INetSerializable<T>, new()
+    {
+        var packet = new NetPacket(Payload);
+        return new T().Deserialize(packet);
+    }
 
     public ConnectionData Deserialize(NetPacket packet)
     {
-        return new ConnectionData()
+        ConnectionData connectionData = new ConnectionData()
         {
-#if CNS_SERVER_MULTIPLE
-            TokenId = Guid.Parse(packet.ReadString()),
-            UserGuid = Guid.Parse(packet.ReadString()),
-#endif
             LobbyId = packet.ReadInt(),
             LobbyConnectionType = (LobbyConnectionType)packet.ReadByte()
         };
+
+        if (packet.UnreadLength > 0)
+        {
+            connectionData.Payload = packet.ReadBytes();
+        }
+
+        return connectionData;
     }
 
     public void Serialize(NetPacket packet)
     {
-#if CNS_SERVER_MULTIPLE
-        packet.Write(TokenId.ToString());
-        packet.Write(UserGuid.ToString());
-#endif
         packet.Write(LobbyId);
         packet.Write((byte)LobbyConnectionType);
+        if (Payload != null)
+        {
+            packet.Write(Payload);
+        }
     }
 }
 
 public enum LobbyConnectionType
 {
     Create,
-    Join,
+    JoinIfExists,
+    JoinOrCreate
 }

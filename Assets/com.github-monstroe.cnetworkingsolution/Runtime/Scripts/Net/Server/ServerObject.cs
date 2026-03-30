@@ -5,7 +5,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-public abstract class ServerObject : ServerBehaviour, INetObject
+public abstract class ServerObject : ServerBehaviour, INetObject, INetEvent
 {
     public ushort Id { get; private set; }
     public byte? OwnerId { get; private set; } = null;
