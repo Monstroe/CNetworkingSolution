@@ -7,19 +7,6 @@ using UnityEngine;
 [RequireComponent(typeof(SingleTransportUtility))]
 public class ClientManager : MonoBehaviour
 {
-    public delegate void NewUserCreatedEventHandler(Guid userId);
-    public event NewUserCreatedEventHandler OnNewUserCreated;
-
-#nullable enable
-    public delegate void LobbyCreateRequestedEventHandler(TransportSettings? serverSettings);
-#nullable disable
-    public event LobbyCreateRequestedEventHandler OnLobbyCreateRequested;
-
-#nullable enable
-    public delegate void LobbyJoinRequestedEventHandler(int lobbyId, TransportSettings? serverSettings);
-#nullable disable
-    public event LobbyJoinRequestedEventHandler OnLobbyJoinRequested;
-
     public delegate void LobbyConnectionAcceptedEventHandler(int lobbyId);
     public event LobbyConnectionAcceptedEventHandler OnLobbyConnectionAccepted;
 
@@ -32,26 +19,16 @@ public class ClientManager : MonoBehaviour
     public delegate void LobbyConnectionErrorEventHandler(TransportCode code, SocketError? socketError);
     public event LobbyConnectionErrorEventHandler OnLobbyConnectionError;
 
+    public static ClientManager Instance { get; private set; }
+    public ClientLobby CurrentLobby { get; private set; }
+    public bool IsConnected { get; private set; } = false;
+    public NetMode NetMode { get; set; }
+
     [Header("Lobby Settings")]
     [SerializeField] private ClientLobby lobbyPrefab;
 
-    public static ClientManager Instance { get; private set; }
-    public ClientLobby CurrentLobby { get; private set; }
-#nullable enable
-    public TransportSettings? CurrentTransportSettings { get; set; }
-#nullable disable
-    public bool IsConnected { get; private set; } = false;
-    public ConnectionData ConnectionData { get; private set; }
-    public NetMode NetMode { get; set; }
-
-#if CNS_SERVER_MULTIPLE
-    [Tooltip("The URL of the lobby API. PLEASE DON'T PUT A SLASH AT THE END.")]
-    [SerializeField] private string lobbyApiUrl = "http://localhost:5107/api";
-
-    public ClientWebAPI WebAPI { get; private set; }
-#endif
-
     private SingleTransportUtility transportUtility;
+    private ConnectionData connectionData;
 
     void Awake()
     {
@@ -73,9 +50,10 @@ public class ClientManager : MonoBehaviour
         CurrentLobby = Instantiate(lobbyPrefab, transform);
         CurrentLobby.Init(transportUtility);
         NetMode = NetResources.Instance.DefaultNetMode;
-#if CNS_SERVER_MULTIPLE
-        WebAPI = new ClientWebAPI(lobbyApiUrl);
-#endif
+    }
+
+    void Start()
+    {
         Debug.Log("<color=green><b>CNS</b></color>: Client initialized.");
     }
 
@@ -87,48 +65,14 @@ public class ClientManager : MonoBehaviour
 
     private void HandleNetworkConnected(ulong remoteId)
     {
-        if (NetMode == NetMode.Local)
-        {
-            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
-            return;
-        }
-#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-        if (WebAPI.ConnectionToken != null)
-        {
-            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(WebAPI.ConnectionToken), TransportMethod.Reliable);
-        }
-        else
-        {
-            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
-        }
-#elif CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
-        if (ConnectionData.LobbyConnectionType == LobbyConnectionType.Create)
-        {
-            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
-        }
-        else
-        {
-            if (WebAPI.ConnectionToken != null)
-            {
-                transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(WebAPI.ConnectionToken), TransportMethod.Reliable);
-            }
-            else
-            {
-                transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
-            }
-        }
-#elif CNS_SERVER_SINGLE
-            transportUtility.SendToAllRemotes(PacketBuilder.ConnectionRequest(ConnectionData), TransportMethod.Reliable);
-#endif
+        transportUtility.SendToAllRemotes(ConnectionPacketBuilder.ConnectionRequest(connectionData), TransportMethod.Reliable);
     }
 
     private void HandleNetworkDisconnected(ulong remoteId, TransportCode code)
     {
-        Debug.Log("<color=green><b>CNS</b></color>: Client disconnected: " + code);
         transportUtility.RemoveTransports();
         IsConnected = false;
         CurrentLobby.LobbyData = new LobbyData();
-        CurrentLobby.LobbyData.Settings = NetResources.Instance.DefaultLobbySettings.Clone();
         OnLobbyConnectionLost?.Invoke(code);
     }
 
@@ -142,33 +86,30 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.ReceiveData(packet, method);
         }
-        else
+        else if ((ConnectionCommandType)packet.ReadByte() == ConnectionCommandType.CONNECTION_RESPONSE)
         {
-            ServiceType serviceType = (ServiceType)packet.ReadByte();
-            CommandType commandType = (CommandType)packet.ReadByte();
-            if (serviceType == ServiceType.CONNECTION && commandType == CommandType.CONNECTION_RESPONSE)
+            bool accepted = packet.ReadBool();
+            if (accepted)
             {
-                bool accepted = packet.ReadBool();
+                Guid userGuid = Guid.Parse(packet.ReadString());
                 int lobbyId = packet.ReadInt();
-                if (accepted)
-                {
-                    Debug.Log("<color=green><b>CNS</b></color>: Client connected");
-                    CurrentLobby.LobbyData.LobbyId = lobbyId;
-                    CurrentLobby.CurrentUser.LobbyId = lobbyId;
-                    IsConnected = true;
-                    OnLobbyConnectionAccepted?.Invoke(CurrentLobby.LobbyData.LobbyId);
-                }
-                else
-                {
-                    Debug.LogWarning("<color=yellow><b>CNS</b></color>: Client rejected");
-                    LobbyRejectionType errorType = (LobbyRejectionType)packet.ReadByte();
-                    OnLobbyConnectionRejected?.Invoke(lobbyId, errorType);
-                }
+
+                Debug.Log("<color=green><b>CNS</b></color>: Client connected");
+                CurrentLobby.LobbyData.LobbyId = lobbyId;
+                CurrentLobby.CurrentUser.LobbyId = lobbyId;
+                IsConnected = true;
+                OnLobbyConnectionAccepted?.Invoke(CurrentLobby.LobbyData.LobbyId);
             }
             else
             {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received packet with unknown service type {serviceType} and command type {commandType} while not in a lobby.");
+                Debug.LogWarning("<color=yellow><b>CNS</b></color>: Client rejected");
+                LobbyRejectionType errorType = (LobbyRejectionType)packet.ReadByte();
+                OnLobbyConnectionRejected?.Invoke(lobbyId, errorType);
             }
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received unknown packet while not in a lobby.");
         }
 #if !UNITY_EDITOR
         }
@@ -296,7 +237,7 @@ public class ClientManager : MonoBehaviour
 #nullable enable
     private void CreateLobby(int lobbyId, LobbySettings lobbySettings, TransportSettings? serverSettings, bool invokeEvent)
     {
-        ConnectionData = new ConnectionData
+        connectionData = new connectionData
         {
             LobbyId = lobbyId,
             LobbyConnectionType = LobbyConnectionType.Create,
@@ -377,7 +318,7 @@ public class ClientManager : MonoBehaviour
 #nullable enable
     private void JoinLobby(int lobbyId, LobbySettings lobbySettings, TransportSettings? serverSettings, bool invokeEvent)
     {
-        ConnectionData = new ConnectionData
+        connectionData = new connectionData
         {
             LobbyId = lobbyId,
             LobbyConnectionType = LobbyConnectionType.Join,
@@ -451,7 +392,7 @@ public class ClientManager : MonoBehaviour
         transportUtility.OnSingleError -= HandleNetworkError;
     }
 
-    private static NetPacket ConnectionRequest(ConnectionData connectionData)
+    private static NetPacket ConnectionRequest(connectionData connectionData)
     {
         NetPacket packet = new NetPacket();
         packet.Write((byte)ServiceType.CONNECTION);

@@ -1,13 +1,8 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(MultiTransportUtility))]
@@ -29,6 +24,7 @@ public class ServerManager : MonoBehaviour
     [SerializeField] private ServerLobby lobbyPrefab;
 
     private ConnectionEventBus connectionEventBus = new ConnectionEventBus();
+    private DisconnectionEventBus disconnectionEventBus = new DisconnectionEventBus();
     private MultiTransportUtility transportUtility;
 
     void Awake()
@@ -66,126 +62,6 @@ public class ServerManager : MonoBehaviour
         Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
     }
 
-    private async void HandleNetworkConnected(ulong remoteId)
-    {
-        try
-        {
-            if (!ServerData.ConnectedUsers.ContainsKey(remoteId) && !ServerData.ConnectingUsers.ContainsKey(remoteId))
-            {
-                await RegisterUser(remoteId);
-                Debug.Log($"<color=green><b>CNS</b></color>: Server registered new user {remoteId}.");
-            }
-            else
-            {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} attempted to connect again.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {remoteId}: {ex.Message}");
-        }
-    }
-
-    private async void HandleNetworkDisconnected(ulong remoteId, TransportCode code)
-    {
-        try
-        {
-            if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
-            {
-                await RemoveUser(userData);
-            }
-            else
-            {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} already disconnected.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {remoteId}: {ex.Message}");
-        }
-    }
-
-    private async void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
-    {
-        if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData remoteUser))
-        {
-#if !UNITY_EDITOR
-            try
-            {
-#endif
-            if (remoteUser.InLobby && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
-            {
-                existingLobby.ReceiveData(remoteUser, packet, method);
-            }
-            else
-            {
-                ConnectionCommandType commandType = (ConnectionCommandType)packet.ReadByte();
-                if (commandType == ConnectionCommandType.CONNECTION_REQUEST)
-                {
-                    ConnectionEventResult connectionEvtResult = ServerData.ConnectingUsers[remoteUser.UserId];
-                    ConnectionData connectionData = await GetConnectionData(connectionEvtResult, packet);
-                    if (connectionData == null)
-                    {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {remoteId}.");
-                        transportUtility.KickRemote(remoteUser.UserId);
-                        return;
-                    }
-
-                    ServerLobby newLobby = await GetLobbyData(connectionEvtResult, connectionData);
-                    if (newLobby == null)
-                    {
-                        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {remoteId} cannot join.");
-                        transportUtility.KickRemote(remoteUser.UserId);
-                        return;
-                    }
-
-#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-                    transportUtility.SendToRemote(remoteUser.UserId, ConnectionPacketBuilder.ConnectionResponse(true, connectionData.LobbyId), TransportMethod.Reliable);
-#elif CNS_SERVER_SINGLE || CNS_SYNC_HOST
-                    transportUtility.SendToRemote(remoteUser.UserId, ConnectionPacketBuilder.ConnectionResponse(true, connectionData.LobbyId, ConnectionPacketBuilder.ConnectionUserGuid(remoteUser.GlobalGuid)), TransportMethod.Reliable);
-#endif
-                    await AddUserToLobby(remoteUser, newLobby, connectionData);
-                }
-                else
-                {
-                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {remoteId} is not in any active lobby.");
-                    transportUtility.KickRemote(remoteUser.UserId);
-                }
-            }
-#if !UNITY_EDITOR
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {remoteId}: {ex.Message}");
-                transportUtility.KickRemote(remoteUser.UserId);
-            }
-#endif
-        }
-    }
-
-#if CNS_LOBBY_SINGLE
-    private void HandleNetworkReceivedUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
-    {
-#if !UNITY_EDITOR
-        try
-        {
-#endif
-        ServerData.CurrentLobby.ReceiveDataUnconnected(iPEndPoint, packet);
-#if !UNITY_EDITOR
-        }
-        catch (Exception ex)
-        {
-            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing unconnected received data from {iPEndPoint}: {ex.Message}");
-        }
-#endif
-    }
-#endif
-
-    private void HandleNetworkError(TransportCode code, SocketError? socketError)
-    {
-        Debug.LogError($"<color=red><b>CNS</b></color>: Network error occurred: {code} {(socketError.HasValue ? $"(Socket Error: {socketError.Value})" : "")}");
-    }
-
     void Update()
     {
         foreach (var (userId, connectionEvent) in ServerData.ConnectingUsers)
@@ -207,10 +83,112 @@ public class ServerManager : MonoBehaviour
         }
     }
 
-    async void OnDestroy()
+    void OnDestroy()
     {
         transportUtility.RemoveTransports();
         ClearTransportUtilityEvents();
+    }
+
+    private async void HandleNetworkConnected(ulong remoteId)
+    {
+        try
+        {
+            if (!ServerData.ConnectedUsers.ContainsKey(remoteId) && !ServerData.ConnectingUsers.ContainsKey(remoteId))
+            {
+                await RegisterUser(remoteId);
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} attempted to connect again.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {remoteId}: {ex.Message}");
+        }
+    }
+
+    private async void HandleNetworkDisconnected(ulong remoteId, TransportCode code)
+    {
+        try
+        {
+            if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
+            {
+                await RemoveUser(userData);
+            }
+            else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionEventResult connectionEvtResult))
+            {
+                await RemoveUser(connectionEvtResult.ConnectingUser);
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} already disconnected.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {remoteId}: {ex.Message}");
+        }
+    }
+
+    private async void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
+    {
+#if !UNITY_EDITOR
+        try
+        {
+#endif
+        if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData remoteUser) && remoteUser.InLobby && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
+        {
+            existingLobby.ReceiveData(remoteUser, packet, method);
+        }
+        else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionEventResult connectionEvtResult) && (ConnectionCommandType)packet.ReadByte() == ConnectionCommandType.CONNECTION_REQUEST)
+        {
+            ConnectionData connectionData = await GetConnectionData(connectionEvtResult, packet);
+            if (connectionData == null)
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {remoteId}.");
+                transportUtility.KickRemote(remoteUser.UserId);
+                return;
+            }
+
+            ServerLobby newLobby = await GetLobbyData(connectionEvtResult, connectionData);
+            if (newLobby == null)
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {remoteId} could not join lobby {connectionData.LobbyId}.");
+                transportUtility.KickRemote(remoteUser.UserId);
+                return;
+            }
+
+            if (!await AddUserToLobby(connectionEvtResult, newLobby, connectionData))
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {remoteId} was denied joining lobby {newLobby.LobbyData.LobbyId}.");
+                transportUtility.KickRemote(remoteUser.UserId);
+                return;
+            }
+
+            ServerData.AddConnectedUser(connectionEvtResult.ConnectingUser);
+            ServerData.RemoveConnectingUser(remoteId);
+            transportUtility.SendToRemote(remoteUser.UserId, ConnectionPacketBuilder.ConnectionResponse(true, ConnectionPacketBuilder.ConnectionData(remoteUser.GlobalGuid, newLobby.LobbyData.LobbyId, connectionEvtResult.ResponsePacket)), TransportMethod.Reliable);
+            newLobby.UserJoined(remoteUser);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received data from unknown user {remoteId}. Data will be ignored.");
+            transportUtility.KickRemote(remoteId);
+        }
+#if !UNITY_EDITOR
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing received data from user {remoteId}: {ex.Message}");
+            transportUtility.KickRemote(remoteId);
+        }
+#endif
+    }
+
+    private void HandleNetworkError(TransportCode code, SocketError? socketError)
+    {
+        Debug.LogError($"<color=red><b>CNS</b></color>: Network error occurred: {code} {(socketError.HasValue ? $"(Socket Error: {socketError.Value})" : "")}");
     }
 
     private async Task<ConnectionData> GetConnectionData(ConnectionEventResult connectingEvtData, NetPacket packet)
@@ -218,8 +196,9 @@ public class ServerManager : MonoBehaviour
         ConnectionData connectionData = new ConnectionData().Deserialize(packet);
         connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create ? GenerateLobbyId() : connectionData.LobbyId;
 
-        connectingEvtData = await connectionEventBus.Fire(new ConnectionDataReceivedEvent(connectionData)
+        connectingEvtData = await connectionEventBus.Fire(new ConnectionDataReceivedEvent()
         {
+            ConnectionData = connectionData,
             ConnectingUser = connectingEvtData.ConnectingUser,
             ConnectionTime = connectingEvtData.ConnectionTime,
             ResponsePacket = connectingEvtData.ResponsePacket
@@ -245,31 +224,22 @@ public class ServerManager : MonoBehaviour
 
         if ((connectionData.LobbyConnectionType == LobbyConnectionType.Create || connectionData.LobbyConnectionType == LobbyConnectionType.JoinOrCreate) && !ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
         {
-            lobby = await RegisterLobby(connectionData.LobbyId);
-            connectingEvtData = await connectionEventBus.Fire(new LobbyRegisteredEvent(lobby)
-            {
-                ConnectingUser = connectingEvtData.ConnectingUser,
-                ConnectionTime = connectingEvtData.ConnectionTime,
-                ResponsePacket = connectingEvtData.ResponsePacket
-            });
-            if (connectingEvtData.UserDenied)
-            {
-                transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
-                await RemoveLobby(lobby);
-                return null;
-            }
-            Debug.Log($"<color=green><b>CNS</b></color>: Server registered new lobby {lobby.LobbyData.LobbyId}.");
+            lobby = await RegisterLobby(connectingEvtData, connectionData.LobbyId);
         }
         else if (connectionData.LobbyConnectionType == LobbyConnectionType.JoinIfExists && !ServerData.ActiveLobbies.TryGetValue(connectionData.LobbyId, out lobby))
         {
-            connectingEvtData = await connectionEventBus.Fire(new LobbyNotFoundEvent(connectionData.LobbyId)
+            connectingEvtData = await connectionEventBus.Fire(new LobbyNotFoundEvent()
             {
+                LobbyId = connectionData.LobbyId,
                 ConnectingUser = connectingEvtData.ConnectingUser,
                 ConnectionTime = connectingEvtData.ConnectionTime,
                 UserDenied = true,
                 ResponsePacket = connectingEvtData.ResponsePacket
             });
-            transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
+            if (connectingEvtData.UserDenied)
+            {
+                transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
+            }
         }
 
         return lobby;
@@ -296,26 +266,23 @@ public class ServerManager : MonoBehaviour
         }
 
         ServerData.AddConnectingUser(result);
+        Debug.Log($"<color=green><b>CNS</b></color>: Server registered new user {userId}.");
     }
 
     private async Task RemoveUser(UserData user)
     {
-        ServerData.ConnectedUsers.Remove(user.UserId);
+        if (!ServerData.RemoveConnectedUser(user.UserId))
+        {
+            ServerData.RemoveConnectingUser(user.UserId);
+        }
 
         if (ServerData.ActiveLobbies.TryGetValue(user.LobbyId, out ServerLobby lobby))
         {
             await RemoveUserFromLobby(user, lobby);
 
-            if (lobby.LobbyData.LobbyUsers.Count == 0)
+            if (lobby.LobbyData.LobbyUsers.Count == 0 && !spawnLobbiesOnStart)
             {
-                if (spawnLobbiesOnStart)
-                {
-                    lobby.UserLeft(user);
-                }
-                else 
-                {
-                    await RemoveLobby(lobby);
-                }
+                await RemoveLobby(user, lobby);
             }
             else
             {
@@ -323,12 +290,15 @@ public class ServerManager : MonoBehaviour
             }
         }
 
-        _ = await connectionEventBus.Fire(new UserRemovedEvent(user));
+        _ = await disconnectionEventBus.Fire(new UserRemovedEvent()
+        {
+            DisconnectingUser = user
+        });
 
         Debug.Log($"<color=green><b>CNS</b></color>: Server removed user {user.UserId}.");
     }
 
-    private async Task<ServerLobby> RegisterLobby(int lobbyId)
+    private async Task<ServerLobby> RegisterLobby(ConnectionEventResult connectingEvtData, int lobbyId)
     {
         Scene lobbyScene = SceneManager.CreateScene($"Lobby_{lobbyId}_Scene", new CreateSceneParameters(LocalPhysicsMode.Physics3D));
         Scene previousScene = SceneManager.GetActiveScene();
@@ -339,35 +309,80 @@ public class ServerManager : MonoBehaviour
         lobby.LobbyData.LobbyId = lobbyId;
         ServerData.AddLobby(lobby);
         SceneManager.SetActiveScene(previousScene);
+
+        if (connectingEvtData != null)
+        {
+            connectingEvtData = await connectionEventBus.Fire(new LobbyRegisteredEvent()
+            {
+                Lobby = lobby,
+                ConnectingUser = connectingEvtData.ConnectingUser,
+                ConnectionTime = connectingEvtData.ConnectionTime,
+                ResponsePacket = connectingEvtData.ResponsePacket
+            });
+            if (connectingEvtData.UserDenied)
+            {
+                transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
+                await RemoveLobby(connectingEvtData.ConnectingUser, lobby);
+                return null;
+            }
+        }
+
+        Debug.Log($"<color=green><b>CNS</b></color>: Server registered new lobby {lobby.LobbyData.LobbyId}.");
         return lobby;
     }
 
-    private async Task RemoveLobby(ServerLobby lobby)
+    private async Task RemoveLobby(UserData disconnectingUser, ServerLobby lobby)
     {
-        ServerData.ActiveLobbies.Remove(lobby.LobbyData.LobbyId);
+        ServerData.RemoveLobby(lobby.LobbyData.LobbyId);
 
-        _ = await connectionEventBus.Fire(new LobbyRemovedEvent(lobby));
+        _ = await disconnectionEventBus.Fire(new LobbyRemovedEvent()
+        {
+            Lobby = lobby,
+            DisconnectingUser = disconnectingUser
+        });
 
         Destroy(lobby.gameObject);
         if (lobby.LobbyScene.HasValue)
         {
             await SceneManager.UnloadSceneAsync(lobby.LobbyScene.Value);
         }
+
         Debug.Log($"<color=green><b>CNS</b></color>: Server removed lobby {lobby.LobbyData.LobbyId}.");
     }
 
-    private async Task AddUserToLobby(UserData user, ServerLobby lobby, ConnectionData connectionData)
+    private async Task<bool> AddUserToLobby(ConnectionEventResult connectingEvtData, ServerLobby lobby, ConnectionData connectionData)
     {
-        user.LobbyId = connectionData.LobbyId;
-        lobby.LobbyData.AddUser(user);
+        connectingEvtData.ConnectingUser.LobbyId = connectionData.LobbyId;
+        lobby.LobbyData.AddUser(connectingEvtData.ConnectingUser);
 
-        Debug.Log($"<color=green><b>CNS</b></color>: User {user.UserId} joined lobby {lobby.LobbyData.LobbyId}.");
-        lobby.UserJoined(user);
+        var result = await connectionEventBus.Fire(new UserAddedToLobbyEvent
+        {
+            Lobby = lobby,
+            ConnectingUser = connectingEvtData.ConnectingUser,
+            ConnectionTime = connectingEvtData.ConnectionTime,
+            ResponsePacket = connectingEvtData.ResponsePacket
+        });
+        if (result.UserDenied)
+        {
+            connectingEvtData.ConnectingUser.LobbyId = -1;
+            lobby.LobbyData.RemoveUser(connectingEvtData.ConnectingUser);
+            transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.ResponsePacket), TransportMethod.Reliable);
+            return false;
+        }
+
+        Debug.Log($"<color=green><b>CNS</b></color>: User {connectingEvtData.ConnectingUser.UserId} joined lobby {lobby.LobbyData.LobbyId}.");
+        return true;
     }
 
     private async Task RemoveUserFromLobby(UserData user, ServerLobby lobby)
     {
         lobby.LobbyData.RemoveUser(user);
+
+        _ = await disconnectionEventBus.Fire(new UserRemovedFromLobbyEvent
+        {
+            Lobby = lobby,
+            DisconnectingUser = user
+        });
 
         Debug.Log($"<color=green><b>CNS</b></color>: User {user.UserId} left lobby {lobby.LobbyData.LobbyId}.");
     }
@@ -410,9 +425,7 @@ public class ServerManager : MonoBehaviour
         transportUtility.OnMultiConnected += HandleNetworkConnected;
         transportUtility.OnMultiDisconnected += HandleNetworkDisconnected;
         transportUtility.OnMultiReceived += HandleNetworkReceived;
-#if CNS_LOBBY_SINGLE
-        transportUtility.OnMultiReceivedUnconnected += HandleNetworkReceivedUnconnected;
-#endif
+        //transportUtility.OnMultiReceivedUnconnected += HandleNetworkReceivedUnconnected;
         transportUtility.OnMultiError += HandleNetworkError;
     }
 
@@ -421,9 +434,7 @@ public class ServerManager : MonoBehaviour
         transportUtility.OnMultiConnected -= HandleNetworkConnected;
         transportUtility.OnMultiDisconnected -= HandleNetworkDisconnected;
         transportUtility.OnMultiReceived -= HandleNetworkReceived;
-#if CNS_LOBBY_SINGLE
-        transportUtility.OnMultiReceivedUnconnected -= HandleNetworkReceivedUnconnected;
-#endif
+        //transportUtility.OnMultiReceivedUnconnected -= HandleNetworkReceivedUnconnected;
         transportUtility.OnMultiError -= HandleNetworkError;
     }
 
@@ -460,13 +471,18 @@ internal enum ConnectionCommandType
 {
     CONNECTION_REQUEST,
     CONNECTION_RESPONSE,
-#if CNS_SERVER_SINGLE || CNS_SYNC_HOST
-    CONNECTION_USER_GUID
-#endif
 }
 
 internal static class ConnectionPacketBuilder
 {
+    internal static NetPacket ConnectionRequest(ConnectionData connectionData)
+    {
+        NetPacket packet = new NetPacket();
+        packet.Write((byte)ConnectionCommandType.CONNECTION_REQUEST);
+        connectionData.Serialize(packet);
+        return packet;
+    }
+
     internal static NetPacket ConnectionResponse(bool accepted, NetPacket dataPkt = null)
     {
         NetPacket packet = new NetPacket();
@@ -477,57 +493,44 @@ internal static class ConnectionPacketBuilder
         return packet;
     }
 
-#if CNS_SERVER_SINGLE || CNS_SYNC_HOST
-    internal static NetPacket ConnectionUserGuid(Guid userGuid)
+    internal static NetPacket ConnectionData(Guid userGuid, int lobbyId, NetPacket packet)
     {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ConnectionCommandType.CONNECTION_USER_GUID);
-        packet.Write(userGuid.ToString());
+        packet.Insert(0, lobbyId.ToString());
+        packet.Insert(0, userGuid.ToString());
         return packet;
     }
-#endif
 }
 
 public class UserRegisteredEvent : ConnectionEvent { }
 
-public class UserRemovedEvent : ConnectionEvent { }
-
 public class ConnectionDataReceivedEvent : ConnectionEvent
 {
-    public ConnectionData ConnectionData { get; private set; }
-
-    internal ConnectionDataReceivedEvent(ConnectionData data)
-    {
-        ConnectionData = data;
-    }
+    public ConnectionData ConnectionData { get; internal set; }
 }
 
 public class LobbyNotFoundEvent : ConnectionEvent
 {
-    public int LobbyId { get; private set; }
-
-    internal LobbyNotFoundEvent(int lobbyId)
-    {
-        LobbyId = lobbyId;
-    }
+    public int LobbyId { get; internal set; }
 }
 
 public class LobbyRegisteredEvent : ConnectionEvent
 {
-    public ServerLobby Lobby { get; private set; }
-
-    internal LobbyRegisteredEvent(ServerLobby lobby)
-    {
-        Lobby = lobby;
-    }
+    public ServerLobby Lobby { get; internal set; }
 }
 
-public class LobbyRemovedEvent : ConnectionEvent
+public class UserAddedToLobbyEvent : ConnectionEvent
 {
-    public ServerLobby Lobby { get; private set; }
+    public ServerLobby Lobby { get; internal set; }
+}
 
-    internal LobbyRemovedEvent(ServerLobby lobby)
-    {
-        Lobby = lobby;
-    }
+public class UserRemovedEvent : DisconnectionEvent { }
+
+public class LobbyRemovedEvent : DisconnectionEvent
+{
+    public ServerLobby Lobby { get; internal set; }
+}
+
+public class UserRemovedFromLobbyEvent : DisconnectionEvent
+{
+    public ServerLobby Lobby { get; internal set; }
 }

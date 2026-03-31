@@ -19,9 +19,9 @@ public class ServerData
         connectingUsers[result.ConnectingUser.UserId] = result;
     }
 
-    internal void RemoveConnectingUser(ulong userId)
+    internal bool RemoveConnectingUser(ulong userId)
     {
-        connectingUsers.Remove(userId);
+        return connectingUsers.Remove(userId);
     }
 
     internal void AddConnectedUser(UserData user)
@@ -29,9 +29,9 @@ public class ServerData
         connectedUsers[user.UserId] = user;
     }
 
-    internal void RemoveConnectedUser(ulong userId)
+    internal bool RemoveConnectedUser(ulong userId)
     {
-        connectedUsers.Remove(userId);
+        return connectedUsers.Remove(userId);
     }
 
     internal void AddLobby(ServerLobby lobby)
@@ -39,8 +39,8 @@ public class ServerData
         activeLobbies[lobby.LobbyData.LobbyId] = lobby;
     }
 
-    internal void RemoveLobby(int lobbyId)
+    internal bool RemoveLobby(int lobbyId)
     {
-        activeLobbies.Remove(lobbyId);
+        return activeLobbies.Remove(lobbyId);
     }
 }
