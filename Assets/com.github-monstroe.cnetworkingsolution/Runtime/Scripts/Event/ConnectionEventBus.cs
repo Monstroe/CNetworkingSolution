@@ -21,7 +21,9 @@ public class ConnectionEventBus : EventBus<ConnectionEvent, ConnectionEventResul
     internal override async Task<ConnectionEventResult> HandleEvents(ConnectionEvent e, List<ConnectionEventHandler> handlers)
     {
         ConnectionEventResult finalResult = e.UserDenied ? ConnectionEventResult.Deny() : ConnectionEventResult.Allow();
-        finalResult.PayloadPacket = e.PayloadPacket;
+        finalResult.ConnectingUser = e.ConnectingUser;
+        finalResult.ConnectionTime = e.ConnectionTime;
+        finalResult.ResponsePacket = e.ResponsePacket;
 
         foreach (var handler in handlers)
         {
@@ -38,21 +40,25 @@ public class ConnectionEventBus : EventBus<ConnectionEvent, ConnectionEventResul
             }
         }
 
-        finalResult.PayloadPacket = e.PayloadPacket;
+        finalResult.ResponsePacket = e.ResponsePacket;
         return finalResult;
     }
 }
 
 public abstract class ConnectionEvent : NetEvent
 {
+    public UserData ConnectingUser { get; internal set; }
+    public DateTime ConnectionTime { get; internal set; }
     public bool UserDenied { get; internal set; } = false;
-    public NetPacket PayloadPacket { get; internal set; } = new NetPacket();
+    public NetPacket ResponsePacket { get; internal set; } = new NetPacket();
 }
 
 public class ConnectionEventResult : NetEventResult
 {
+    public UserData ConnectingUser { get; internal set; }
+    public DateTime ConnectionTime { get; internal set; }
     public bool UserDenied { get; }
-    public NetPacket PayloadPacket { get; internal set; }
+    public NetPacket ResponsePacket { get; internal set; }
 
     private ConnectionEventResult(bool denyUser)
     {

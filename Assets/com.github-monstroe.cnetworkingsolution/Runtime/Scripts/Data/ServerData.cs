@@ -1,19 +1,46 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 public class ServerData
 {
-    public Guid ServerId { get; set; }
-    public string SecretKey { get; set; }
-    public Dictionary<ulong, UserData> ConnectedUsers { get; private set; } = new Dictionary<ulong, UserData>();
-    public Dictionary<int, ServerLobby> ActiveLobbies { get; private set; } = new Dictionary<int, ServerLobby>();
+    public Guid ServerId { get; internal set; }
+    public string SecretKey { get; internal set; }
+    private readonly Dictionary<ulong, ConnectionEventResult> connectingUsers = new Dictionary<ulong, ConnectionEventResult>();
+    internal IReadOnlyDictionary<ulong, ConnectionEventResult> ConnectingUsers => connectingUsers;
+    private readonly Dictionary<ulong, UserData> connectedUsers = new Dictionary<ulong, UserData>();
+    public IReadOnlyDictionary<ulong, UserData> ConnectedUsers => connectedUsers;
+    private readonly Dictionary<int, ServerLobby> activeLobbies = new Dictionary<int, ServerLobby>();
+    public IReadOnlyDictionary<int, ServerLobby> ActiveLobbies => activeLobbies;
 
-#if CNS_LOBBY_SINGLE
-    public ServerLobby CurrentLobby { get => ActiveLobbies.Count == 1 ? ActiveLobbies.Values.First() : null; }
-#endif
+    internal ServerData() { }
 
-#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-    public TransportSettings Settings { get; set; } = new TransportSettings();
-#endif
+    internal void AddConnectingUser(ConnectionEventResult result)
+    {
+        connectingUsers[result.ConnectingUser.UserId] = result;
+    }
+
+    internal void RemoveConnectingUser(ulong userId)
+    {
+        connectingUsers.Remove(userId);
+    }
+
+    internal void AddConnectedUser(UserData user)
+    {
+        connectedUsers[user.UserId] = user;
+    }
+
+    internal void RemoveConnectedUser(ulong userId)
+    {
+        connectedUsers.Remove(userId);
+    }
+
+    internal void AddLobby(ServerLobby lobby)
+    {
+        activeLobbies[lobby.LobbyData.LobbyId] = lobby;
+    }
+
+    internal void RemoveLobby(int lobbyId)
+    {
+        activeLobbies.Remove(lobbyId);
+    }
 }

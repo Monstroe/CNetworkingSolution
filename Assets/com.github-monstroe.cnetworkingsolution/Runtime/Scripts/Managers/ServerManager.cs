@@ -19,8 +19,11 @@ public class ServerManager : MonoBehaviour
 
     [Header("General Settings")]
     [SerializeField] private int minLobbyId = 1000;
-    [SerializeField] private int maxLobbyId = 9999;
+    [SerializeField] private int maxLobbyId = 10000;
     [SerializeField] private bool spawnLobbiesOnStart = false;
+
+    [Header("Connection Settings")]
+    [SerializeField] private int maxSecondsBeforeUnverifiedUserRemoval = 30;
 
     [Header("Lobby Settings")]
     [SerializeField] private ServerLobby lobbyPrefab;
@@ -54,7 +57,7 @@ public class ServerManager : MonoBehaviour
     {
         if (spawnLobbiesOnStart)
         {
-            for (int i = minLobbyId; i <= maxLobbyId; i++)
+            for (int i = minLobbyId; i < maxLobbyId; i++)
             {
                 _ = await RegisterLobby(null, i);
             }
@@ -67,9 +70,10 @@ public class ServerManager : MonoBehaviour
     {
         try
         {
-            if (!ServerData.ConnectedUsers.ContainsKey(remoteId))
+            if (!ServerData.ConnectedUsers.ContainsKey(remoteId) && !ServerData.ConnectingUsers.ContainsKey(remoteId))
             {
                 await RegisterUser(remoteId);
+                Debug.Log($"<color=green><b>CNS</b></color>: Server registered new user {remoteId}.");
             }
             else
             {
@@ -118,7 +122,8 @@ public class ServerManager : MonoBehaviour
                 ConnectionCommandType commandType = (ConnectionCommandType)packet.ReadByte();
                 if (commandType == ConnectionCommandType.CONNECTION_REQUEST)
                 {
-                    ConnectionData connectionData = await GetConnectionData(remoteUser, packet);
+                    ConnectionEventResult connectionEvtResult = ServerData.ConnectingUsers[remoteUser.UserId];
+                    ConnectionData connectionData = await GetConnectionData(connectionEvtResult, packet);
                     if (connectionData == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Invalid connection data received from user {remoteId}.");
@@ -126,7 +131,7 @@ public class ServerManager : MonoBehaviour
                         return;
                     }
 
-                    ServerLobby newLobby = await GetLobbyData(remoteUser, connectionData);
+                    ServerLobby newLobby = await GetLobbyData(connectionEvtResult, connectionData);
                     if (newLobby == null)
                     {
                         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Lobby {connectionData.LobbyId} does not exist. User {remoteId} cannot join.");
@@ -181,6 +186,18 @@ public class ServerManager : MonoBehaviour
         Debug.LogError($"<color=red><b>CNS</b></color>: Network error occurred: {code} {(socketError.HasValue ? $"(Socket Error: {socketError.Value})" : "")}");
     }
 
+    void Update()
+    {
+        foreach (var (userId, connectionEvent) in ServerData.ConnectingUsers)
+        {
+            if (DateTime.UtcNow - connectionEvent.ConnectionTime > TimeSpan.FromSeconds(maxSecondsBeforeUnverifiedUserRemoval))
+            {
+                transportUtility.KickRemote(userId);
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {userId} took too long to send connection data and was removed.");
+            }
+        }
+    }
+
     void FixedUpdate()
     {
         Physics.simulationMode = SimulationMode.Script;
@@ -196,103 +213,69 @@ public class ServerManager : MonoBehaviour
         ClearTransportUtilityEvents();
     }
 
-    private async Task<ConnectionData> GetConnectionData(UserData connectingUser, NetPacket packet)
+    private async Task<ConnectionData> GetConnectionData(ConnectionEventResult connectingEvtData, NetPacket packet)
     {
         ConnectionData connectionData = new ConnectionData().Deserialize(packet);
         connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create ? GenerateLobbyId() : connectionData.LobbyId;
 
-        if (connectingUser != null)
+        connectingEvtData = await connectionEventBus.Fire(new ConnectionDataReceivedEvent(connectionData)
         {
-            var result = await connectionEventBus.Fire(new ConnectionDataReceivedEvent(connectingUser, connectionData));
-            if (result.UserDenied)
-            {
-                transportUtility.SendToRemote(connectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.PayloadPacket), TransportMethod.Reliable);
-                return null;
-            }
+            ConnectingUser = connectingEvtData.ConnectingUser,
+            ConnectionTime = connectingEvtData.ConnectionTime,
+            ResponsePacket = connectingEvtData.ResponsePacket
+        });
+        if (connectingEvtData.UserDenied)
+        {
+            transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
+            return null;
         }
 
         return connectionData;
     }
 
-    private async Task<ServerLobby> GetLobbyData(UserData connectingUser, ConnectionData connectionData)
+    private async Task<ServerLobby> GetLobbyData(ConnectionEventResult connectingEvtData, ConnectionData connectionData)
     {
         ServerLobby lobby = null;
 
         if (connectionData.LobbyId < minLobbyId || connectionData.LobbyId > maxLobbyId)
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {connectingUser.UserId} attempted to connect with invalid lobby ID {connectionData.LobbyId}.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {connectingEvtData.ConnectingUser.UserId} attempted to connect with invalid lobby ID {connectionData.LobbyId}.");
             return null;
         }
 
         if ((connectionData.LobbyConnectionType == LobbyConnectionType.Create || connectionData.LobbyConnectionType == LobbyConnectionType.JoinOrCreate) && !ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
         {
-            lobby = await RegisterLobby(connectingUser, connectionData.LobbyId);
-            return lobby;
-        }
-
-        if (connectionData.LobbyConnectionType != LobbyConnectionType.Create && ServerData.ActiveLobbies.TryGetValue(connectionData.LobbyId, out lobby))
-        {
-            return lobby;
-        }
-
-
-        if (connectionData.LobbyConnectionType == LobbyConnectionType.JoinIfExists)
-        {
-            // Lobby not found, deny connection
-            LobbyNotFoundEvent e = new LobbyNotFoundEvent(connectionData.LobbyId)
+            lobby = await RegisterLobby(connectionData.LobbyId);
+            connectingEvtData = await connectionEventBus.Fire(new LobbyRegisteredEvent(lobby)
             {
-                UserDenied = true
-            };
-            var result = await connectionEventBus.Fire(e);
-            transportUtility.SendToRemote(connectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.PayloadPacket), TransportMethod.Reliable);
-            return null;
-        }
-
-
-
-
-
-        if (connectionData.LobbyConnectionType == LobbyConnectionType.Create && !ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
-        {
-            lobby = await RegisterLobby(connectingUser, connectionData.LobbyId);
-        }
-        else if (connectionData.LobbyConnectionType == LobbyConnectionType.Join)
-        {
-
-
-#if CNS_LOBBY_SINGLE
-        if (!ServerData.ActiveLobbies.TryGetValue(connectionData.LobbyId, out lobby))
-        {
-            LobbyNotFoundEvent e = new LobbyNotFoundEvent(connectionData.LobbyId)
+                ConnectingUser = connectingEvtData.ConnectingUser,
+                ConnectionTime = connectingEvtData.ConnectionTime,
+                ResponsePacket = connectingEvtData.ResponsePacket
+            });
+            if (connectingEvtData.UserDenied)
             {
-                UserDenied = true
-            };
-            var result = await connectionEventBus.Fire(e);
-            transportUtility.SendToRemote(connectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.PayloadPacket), TransportMethod.Reliable);
-        }
-        else
-        {
-            lobby = await RegisterLobby(connectingUser, connectionData.LobbyId);
-        }
-#elif CNS_LOBBY_MULTIPLE
-            if (connectionData.LobbyConnectionType == LobbyConnectionType.Join && !ServerData.ActiveLobbies.TryGetValue(connectionData.LobbyId, out lobby))
-            {
-                LobbyNotFoundEvent e = new LobbyNotFoundEvent(connectionData.LobbyId)
-                {
-                    UserDenied = true
-                };
-                var result = await connectionEventBus.Fire(e);
-                transportUtility.SendToRemote(connectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.PayloadPacket), TransportMethod.Reliable);
+                transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
+                await RemoveLobby(lobby);
+                return null;
             }
-            else if (connectionData.LobbyConnectionType == LobbyConnectionType.Create)
+            Debug.Log($"<color=green><b>CNS</b></color>: Server registered new lobby {lobby.LobbyData.LobbyId}.");
+        }
+        else if (connectionData.LobbyConnectionType == LobbyConnectionType.JoinIfExists && !ServerData.ActiveLobbies.TryGetValue(connectionData.LobbyId, out lobby))
+        {
+            connectingEvtData = await connectionEventBus.Fire(new LobbyNotFoundEvent(connectionData.LobbyId)
             {
-                lobby = await RegisterLobby(connectingUser, connectionData.LobbyId);
-            }
-#endif
-            return lobby;
+                ConnectingUser = connectingEvtData.ConnectingUser,
+                ConnectionTime = connectingEvtData.ConnectionTime,
+                UserDenied = true,
+                ResponsePacket = connectingEvtData.ResponsePacket
+            });
+            transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
         }
 
-    private async Task<UserData> RegisterUser(ulong userId)
+        return lobby;
+    }
+
+    private async Task RegisterUser(ulong userId)
     {
         UserData user = new UserData()
         {
@@ -300,20 +283,19 @@ public class ServerManager : MonoBehaviour
             LobbyId = -1,
             UserId = userId
         };
-        ServerData.ConnectedUsers[user.UserId] = user;
 
-        // TODO: Handle user cleanup if they don't send ConnectionData
-
-        var result = await connectionEventBus.Fire(new UserRegisteredEvent(user));
+        var result = await connectionEventBus.Fire(new UserRegisteredEvent
+        {
+            ConnectingUser = user,
+            ConnectionTime = DateTime.UtcNow
+        });
         if (result.UserDenied)
         {
-            transportUtility.SendToRemote(user.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.PayloadPacket), TransportMethod.Reliable);
+            transportUtility.SendToRemote(user.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.ResponsePacket), TransportMethod.Reliable);
             transportUtility.KickRemote(user.UserId);
-            return null;
         }
 
-        Debug.Log($"<color=green><b>CNS</b></color>: Server registered new user {user.UserId}.");
-        return user;
+        ServerData.AddConnectingUser(result);
     }
 
     private async Task RemoveUser(UserData user)
@@ -346,7 +328,7 @@ public class ServerManager : MonoBehaviour
         Debug.Log($"<color=green><b>CNS</b></color>: Server removed user {user.UserId}.");
     }
 
-    private async Task<ServerLobby> RegisterLobby(UserData connectingUser, int lobbyId)
+    private async Task<ServerLobby> RegisterLobby(int lobbyId)
     {
         Scene lobbyScene = SceneManager.CreateScene($"Lobby_{lobbyId}_Scene", new CreateSceneParameters(LocalPhysicsMode.Physics3D));
         Scene previousScene = SceneManager.GetActiveScene();
@@ -355,21 +337,8 @@ public class ServerManager : MonoBehaviour
         lobby.name = $"Lobby_{lobbyId}";
         lobby.Init(transportUtility, lobbyScene);
         lobby.LobbyData.LobbyId = lobbyId;
-        ServerData.ActiveLobbies.Add(lobby.LobbyData.LobbyId, lobby);
+        ServerData.AddLobby(lobby);
         SceneManager.SetActiveScene(previousScene);
-
-        if (connectingUser != null)
-        {
-            var result = await connectionEventBus.Fire(new LobbyRegisteredEvent(lobby));
-            if (result.UserDenied)
-            {
-                transportUtility.SendToRemote(connectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.PayloadPacket), TransportMethod.Reliable);
-                await RemoveLobby(lobby);
-                return null;
-            }
-        }
-
-        Debug.Log($"<color=green><b>CNS</b></color>: Server registered new lobby {lobby.LobbyData.LobbyId}.");
         return lobby;
     }
 
@@ -519,34 +488,16 @@ internal static class ConnectionPacketBuilder
 #endif
 }
 
-public class UserRegisteredEvent : ConnectionEvent
-{
-    public UserData User { get; private set; }
+public class UserRegisteredEvent : ConnectionEvent { }
 
-    internal UserRegisteredEvent(UserData user)
-    {
-        User = user;
-    }
-}
-
-public class UserRemovedEvent : ConnectionEvent
-{
-    public UserData User { get; private set; }
-
-    internal UserRemovedEvent(UserData user)
-    {
-        User = user;
-    }
-}
+public class UserRemovedEvent : ConnectionEvent { }
 
 public class ConnectionDataReceivedEvent : ConnectionEvent
 {
-    public UserData ConnectingUser { get; private set; }
     public ConnectionData ConnectionData { get; private set; }
 
-    internal ConnectionDataReceivedEvent(UserData user, ConnectionData data)
+    internal ConnectionDataReceivedEvent(ConnectionData data)
     {
-        ConnectingUser = user;
         ConnectionData = data;
     }
 }
