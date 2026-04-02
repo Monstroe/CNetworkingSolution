@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 public class ServerServiceUtility
 {
-    private Dictionary<ulong, ServerService> services = new Dictionary<ulong, ServerService>();
-    private Dictionary<Type, ulong> serviceTypeCache = new Dictionary<Type, ulong>();
-    private SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
+    private readonly Dictionary<ulong, ServerService> services = new Dictionary<ulong, ServerService>();
+    private readonly SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
+    private readonly ServiceBus serviceBus = new ServiceBus();
 
     public void UserJoined(UserData user)
     {
@@ -51,15 +51,12 @@ public class ServerServiceUtility
         }
     }
 
-    public bool RegisterService<T>(T service) where T : ServerService
+    public bool RegisterService<T>(T service, out ulong serviceId) where T : ServerService
     {
-        ulong serviceId = service.ServiceId;
         int executionOrder = service.ExecutionOrder;
-        if (!services.ContainsKey(serviceId))
+        if (serviceBus.RegisterService(service.GetType(), out serviceId) && !services.ContainsKey(serviceId))
         {
             services[serviceId] = service;
-            serviceTypeCache[service.GetType()] = serviceId;
-
             if (!serviceOrderCache.TryGetValue(executionOrder, out List<ServerService> list))
             {
                 list = new List<ServerService>();
@@ -73,10 +70,9 @@ public class ServerServiceUtility
 
     public bool UnregisterService(ulong serviceId)
     {
-        if (services.TryGetValue(serviceId, out ServerService service))
+        if (services.TryGetValue(serviceId, out ServerService service) && serviceBus.UnregisterService(service.GetType()))
         {
             services.Remove(serviceId);
-            serviceTypeCache.Remove(service.GetType());
             List<ServerService> executionList = serviceOrderCache[service.ExecutionOrder];
             executionList.Remove(service);
             if (executionList.Count == 0)
@@ -90,7 +86,7 @@ public class ServerServiceUtility
 
     public T GetService<T>(out ulong serviceId) where T : ServerService
     {
-        if (serviceTypeCache.TryGetValue(typeof(T), out serviceId) && services.TryGetValue(serviceId, out ServerService service))
+        if (serviceBus.TryGetServiceId<T>(out serviceId) && services.TryGetValue(serviceId, out ServerService service))
         {
             return (T)service;
         }

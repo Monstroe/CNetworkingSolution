@@ -3,16 +3,14 @@ using System.Collections.Generic;
 
 public class ClientServiceUtility
 {
-    private Dictionary<ulong, ClientService> services = new Dictionary<ulong, ClientService>();
-    private Dictionary<Type, ulong> serviceTypeCache = new Dictionary<Type, ulong>();
+    private readonly Dictionary<ulong, ClientService> services = new Dictionary<ulong, ClientService>();
+    private readonly ServiceBus serviceBus = new ServiceBus();
 
-    public bool RegisterService<T>(T service) where T : ClientService
+    public bool RegisterService<T>(T service, out ulong serviceId) where T : ClientService
     {
-        ulong serviceId = service.ServiceId;
-        if (!services.ContainsKey(serviceId))
+        if (serviceBus.RegisterService(service.GetType(), out serviceId) && !services.ContainsKey(serviceId))
         {
             services[serviceId] = service;
-            serviceTypeCache[service.GetType()] = serviceId;
             return true;
         }
         return false;
@@ -20,10 +18,9 @@ public class ClientServiceUtility
 
     public bool UnregisterService(ulong serviceId)
     {
-        if (services.TryGetValue(serviceId, out ClientService service))
+        if (services.TryGetValue(serviceId, out ClientService service) && serviceBus.UnregisterService(service.GetType()))
         {
             services.Remove(serviceId);
-            serviceTypeCache.Remove(service.GetType());
             return true;
         }
         return false;
@@ -31,7 +28,7 @@ public class ClientServiceUtility
 
     public T GetService<T>(out ulong serviceId) where T : ClientService
     {
-        if (serviceTypeCache.TryGetValue(typeof(T), out serviceId) && services.TryGetValue(serviceId, out ClientService service))
+        if (serviceBus.TryGetServiceId<T>(out serviceId) && services.TryGetValue(serviceId, out ClientService service))
         {
             return (T)service;
         }

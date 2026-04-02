@@ -96,9 +96,9 @@ public class ClientLobby : MonoBehaviour
         transportUtility.DisconnectTransports();
     }
 
-    public bool RegisterService<T>(T service) where T : ClientService
+    public bool RegisterService<T>(T service, out ulong serviceId) where T : ClientService
     {
-        return services.RegisterService(service);
+        return services.RegisterService(service, out serviceId);
     }
 
     public bool UnregisterService(ClientService service)
@@ -120,9 +120,9 @@ public class ClientLobby : MonoBehaviour
         }
     }
 
-    public bool RegisterUnconnectedService<T>(T service) where T : ClientService
+    public bool RegisterUnconnectedService<T>(T service, out ulong serviceId) where T : ClientService
     {
-        return unconnectedServices.RegisterService(service);
+        return unconnectedServices.RegisterService(service, out serviceId);
     }
 
     public bool UnregisterUnconnectedService(ClientService service)

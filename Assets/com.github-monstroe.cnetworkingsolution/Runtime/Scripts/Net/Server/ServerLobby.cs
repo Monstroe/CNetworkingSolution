@@ -97,6 +97,15 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
+    internal void SendToUsers(List<UserData> users, ulong serviceId, NetPacket packet, TransportMethod method)
+    {
+        if (packet != null)
+        {
+            packet.Insert(0, serviceId);
+            transportUtility.SendToRemotes(users.ConvertAll(user => user.UserId), packet, method);
+        }
+    }
+
     public void SendToGame<T>(NetPacket packet, TransportMethod method, UserData exception = null) where T : ClientService
     {
         if (packet != null)
@@ -155,9 +164,9 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
-    public bool RegisterService<T>(T service) where T : ServerService
+    public bool RegisterService<T>(T service, out ulong serviceId) where T : ServerService
     {
-        return services.RegisterService(service);
+        return services.RegisterService(service, out serviceId);
     }
 
     public bool UnregisterService(ServerService service)
@@ -179,9 +188,9 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
-    public bool RegisterUnconnectedService<T>(T service) where T : ServerService
+    public bool RegisterUnconnectedService<T>(T service, out ulong serviceId) where T : ServerService
     {
-        return unconnectedServices.RegisterService(service);
+        return unconnectedServices.RegisterService(service, out serviceId);
     }
 
     public bool UnregisterUnconnectedService(ServerService service)

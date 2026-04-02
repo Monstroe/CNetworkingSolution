@@ -1,4 +1,4 @@
-using System.Net;
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,8 +9,6 @@ public abstract class ServerService : ServerBehaviour
 
     [SerializeField, HideInInspector]
     private ulong serviceId;
-    [SerializeField, HideInInspector]
-    private string serviceType;
 
     [Header("Server Service Settings")]
     [SerializeField] protected int executionOrder = 0;
@@ -18,13 +16,13 @@ public abstract class ServerService : ServerBehaviour
     public override void Init(ServerLobby lobby)
     {
         base.Init(lobby);
-        if (lobby.RegisterService(this))
+        if (lobby.RegisterService(this, out serviceId))
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: ServerService {serviceType} registered.");
+            Debug.Log($"<color=green><b>CNS</b></color>: ServerService {GetType().Name} registered.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} is already registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {GetType().Name} is already registered.");
         }
     }
 
@@ -32,11 +30,11 @@ public abstract class ServerService : ServerBehaviour
     {
         if (lobby.UnregisterService(this))
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: ServerService {serviceType} unregistered.");
+            Debug.Log($"<color=green><b>CNS</b></color>: ServerService {GetType().Name} unregistered.");
         }
         else
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} was not registered.");
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {GetType().Name} was not registered.");
         }
         base.Remove();
     }
@@ -46,24 +44,13 @@ public abstract class ServerService : ServerBehaviour
     {
         if (Application.isPlaying)
             return;
-
-        string type = GetType().FullName;
-        if (!string.IsNullOrEmpty(type) && serviceType != type)
-        {
-            ResetServiceId(type);
-        }
+        ResetServiceId(GetType());
     }
 
-    public void ResetServiceId(string type)
+    internal void ResetServiceId(Type type)
     {
-        if (string.IsNullOrEmpty(type))
-        {
-            type = GetType().FullName;
-        }
-
-        serviceType = type;
         EditorUtility.SetDirty(this);
-        serviceId = NetResources.GenerateHashKey(type);
+        serviceId = ServiceBus.GetServiceId(type);
     }
 #endif
 }

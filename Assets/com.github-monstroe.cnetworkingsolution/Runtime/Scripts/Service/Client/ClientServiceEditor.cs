@@ -20,8 +20,7 @@ public class ClientServiceEditor : Editor
 
         if (GUILayout.Button("Get Service Type"))
         {
-            string type = obj.GetType().FullName;
-            obj.ResetServiceId(type);
+            obj.ResetServiceId(obj.GetType());
         }
 
         EditorGUILayout.LabelField("Service Id", obj.ServiceId.ToString());
