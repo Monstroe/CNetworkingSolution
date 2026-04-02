@@ -12,7 +12,7 @@ public class GameClientService : ClientService
     public delegate void GameUserJoinedEventHandler(UserData user);
     public event GameUserJoinedEventHandler OnGameUserJoined;
 
-    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -40,7 +40,7 @@ public class GameClientService : ClientService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }
@@ -50,7 +50,7 @@ public class GameClientService : ClientService
     public static NetPacket GameStart()
     {
         NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<GameServerService>());
+        packet.Write(NetResources.GenerateServerServiceId<GameServerService>());
         packet.Write((byte)GameServerService.GameCommandType.GAME_START);
         return packet;
     }
@@ -58,7 +58,7 @@ public class GameClientService : ClientService
     public static NetPacket GameUserJoined(UserData user)
     {
         NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<GameServerService>());
+        packet.Write(NetResources.GenerateServerServiceId<GameServerService>());
         packet.Write((byte)GameServerService.GameCommandType.GAME_USER_JOINED);
         packet.Write(user.PlayerId);
         return packet;

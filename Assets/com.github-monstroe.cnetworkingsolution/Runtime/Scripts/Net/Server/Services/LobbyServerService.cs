@@ -15,30 +15,10 @@ public class LobbyServerService : ServerService
         base.Init(lobby);
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
-#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
-            /*case CommandType.LOBBY_SETTINGS:
-                {
-                    if (!user.IsHost(lobby.LobbyData))
-                    {
-                        Debug.LogWarning($"User {user.UserId} tried to set lobby settings, but only the host can change lobby settings.");
-                        return;
-                    }
-
-                    LobbySettings lobbySettings = new LobbySettings().Deserialize(packet);
-                    lobby.LobbyData.Settings = lobbySettings;
-                    lobby.SendToLobby(PacketBuilder.LobbySettings(lobbySettings, true), TransportMethod.Reliable);
-#if CNS_SERVER_MULTIPLE && CNS_SYNC_DEDICATED
-                    if (NetResources.Instance.NetMode != NetMode.Local)
-                    {
-                        ServerManager.Instance.Database.UpdateLobbyMetadataAsync(lobby.LobbyData);
-                    }
-#endif
-                    break;
-                }*/
             case CommandType.LOBBY_USER_KICK:
                 {
                     if (!user.IsHost(lobby.LobbyData))
@@ -85,7 +65,7 @@ public class LobbyServerService : ServerService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }
@@ -98,9 +78,9 @@ public class LobbyServerService : ServerService
     public override void UserJoined(UserData joinedUser)
     {
         //lobby.SendToUser(joinedUser, PacketBuilder.LobbySettings(lobby.LobbyData.Settings, false), TransportMethod.Reliable);
-        lobby.SendToUser(joinedUser, LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
-        lobby.SendToUser(joinedUser, LobbyTick(lobby.ServerTick, true), TransportMethod.Reliable);
-        lobby.SendToLobby(LobbyUserJoined(joinedUser), TransportMethod.Reliable, joinedUser);
+        lobby.SendToUser(joinedUser, LobbyPacketBuilder.LobbyUsersList(lobby.LobbyData.LobbyUsers), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, LobbyPacketBuilder.LobbyTick(lobby.ServerTick, true), TransportMethod.Reliable);
+        lobby.SendToLobby(LobbyPacketBuilder.LobbyUserJoined(joinedUser), TransportMethod.Reliable, joinedUser);
     }
 
     public override void UserJoinedGame(UserData joinedUser)
@@ -110,74 +90,6 @@ public class LobbyServerService : ServerService
 
     public override void UserLeft(UserData leftUser)
     {
-        lobby.SendToLobby(LobbyUserLeft(leftUser), TransportMethod.Reliable, leftUser);
-    }
-
-    /* PACKETS */
-
-    public enum LobbyCommandType
-    {
-        LOBBY_SETTINGS,
-        LOBBY_USER_SETTINGS,
-        LOBBY_USERS_LIST,
-        LOBBY_USER_JOINED,
-        LOBBY_USER_LEFT,
-#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
-        LOBBY_USER_KICK,
-#endif
-        LOBBY_TICK
-    }
-
-    public static NetPacket LobbyUsersList(List<UserData> users)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<LobbyClientService>());
-        packet.Write((byte)LobbyCommandType.LOBBY_USERS_LIST);
-        packet.Write((byte)users.Count);
-        foreach (UserData user in users)
-        {
-            user.Serialize(packet);
-        }
-        return packet;
-    }
-
-    public static NetPacket LobbyUserJoined(UserData user)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<LobbyClientService>());
-        packet.Write((byte)LobbyCommandType.LOBBY_USER_JOINED);
-        user.Serialize(packet);
-        return packet;
-    }
-
-    public static NetPacket LobbyUserLeft(UserData user)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<LobbyClientService>());
-        packet.Write((byte)LobbyCommandType.LOBBY_USER_LEFT);
-        packet.Write(user.UserId);
-        return packet;
-    }
-
-#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
-    public static NetPacket LobbyUserKick(UserData user, string reason)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<LobbyClientService>());
-        packet.Write((byte)LobbyCommandType.LOBBY_USER_KICK);
-        packet.Write(user.UserId);
-        packet.Write(reason);
-        return packet;
-    }
-#endif
-
-    public static NetPacket LobbyTick(ulong tick, bool invokeEvent = false)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<LobbyClientService>());
-        packet.Write((byte)LobbyCommandType.LOBBY_TICK);
-        packet.Write(tick);
-        packet.Write(invokeEvent);
-        return packet;
+        lobby.SendToLobby(LobbyPacketBuilder.LobbyUserLeft(leftUser), TransportMethod.Reliable, leftUser);
     }
 }

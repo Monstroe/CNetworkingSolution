@@ -24,6 +24,19 @@ public abstract class ClientService : ClientBehaviour
         }
     }
 
+    public override void Remove()
+    {
+        if (lobby.UnregisterService(this))
+        {
+            Debug.Log($"<color=green><b>CNS</b></color>: ClientService {serviceType} unregistered.");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {serviceType} was not registered.");
+        }
+        base.Remove();
+    }
+
 #if UNITY_EDITOR
     void OnValidate()
     {
@@ -49,7 +62,4 @@ public abstract class ClientService : ClientBehaviour
         serviceId = NetResources.GenerateHashKey(type);
     }
 #endif
-
-    public abstract void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod);
-    public abstract void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType);
 }

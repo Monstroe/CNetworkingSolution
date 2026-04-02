@@ -56,7 +56,7 @@ public abstract class ClientTransform : ClientObject
         ReceiveTransform(receivedPosition, receivedRotation);
     }
 
-    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(packet, commandType, transportMethod);
         switch (commandType)

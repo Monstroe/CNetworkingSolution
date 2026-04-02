@@ -4,15 +4,17 @@ using UnityEngine;
 
 public class ClientLobby : MonoBehaviour
 {
-    public LobbyData LobbyData { get; set; } = new LobbyData();
-    public UserData CurrentUser { get; set; } = new UserData();
-    public ulong ClientTick { get; set; } = 0;
+    public LobbyData LobbyData { get; internal set; } = new LobbyData();
+    public UserData CurrentUser { get; internal set; } = new UserData();
+    public ulong ClientTick { get; internal set; } = 0;
 
     private ITransportUtility transportUtility;
     private readonly ClientServiceUtility services = new ClientServiceUtility();
     private readonly ClientServiceUtility unconnectedServices = new ClientServiceUtility();
 
-    public void Init(ITransportUtility transport)
+    internal RpcBus RpcBus { get; } = new RpcBus();
+
+    internal void Init(ITransportUtility transport)
     {
         transportUtility = transport;
 
@@ -22,23 +24,53 @@ public class ClientLobby : MonoBehaviour
         }
     }
 
-    void FixedUpdate()
+    internal void ReceiveData(NetPacket packet, TransportMethod? transportMethod)
+    {
+        ulong serviceId = packet.ReadULong();
+        ushort commandType = packet.ReadUShort();
+        if (services.GetService(serviceId, out ClientService service))
+        {
+            service.ReceiveData(packet, commandType, transportMethod);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for id {serviceId}.");
+        }
+    }
+
+    internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    {
+        ulong serviceId = packet.ReadULong();
+        ushort commandType = packet.ReadUShort();
+        if (unconnectedServices.GetService(serviceId, out ClientService unconnectedService))
+        {
+            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for id {serviceId}.");
+        }
+    }
+
+    internal void Tick()
     {
         ClientTick++;
     }
 
-    public void SendToServer(NetPacket packet, TransportMethod method)
+    public void SendToServer<T>(NetPacket packet, TransportMethod method) where T : ServerService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateServerServiceId<T>());
             transportUtility.SendToAllRemotes(packet, method);
         }
     }
 
-    public void SendToUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
+    public void SendToUnconnected<T>(IPEndPoint iPEndPoint, NetPacket packet) where T : ServerService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateServerServiceId<T>());
             transportUtility.SendToUnconnectedRemote(iPEndPoint, packet);
         }
     }
@@ -64,57 +96,14 @@ public class ClientLobby : MonoBehaviour
         transportUtility.DisconnectTransports();
     }
 
-#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
-    public void KickUser(UserData user, string reason)
-    {
-        if (user.UserId == CurrentUser.UserId)
-        {
-            Debug.LogWarning("You cannot kick yourself from the lobby.");
-            return;
-        }
-
-        SendToServer(LobbyClientService.LobbyUserKick(user, reason), TransportMethod.Reliable);
-    }
-#endif
-
-    public void ReceiveData(NetPacket packet, TransportMethod? transportMethod)
-    {
-        uint serviceId = packet.ReadUInt();
-        CommandType commandType = (CommandType)packet.ReadByte();
-
-        if (services.GetService(serviceId, out ClientService service))
-        {
-            service.ReceiveData(packet, commandType, transportMethod);
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for id {serviceId}. Command {commandType} will not be processed.");
-        }
-    }
-
-    public void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
-    {
-        uint serviceId = packet.ReadUInt();
-        CommandType commandType = (CommandType)packet.ReadByte();
-
-        if (unconnectedServices.GetService(serviceId, out ClientService unconnectedService))
-        {
-            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for id {serviceId}. Command {commandType} will not be processed.");
-        }
-    }
-
     public bool RegisterService<T>(T service) where T : ClientService
     {
         return services.RegisterService(service);
     }
 
-    public bool UnregisterService<T>() where T : ClientService
+    public bool UnregisterService(ClientService service)
     {
-        return services.UnregisterService<T>(out _);
+        return services.UnregisterService(service.ServiceId);
     }
 
     public T GetService<T>() where T : ClientService
@@ -136,9 +125,9 @@ public class ClientLobby : MonoBehaviour
         return unconnectedServices.RegisterService(service);
     }
 
-    public bool UnregisterUnconnectedService<T>() where T : ClientService
+    public bool UnregisterUnconnectedService(ClientService service)
     {
-        return unconnectedServices.UnregisterService<T>(out _);
+        return unconnectedServices.UnregisterService(service.ServiceId);
     }
 
     public T GetUnconnectedService<T>() where T : ClientService
@@ -153,5 +142,15 @@ public class ClientLobby : MonoBehaviour
             Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService with id {serviceId} not found.");
             return null;
         }
+    }
+
+    public void RegisterRpcContainer(INetRpc rpcContainer)
+    {
+        RpcBus.RegisterRpcContainer(rpcContainer);
+    }
+
+    public void UnregisterRpcContainer(INetRpc rpcContainer)
+    {
+        RpcBus.UnregisterRpcContainer(rpcContainer);
     }
 }

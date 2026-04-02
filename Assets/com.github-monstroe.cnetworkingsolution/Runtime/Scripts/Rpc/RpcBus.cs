@@ -11,11 +11,11 @@ public class RpcBus
         public RpcAttribute Attribute;
     }
 
-    private readonly Dictionary<object, Dictionary<ulong, RpcMethodInfo>> instanceRpcMethodMap = new Dictionary<object, Dictionary<ulong, RpcMethodInfo>>();
+    private readonly Dictionary<INetRpc, Dictionary<ulong, RpcMethodInfo>> instanceRpcMethodMap = new Dictionary<INetRpc, Dictionary<ulong, RpcMethodInfo>>();
     private readonly Dictionary<Type, Dictionary<string, RpcMethodInfo>> rpcMethodByTypeAndSignature = new Dictionary<Type, Dictionary<string, RpcMethodInfo>>();
     private readonly Dictionary<Type, List<RpcMethodInfo>> rpcMethodCache = new Dictionary<Type, List<RpcMethodInfo>>();
 
-    public void RegisterRpcContainer(object instance)
+    public void RegisterRpcContainer(INetRpc instance)
     {
         var type = instance.GetType();
 
@@ -73,12 +73,12 @@ public class RpcBus
         instanceRpcMethodMap[instance] = methodMap;
     }
 
-    public void UnregisterRpcContainer(object instance)
+    public void UnregisterRpcContainer(INetRpc instance)
     {
         instanceRpcMethodMap.Remove(instance);
     }
 
-    public bool TryGetRpcMethodByInstanceAndId(object instance, ulong methodId, out MethodInfo method)
+    public bool TryGetRpcMethodByInstanceAndId(INetRpc instance, ulong methodId, out MethodInfo method)
     {
         var rpcMethodInfo = instanceRpcMethodMap.TryGetValue(instance, out var methods) && methods.TryGetValue(methodId, out var info) ? info : null;
         method = rpcMethodInfo?.Method;

@@ -48,8 +48,7 @@ public class LocalTransport : NetTransport
         }
     }
 
-#nullable enable
-    protected override bool StartClient(TransportSettings? transportSettings = null)
+    protected override bool StartClient()
     {
         if (initialized)
         {
@@ -72,7 +71,7 @@ public class LocalTransport : NetTransport
         return true;
     }
 
-    protected override bool StartServer(TransportSettings? transportSettings = null)
+    protected override bool StartServer()
     {
         if (initialized)
         {
@@ -94,7 +93,6 @@ public class LocalTransport : NetTransport
         }
         return true;
     }
-#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod method)
     {

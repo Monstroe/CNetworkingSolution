@@ -18,9 +18,8 @@ public interface ITransportUtility
     public void BroadcastToUnconnectedRemotes(NetPacket packet);
 
     public void KickRemote(ulong remoteId);
-#nullable enable
-    public void RegisterTransport(TransportType transportType, NetDeviceType deviceType, TransportSettings? transportSettings = null);
-#nullable disable
+    public void StartTransports();
+    public void RegisterTransport<T>(NetDeviceType deviceType) where T : NetTransport;
     public void AddTransport(NetTransport transport);
     public void DisconnectTransports();
     public void RemoveTransport(NetTransport transport);

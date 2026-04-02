@@ -28,6 +28,19 @@ public abstract class ServerService : ServerBehaviour
         }
     }
 
+    public override void Remove()
+    {
+        if (lobby.UnregisterService(this))
+        {
+            Debug.Log($"<color=green><b>CNS</b></color>: ServerService {serviceType} unregistered.");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {serviceType} was not registered.");
+        }
+        base.Remove();
+    }
+
 #if UNITY_EDITOR
     void OnValidate()
     {
@@ -53,11 +66,4 @@ public abstract class ServerService : ServerBehaviour
         serviceId = NetResources.GenerateHashKey(type);
     }
 #endif
-
-    public abstract void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod);
-    public abstract void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType);
-    public abstract void Tick();
-    public abstract void UserJoined(UserData joinedUser);
-    public abstract void UserJoinedGame(UserData joinedUser);
-    public abstract void UserLeft(UserData leftUser);
 }

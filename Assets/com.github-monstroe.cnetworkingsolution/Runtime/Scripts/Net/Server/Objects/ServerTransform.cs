@@ -30,7 +30,7 @@ public class ServerTransform : ServerObject
         lobby.GetService<ObjectServerService>().ServerTransforms.Remove(Id);
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(user, packet, commandType, transportMethod);
         switch (commandType)

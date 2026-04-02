@@ -89,17 +89,21 @@ public class MultiTransportUtility : MonoBehaviour, ITransportUtility
         }
     }
 
-#nullable enable
-    public void RegisterTransport(TransportType transportType, NetDeviceType deviceType, TransportSettings? transportSettings = null)
+    public void StartTransports()
     {
-        NetTransport transport = Instantiate(NetResources.Instance.TransportPrefabs[transportType], this.transform).GetComponent<NetTransport>();
-        transport.TransportData.TransportType = transportType;
+        foreach (NetTransport transport in Transports)
+        {
+            transport.StartDevice();
+        }
+    }
+
+    public void RegisterTransport<T>(NetDeviceType deviceType) where T : NetTransport
+    {
+        NetTransport transport = Instantiate(NetResources.Instance.TransportPrefabs[typeof(T)], this.transform).GetComponent<NetTransport>();
         Transports.Add(transport);
         AddTransportEvents(transport);
         transport.Initialize(deviceType);
-        transport.StartDevice(transportSettings);
     }
-#nullable disable
 
     public void AddTransport(NetTransport transport)
     {

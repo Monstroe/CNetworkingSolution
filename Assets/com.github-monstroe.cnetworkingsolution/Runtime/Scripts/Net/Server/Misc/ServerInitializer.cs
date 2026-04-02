@@ -6,10 +6,10 @@ public class ServerInitializer : MonoBehaviour
     void Start()
     {
 #if CNS_TRANSPORT_CNET
-        ServerManager.Instance.RegisterTransport(TransportType.CNet);
+        ServerManager.Instance.RegisterTransport<CNetTransport>();
 #endif
 #if CNS_TRANSPORT_LITENETLIB
-        ServerManager.Instance.RegisterTransport(TransportType.LiteNetLib);
+        ServerManager.Instance.RegisterTransport<LiteNetLibTransport>();
 #endif
     }
 }

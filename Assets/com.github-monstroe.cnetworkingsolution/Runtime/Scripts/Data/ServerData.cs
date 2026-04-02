@@ -5,8 +5,8 @@ public class ServerData
 {
     public Guid ServerId { get; internal set; }
     public string SecretKey { get; internal set; }
-    private readonly Dictionary<ulong, ConnectionEventResult> connectingUsers = new Dictionary<ulong, ConnectionEventResult>();
-    internal IReadOnlyDictionary<ulong, ConnectionEventResult> ConnectingUsers => connectingUsers;
+    private readonly Dictionary<ulong, ConnectionRequestedEventResult> connectingUsers = new Dictionary<ulong, ConnectionRequestedEventResult>();
+    internal IReadOnlyDictionary<ulong, ConnectionRequestedEventResult> ConnectingUsers => connectingUsers;
     private readonly Dictionary<ulong, UserData> connectedUsers = new Dictionary<ulong, UserData>();
     public IReadOnlyDictionary<ulong, UserData> ConnectedUsers => connectedUsers;
     private readonly Dictionary<int, ServerLobby> activeLobbies = new Dictionary<int, ServerLobby>();
@@ -14,7 +14,7 @@ public class ServerData
 
     internal ServerData() { }
 
-    internal void AddConnectingUser(ConnectionEventResult result)
+    internal void AddConnectingUser(ConnectionRequestedEventResult result)
     {
         connectingUsers[result.ConnectingUser.UserId] = result;
     }

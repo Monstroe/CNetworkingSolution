@@ -14,7 +14,7 @@ public class GameServerService : ServerService
         base.Init(lobby);
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -41,7 +41,7 @@ public class GameServerService : ServerService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }
@@ -58,27 +58,11 @@ public class GameServerService : ServerService
 
     public override void UserJoinedGame(UserData joinedUser)
     {
-        lobby.SendToLobby(GameUserJoined(joinedUser), TransportMethod.Reliable);
+        lobby.SendToLobby(GamePacketBuilder.GameUserJoined(joinedUser), TransportMethod.Reliable);
     }
 
     public override void UserLeft(UserData leftUser)
     {
         // Nothing
-    }
-
-    /* PACKETS */
-
-    public enum GameCommandType
-    {
-        GAME_USER_JOINED
-    }
-
-    public static NetPacket GameUserJoined(UserData user)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<GameClientService>());
-        packet.Write((byte)GameCommandType.GAME_USER_JOINED);
-        packet.Write(user.PlayerId);
-        return packet;
     }
 }

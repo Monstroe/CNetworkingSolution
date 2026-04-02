@@ -6,17 +6,15 @@ using LiteNetLib;
 
 public class LiteNetLibBroadcastTransport : LiteNetLibTransport
 {
-#nullable enable
-    protected override bool StartClient(TransportSettings? transportSettings = null)
+    protected override bool StartClient()
     {
-        return StartServer(transportSettings);
+        return StartServer();
     }
 
-    protected override bool StartServer(TransportSettings? transportSettings = null)
+    protected override bool StartServer()
     {
-        return base.StartServer(transportSettings);
+        return base.StartServer();
     }
-#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {

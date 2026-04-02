@@ -71,9 +71,8 @@ public class ServerServiceUtility
         return false;
     }
 
-    public bool UnregisterService<T>(out ulong serviceId) where T : ServerService
+    public bool UnregisterService(ulong serviceId)
     {
-        serviceId = serviceTypeCache[typeof(T)];
         if (services.TryGetValue(serviceId, out ServerService service))
         {
             services.Remove(serviceId);

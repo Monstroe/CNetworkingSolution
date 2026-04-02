@@ -91,7 +91,7 @@ public class ClientPlayer : ClientEntity
         base.Remove();
     }
 
-    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(packet, commandType, transportMethod);
         switch (commandType)

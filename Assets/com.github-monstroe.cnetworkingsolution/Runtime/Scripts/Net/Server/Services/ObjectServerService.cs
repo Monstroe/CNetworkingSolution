@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using UnityEngine;
 
 public class ObjectServerService : ServerService
@@ -16,8 +15,6 @@ public class ObjectServerService : ServerService
     public Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
     public Dictionary<ushort, ServerTransform> ServerTransforms { get; private set; } = new Dictionary<ushort, ServerTransform>();
 
-    public RpcBus RpcBus { get; private set; } = new RpcBus();
-    public EventBus EventBus { get; private set; } = new EventBus();
     public NetMap Map { get; private set; }
 
     [Tooltip("The map prefab to be instantiated on the server.")]
@@ -50,14 +47,15 @@ public class ObjectServerService : ServerService
         }
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
-        switch (commandType)
+        base.ReceiveData(user, packet, commandType, transportMethod);
+        switch ((ObjectCommandType)commandType)
         {
-            case CommandType.OBJECT_COMMUNICATION:
+            case ObjectCommandType.OBJECT_COMMUNICATION:
                 {
                     ushort objectId = packet.ReadUShort();
-                    CommandType objectCommand = (CommandType)packet.ReadByte();
+                    ushort objectCommand = packet.ReadUShort();
                     ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
                     if (serverObject != null)
                     {
@@ -65,15 +63,15 @@ public class ObjectServerService : ServerService
                     }
                     break;
                 }
-            case CommandType.OBJECT_SPAWN_REQUEST:
+            case ObjectCommandType.OBJECT_SPAWN_REQUEST:
                 {
-                    int clientPrefabKey = packet.ReadInt();
+                    ulong clientPrefabKey = packet.ReadULong();
                     Vector3 position = packet.ReadVector3();
                     Quaternion rotation = packet.ReadQuaternion();
                     SpawnObject(user, clientPrefabKey, position, rotation, transportMethod, false, false);
                     break;
                 }
-            case CommandType.OBJECT_DESTROY_REQUEST:
+            case ObjectCommandType.OBJECT_DESTROY_REQUEST:
                 {
                     ushort objectId = packet.ReadUShort();
                     if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject) && user.PlayerId == serverObject.OwnerId)
@@ -85,14 +83,15 @@ public class ObjectServerService : ServerService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
-        switch (commandType)
+        base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+        switch ((ObjectCommandType)commandType)
         {
-            case CommandType.OBJECT_COMMUNICATION:
+            case ObjectCommandType.OBJECT_COMMUNICATION:
                 {
                     ushort objectId = packet.ReadUShort();
-                    CommandType objectCommand = (CommandType)packet.ReadByte();
+                    ushort objectCommand = packet.ReadUShort();
                     ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
                     if (serverObject != null)
                     {
@@ -105,6 +104,7 @@ public class ObjectServerService : ServerService
 
     public override void Tick()
     {
+        base.Tick();
         foreach (var serverObject in ServerObjects.Values)
         {
             serverObject.Tick();
@@ -113,6 +113,7 @@ public class ObjectServerService : ServerService
 
     public override void UserJoined(UserData joinedUser)
     {
+        base.UserJoined(joinedUser);
         foreach (var serverObject in ServerObjects.Values)
         {
             serverObject.UserJoined(joinedUser);
@@ -121,6 +122,7 @@ public class ObjectServerService : ServerService
 
     public override void UserJoinedGame(UserData joinedUser)
     {
+        base.UserJoinedGame(joinedUser);
         if (!startingObjectsInitialized)
         {
             foreach (ClientObject clientObj in Map.GetStartingClientObjects())
@@ -131,21 +133,21 @@ public class ObjectServerService : ServerService
         }
 
         // Initialize starting objects (AKA objects already placed on the map) for the joining user
-        lobby.SendToUser(joinedUser, ObjectsInit(spawnedStartingObjectIds.ToArray()), TransportMethod.Reliable);
+        lobby.SendToUser(joinedUser, ObjectPacketBuilder.ObjectsInit(spawnedStartingObjectIds.ToArray()), TransportMethod.Reliable);
         // Destroy any starting objects that have already been destroyed by other players
         foreach (ushort destroyedObjectId in destroyedStartingObjectIds)
         {
-            lobby.SendToUser(joinedUser, ObjectDestroy(destroyedObjectId), TransportMethod.Reliable);
+            lobby.SendToUser(joinedUser, ObjectPacketBuilder.ObjectDestroy(destroyedObjectId), TransportMethod.Reliable);
         }
 
         // Spawn the rest of the objects for the joining user (not starting objects and not player objects)
         // Spawning happens first in the Server Service
         foreach (ServerObject obj in ServerObjects.Values.Where(o => !spawnedStartingObjectIds.Contains(o.Id)))// && o.Id >= byte.MaxValue))
         {
-            Tuple<int, string> clientPrefabInfo = NetResources.Instance.GetClientPrefabFromServerKey(obj.PrefabKey);
+            Tuple<ulong, string> clientPrefabInfo = NetResources.Instance.GetClientPrefabFromServerKey(obj.PrefabKey);
             if (clientPrefabInfo != null)
             {
-                lobby.SendToUser(joinedUser, ObjectSpawn(obj.Id, clientPrefabInfo.Item1, obj.transform.position, obj.transform.rotation, obj.Id <= byte.MaxValue, obj.OwnerId), TransportMethod.Reliable);
+                lobby.SendToUser(joinedUser, ObjectPacketBuilder.ObjectSpawn(obj.Id, clientPrefabInfo.Item1, obj.transform.position, obj.transform.rotation, obj.Id <= byte.MaxValue, obj.OwnerId), TransportMethod.Reliable);
             }
         }
 
@@ -158,15 +160,16 @@ public class ObjectServerService : ServerService
 
     public override void UserLeft(UserData leftUser)
     {
+        base.UserLeft(leftUser);
         foreach (var serverObject in ServerObjects.Values)
         {
             serverObject.UserLeft(leftUser);
         }
     }
 
-    public void SpawnObject(UserData spawningUser, int clientPrefabKey, Vector3 position, Quaternion rotation, TransportMethod? transportMethod, bool isStartingObject, bool setThisPlayerAsOwner)
+    internal void SpawnObject(UserData spawningUser, ulong clientPrefabKey, Vector3 position, Quaternion rotation, TransportMethod? transportMethod, bool isStartingObject, bool setThisPlayerAsOwner)
     {
-        Tuple<int, string> serverPrefabInfo = NetResources.Instance.GetServerPrefabFromClientKey(clientPrefabKey);
+        Tuple<ulong, string> serverPrefabInfo = NetResources.Instance.GetServerPrefabFromClientKey(clientPrefabKey);
         if (serverPrefabInfo != null)
         {
             ServerObject serverObj = InstantiateOnServer(serverPrefabInfo.Item2, position, rotation, setThisPlayerAsOwner ? spawningUser.PlayerId : null, false);
@@ -178,7 +181,7 @@ public class ObjectServerService : ServerService
             }
             else
             {
-                lobby.SendToGame(ObjectSpawn(id, clientPrefabKey, serverObj.transform.position, serverObj.transform.rotation, false, serverObj.OwnerId), transportMethod ?? TransportMethod.Reliable);
+                lobby.SendToGame(ObjectPacketBuilder.ObjectSpawn(id, clientPrefabKey, serverObj.transform.position, serverObj.transform.rotation, false, serverObj.OwnerId), transportMethod ?? TransportMethod.Reliable);
             }
 
             serverObj.Init(id, lobby);
@@ -186,7 +189,7 @@ public class ObjectServerService : ServerService
         }
     }
 
-    public void DestroyObject(ServerObject serverObj)
+    internal void DestroyObject(ServerObject serverObj)
     {
         if (spawnedStartingObjectIds.Contains(serverObj.Id))
         {
@@ -195,90 +198,5 @@ public class ObjectServerService : ServerService
 
         OnObjectDestroyed?.Invoke(serverObj);
         DestroyOnServer(serverObj, true);
-    }
-
-    /* PACKETS */
-
-    public enum ObjectCommandType
-    {
-        OBJECT_SPAWN_REQUEST,
-        OBJECT_DESTROY_REQUEST,
-        OBJECT_COMMUNICATION,
-        OBJECT_SPAWN,
-        OBJECT_DESTROY,
-        OBJECT_TRANSFORM,
-        OBJECT_RPC,
-        OBJECTS_INIT
-    }
-
-    public static NetPacket ObjectCommunication(INetObject netObject, NetPacket packet)
-    {
-        packet.Insert(0, NetResources.GenerateServiceId<ObjectClientService>());
-        packet.Insert(1, (byte)ObjectCommandType.OBJECT_COMMUNICATION);
-        packet.Insert(2, netObject.Id);
-        return packet;
-    }
-
-    public static NetPacket ObjectsInit(ushort[] startingObjectIds)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
-        packet.Write((byte)ObjectCommandType.OBJECTS_INIT);
-        packet.Write(startingObjectIds);
-        return packet;
-    }
-
-    public static NetPacket ObjectSpawn(ushort objectId, int clientPrefabKey, Vector3 pos, Quaternion rot, bool isPlayer, byte? ownerId)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
-        packet.Write((byte)ObjectCommandType.OBJECT_SPAWN);
-        packet.Write(objectId);
-        packet.Write(clientPrefabKey);
-        packet.Write(pos);
-        packet.Write(rot);
-        packet.Write(isPlayer);
-        if (ownerId != null)
-            packet.Write(ownerId.Value);
-        return packet;
-    }
-
-    public static NetPacket ObjectDestroy(ushort objectId)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
-        packet.Write((byte)ObjectCommandType.OBJECT_DESTROY);
-        packet.Write(objectId);
-        return packet;
-    }
-
-    public static NetPacket ObjectTransform(Vector3 position, Quaternion rotation)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
-        packet.Write((byte)ObjectCommandType.OBJECT_TRANSFORM);
-        packet.Write(position);
-        packet.Write(rotation);
-        return packet;
-    }
-
-    public static NetPacket ObjectRpc(ulong methodId, MethodInfo method, params object[] args)
-    {
-        var parameters = method.GetParameters();
-        if (args.Length != parameters.Length)
-        {
-            throw new ArgumentException("RPC argument count mismatch");
-        }
-
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<ObjectClientService>());
-        packet.Write((byte)ObjectCommandType.OBJECT_RPC);
-        packet.Write(methodId);
-
-        for (int i = 0; i < args.Length; i++)
-        {
-            packet.Write(args[i], parameters[i].ParameterType);
-        }
-        return packet;
     }
 }

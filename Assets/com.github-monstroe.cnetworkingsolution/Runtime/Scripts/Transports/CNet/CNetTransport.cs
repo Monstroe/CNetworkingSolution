@@ -70,8 +70,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         netSystem.MaxPendingConnections = maxPendingConnections;
     }
 
-#nullable enable
-    protected override bool StartClient(TransportSettings? transportSettings = null)
+    protected override bool StartClient()
     {
         if (initialized)
         {
@@ -82,18 +81,11 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         initialized = true;
         netSystem.RegisterInterface((IEventNetClient)this);
 
-        if (transportSettings != null)
-        {
-            address = transportSettings.ConnectionAddress ?? address;
-            port = transportSettings.ConnectionPort ?? port;
-            connectionKey = transportSettings.ConnectionKey ?? connectionKey;
-        }
-
         netSystem.Connect(address, port, connectionKey);
         return true;
     }
 
-    protected override bool StartServer(TransportSettings? transportSettings = null)
+    protected override bool StartServer()
     {
         if (initialized)
         {
@@ -104,17 +96,9 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         initialized = true;
         netSystem.RegisterInterface((IEventNetListener)this);
 
-        if (transportSettings != null)
-        {
-            address = transportSettings.ConnectionAddress ?? address;
-            port = transportSettings.ConnectionPort ?? port;
-            connectionKey = transportSettings.ConnectionKey ?? connectionKey;
-        }
-
         netSystem.Listen(port);
         return true;
     }
-#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {
@@ -291,7 +275,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         if (!connectedEPs.ContainsKey(remoteEPId))
         {
             connectedEPs[remoteEPId] = remoteEP;
-            TransportData.ConnectedClientIds.Add(remoteEPId);
+            TransportData.AddConnectedClient(remoteEPId);
             RaiseNetworkConnected(remoteEPId);
         }
         else
@@ -306,7 +290,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
         if (connectedEPs.Remove(remoteEPId))
         {
-            TransportData.ConnectedClientIds.Remove(remoteEPId);
+            TransportData.RemoveConnectedClient(remoteEPId);
             RaiseNetworkDisconnected(remoteEPId, ConvertCode(disconnect.DisconnectCode));
         }
         else

@@ -57,7 +57,7 @@ public class LobbyInitializer : MonoBehaviour
         ClientManager.Instance.OnLobbyJoinRequested += LobbyJoinedRequested;
         ClientManager.Instance.OnLobbyConnectionAccepted += LobbyConnectionAccepted;
         ClientManager.Instance.OnLobbyConnectionRejected += LobbyConnectionRejected;
-        ClientManager.Instance.OnLobbyConnectionLost += LobbyConnectionLost;
+        ClientManager.Instance.OnConnectionLost += ConnectionLost;
 #if CNS_SERVER_MULTIPLE
         ClientManager.Instance.WebAPI.OnWebAPIConnectionError += OnWebAPIConnectionError;
 #endif
@@ -70,7 +70,7 @@ public class LobbyInitializer : MonoBehaviour
         ClientManager.Instance.OnLobbyJoinRequested -= LobbyJoinedRequested;
         ClientManager.Instance.OnLobbyConnectionAccepted -= LobbyConnectionAccepted;
         ClientManager.Instance.OnLobbyConnectionRejected -= LobbyConnectionRejected;
-        ClientManager.Instance.OnLobbyConnectionLost -= LobbyConnectionLost;
+        ClientManager.Instance.OnConnectionLost -= ConnectionLost;
 #if CNS_SERVER_MULTIPLE
         ClientManager.Instance.WebAPI.OnWebAPIConnectionError -= OnWebAPIConnectionError;
 #endif
@@ -121,7 +121,7 @@ public class LobbyInitializer : MonoBehaviour
         Debug.Log($"Connection to lobby {lobbyId} rejected: {errorType}");
     }
 
-    private void LobbyConnectionLost(TransportCode code)
+    private void ConnectionLost(TransportCode code)
     {
         Debug.LogWarning($"Lost connection to lobby: {code}");
 

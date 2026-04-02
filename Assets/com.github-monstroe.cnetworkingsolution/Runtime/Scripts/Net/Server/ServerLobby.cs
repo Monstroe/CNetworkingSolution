@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -16,7 +18,10 @@ public class ServerLobby : MonoBehaviour
     private readonly ServerServiceUtility services = new ServerServiceUtility();
     private readonly ServerServiceUtility unconnectedServices = new ServerServiceUtility();
 
-    public void Init(ITransportUtility transportUtility, Scene? scene = null)
+    internal RpcBus RpcBus { get; } = new RpcBus();
+    private readonly GameEventBus gameEventBus = new GameEventBus();
+
+    internal void Init(ITransportUtility transportUtility, Scene? scene = null)
     {
         this.transportUtility = transportUtility;
 
@@ -29,50 +34,110 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
-    public void SendToLobby(NetPacket packet, TransportMethod method, UserData exception = null)
+    internal void ReceiveData(UserData user, NetPacket packet, TransportMethod? transportMethod)
+    {
+        ulong serviceId = packet.ReadULong();
+        ushort commandType = packet.ReadUShort();
+        if (services.GetService(serviceId, out ServerService service))
+        {
+            service.ReceiveData(user, packet, commandType, transportMethod);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for id {serviceId}.");
+        }
+    }
+
+    internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    {
+        ulong serviceId = packet.ReadULong();
+        ushort commandType = packet.ReadUShort();
+        if (unconnectedServices.GetService(serviceId, out ServerService unconnectedService))
+        {
+            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for id {serviceId}.");
+        }
+    }
+
+    internal void UserJoined(UserData user)
+    {
+        user.PlayerId = GeneratePlayerId();
+        services.UserJoined(user);
+    }
+
+    internal void UserJoinedGame(UserData user)
+    {
+        services.UserJoinedGame(user);
+    }
+
+    internal void UserLeft(UserData user)
+    {
+        services.UserLeft(user);
+    }
+
+    internal void Tick()
+    {
+        if (physicsScene.HasValue)
+        {
+            physicsScene.Value.Simulate(Time.fixedDeltaTime);
+        }
+        services.Tick();
+        ServerTick++;
+    }
+
+    public void SendToLobby<T>(NetPacket packet, TransportMethod method, UserData exception = null) where T : ClientService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateClientServiceId<T>());
             transportUtility.SendToRemotes(LobbyData.LobbyUsers.Where(u => u != exception).ToList().ConvertAll(user => user.UserId), packet, method);
         }
     }
 
-    public void SendToGame(NetPacket packet, TransportMethod method, UserData exception = null)
+    public void SendToGame<T>(NetPacket packet, TransportMethod method, UserData exception = null) where T : ClientService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateClientServiceId<T>());
             transportUtility.SendToRemotes(LobbyData.GameUsers.Where(u => u != exception).ToList().ConvertAll(user => user.UserId), packet, method);
         }
     }
 
-    public void SendToUser(UserData user, NetPacket packet, TransportMethod method)
+    public void SendToUser<T>(UserData user, NetPacket packet, TransportMethod method) where T : ClientService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateClientServiceId<T>());
             transportUtility.SendToRemote(user.UserId, packet, method);
         }
     }
 
-    public void SendToUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
+    public void SendToUnconnected<T>(IPEndPoint iPEndPoint, NetPacket packet) where T : ClientService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateClientServiceId<T>());
             transportUtility.SendToUnconnectedRemote(iPEndPoint, packet);
         }
     }
 
-    public void SendToUnconnected(List<IPEndPoint> iPEndPoints, NetPacket packet)
+    public void SendToUnconnected<T>(List<IPEndPoint> iPEndPoints, NetPacket packet) where T : ClientService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateClientServiceId<T>());
             transportUtility.SendToUnconnectedRemotes(iPEndPoints, packet);
         }
     }
 
-    public void BroadcastToUnconnected(NetPacket packet)
+    public void BroadcastToUnconnected<T>(NetPacket packet) where T : ClientService
     {
         if (packet != null)
         {
+            packet.Insert(0, NetResources.GenerateClientServiceId<T>());
             transportUtility.BroadcastToUnconnectedRemotes(packet);
         }
     }
@@ -90,70 +155,14 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
-    public void ReceiveData(UserData user, NetPacket packet, TransportMethod? transportMethod)
-    {
-        uint serviceId = packet.ReadUInt();
-        CommandType commandType = (CommandType)packet.ReadByte();
-
-        if (services.GetService(serviceId, out ServerService service))
-        {
-            service.ReceiveData(user, packet, commandType, transportMethod);
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for id {serviceId}. Command {commandType} will not be processed.");
-        }
-    }
-
-    public void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
-    {
-        uint serviceId = packet.ReadUInt();
-        CommandType commandType = (CommandType)packet.ReadByte();
-
-        if (unconnectedServices.GetService(serviceId, out ServerService unconnectedService))
-        {
-            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for id {serviceId}. Command {commandType} will not be processed.");
-        }
-    }
-
-    public void UserJoined(UserData user)
-    {
-        user.PlayerId = GeneratePlayerId();
-        services.UserJoined(user);
-    }
-
-    public void UserJoinedGame(UserData user)
-    {
-        services.UserJoinedGame(user);
-    }
-
-    public void UserLeft(UserData user)
-    {
-        services.UserLeft(user);
-    }
-
-    public void Tick()
-    {
-        if (physicsScene.HasValue)
-        {
-            physicsScene.Value.Simulate(Time.fixedDeltaTime);
-        }
-        services.Tick();
-        ServerTick++;
-    }
-
     public bool RegisterService<T>(T service) where T : ServerService
     {
         return services.RegisterService(service);
     }
 
-    public bool UnregisterService<T>() where T : ServerService
+    public bool UnregisterService(ServerService service)
     {
-        return services.UnregisterService<T>(out _);
+        return services.UnregisterService(service.ServiceId);
     }
 
     public T GetService<T>() where T : ServerService
@@ -175,9 +184,9 @@ public class ServerLobby : MonoBehaviour
         return unconnectedServices.RegisterService(service);
     }
 
-    public bool UnregisterUnconnectedService<T>() where T : ServerService
+    public bool UnregisterUnconnectedService(ServerService service)
     {
-        return unconnectedServices.UnregisterService<T>(out _);
+        return unconnectedServices.UnregisterService(service.ServiceId);
     }
 
     public T GetUnconnectedService<T>() where T : ServerService
@@ -194,7 +203,32 @@ public class ServerLobby : MonoBehaviour
         }
     }
 
-    public byte GeneratePlayerId()
+    public void RegisterRpcContainer(INetRpc rpcContainer)
+    {
+        RpcBus.RegisterRpcContainer(rpcContainer);
+    }
+
+    public void UnregisterRpcContainer(INetRpc rpcContainer)
+    {
+        RpcBus.UnregisterRpcContainer(rpcContainer);
+    }
+
+    public void RegisterGameEventListener(INetEvent listener)
+    {
+        gameEventBus.RegisterListener(listener);
+    }
+
+    public void UnregisterGameEventListener(INetEvent listener)
+    {
+        gameEventBus.UnregisterListener(listener);
+    }
+
+    public async Task<GameEventResult> TriggerGameEvent(GameEvent e)
+    {
+        return await gameEventBus.Fire(e);
+    }
+
+    internal byte GeneratePlayerId()
     {
         byte newPlayerId;
         do
@@ -204,7 +238,7 @@ public class ServerLobby : MonoBehaviour
         return newPlayerId;
     }
 
-    public ushort GenerateObjectId()
+    internal ushort GenerateObjectId()
     {
         ushort newObjectId;
         do

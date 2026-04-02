@@ -10,26 +10,11 @@ public class NetResources : MonoBehaviour
     public static NetResources Instance { get; private set; }
 
     public ServerManager ServerPrefab => serverPrefab;
-    public Dictionary<TransportType, NetTransport> TransportPrefabs { get; private set; } = new Dictionary<TransportType, NetTransport>();
-
-    public string GameSceneName => gameSceneName;
-    public string MenuSceneName => menuSceneName;
-    public string ServerSceneName => serverSceneName;
-
-    public NetMode DefaultNetMode => defaultNetMode;
-    public int DefaultLobbyId => defaultLobbyId;
-    public LobbySettings DefaultLobbySettings => defaultLobbySettings;
-    public UserSettings DefaultUserSettings => defaultUserSettings;
-    public TransportSettings DefaultTransportSettings => defaultTransportSettings;
+    public IReadOnlyDictionary<Type, NetTransport> TransportPrefabs => transportPrefabsDict;
 
     [Header("Connection Settings")]
     [SerializeField] private ServerManager serverPrefab;
     [SerializeField] private List<NetTransport> transportPrefabs;
-
-    [Header("Scene Names")]
-    [SerializeField] private string gameSceneName = "Game";
-    [SerializeField] private string menuSceneName = "Menu";
-    [SerializeField] private string serverSceneName = "Server";
 
     [Header("Asset Registries")]
     [SerializeField] private string clientPrefabsLabel = "CNS_ClientPrefabs";
@@ -37,30 +22,22 @@ public class NetResources : MonoBehaviour
     [SerializeField] private string sfxLabel = "CNS_SFX";
     [SerializeField] private string vfxLabel = "CNS_VFX";
 
-    [Header("Default Settings")]
-    [SerializeField] private NetMode defaultNetMode = NetMode.Online;
-    [Space]
-    [SerializeField] private int defaultLobbyId = 0;
-    [SerializeField] private LobbySettings defaultLobbySettings = new LobbySettings();
-    [Space]
-    [SerializeField] private UserSettings defaultUserSettings = new UserSettings();
-    [Space]
-    [SerializeField] private TransportSettings defaultTransportSettings = new TransportSettings();
+    private readonly Dictionary<Type, NetTransport> transportPrefabsDict = new Dictionary<Type, NetTransport>();
 
-    private readonly Dictionary<string, int> clientPrefabsPathToKeyMap = new Dictionary<string, int>();
-    private readonly Dictionary<int, string> clientPrefabsKeyToPathMap = new Dictionary<int, string>();
+    private readonly Dictionary<string, ulong> clientPrefabsPathToKeyMap = new Dictionary<string, ulong>();
+    private readonly Dictionary<ulong, string> clientPrefabsKeyToPathMap = new Dictionary<ulong, string>();
 
-    private readonly Dictionary<string, int> serverPrefabsPathToKeyMap = new Dictionary<string, int>();
-    private readonly Dictionary<int, string> serverPrefabsKeyToPathMap = new Dictionary<int, string>();
+    private readonly Dictionary<string, ulong> serverPrefabsPathToKeyMap = new Dictionary<string, ulong>();
+    private readonly Dictionary<ulong, string> serverPrefabsKeyToPathMap = new Dictionary<ulong, string>();
 
-    private readonly Dictionary<int, int> clientToServerPrefabKeyMap = new Dictionary<int, int>();
-    private readonly Dictionary<int, int> serverToClientPrefabKeyMap = new Dictionary<int, int>();
+    private readonly Dictionary<ulong, ulong> clientToServerPrefabKeyMap = new Dictionary<ulong, ulong>();
+    private readonly Dictionary<ulong, ulong> serverToClientPrefabKeyMap = new Dictionary<ulong, ulong>();
 
-    private readonly Dictionary<string, int> sfxPathToKeyMap = new Dictionary<string, int>();
-    private readonly Dictionary<int, string> sfxKeyToPathMap = new Dictionary<int, string>();
+    private readonly Dictionary<string, ulong> sfxPathToKeyMap = new Dictionary<string, ulong>();
+    private readonly Dictionary<ulong, string> sfxKeyToPathMap = new Dictionary<ulong, string>();
 
-    private readonly Dictionary<string, int> vfxPathToKeyMap = new Dictionary<string, int>();
-    private readonly Dictionary<int, string> vfxKeyToPathMap = new Dictionary<int, string>();
+    private readonly Dictionary<string, ulong> vfxPathToKeyMap = new Dictionary<string, ulong>();
+    private readonly Dictionary<ulong, string> vfxKeyToPathMap = new Dictionary<ulong, string>();
 
     async void Awake()
     {
@@ -82,7 +59,7 @@ public class NetResources : MonoBehaviour
         await InitAssetRegistry(sfxLabel, sfxPathToKeyMap, sfxKeyToPathMap);
         await InitAssetRegistry(vfxLabel, vfxPathToKeyMap, vfxKeyToPathMap);
 
-        foreach ((string path, int key) in clientPrefabsPathToKeyMap)
+        foreach ((string path, ulong key) in clientPrefabsPathToKeyMap)
         {
             var handle = await Addressables.LoadAssetAsync<GameObject>(path).Task;
             handle.TryGetComponent(out ClientObject clientObject);
@@ -96,69 +73,69 @@ public class NetResources : MonoBehaviour
         }
     }
 
-    public Tuple<int, string> GetServerPrefabFromClientKey(int clientKey)
+    public Tuple<ulong, string> GetServerPrefabFromClientKey(ulong clientKey)
     {
-        if (clientToServerPrefabKeyMap.TryGetValue(clientKey, out int serverKey))
+        if (clientToServerPrefabKeyMap.TryGetValue(clientKey, out ulong serverKey))
         {
-            return new Tuple<int, string>(serverKey, serverPrefabsKeyToPathMap[serverKey]);
+            return new Tuple<ulong, string>(serverKey, serverPrefabsKeyToPathMap[serverKey]);
         }
         Debug.LogError("NetResources could not find server prefab key for client prefab key '" + clientKey + "'");
         return null;
     }
 
-    public Tuple<int, string> GetClientPrefabFromServerKey(int serverKey)
+    public Tuple<ulong, string> GetClientPrefabFromServerKey(ulong serverKey)
     {
-        if (serverToClientPrefabKeyMap.TryGetValue(serverKey, out int clientKey))
+        if (serverToClientPrefabKeyMap.TryGetValue(serverKey, out ulong clientKey))
         {
-            return new Tuple<int, string>(clientKey, clientPrefabsKeyToPathMap[clientKey]);
+            return new Tuple<ulong, string>(clientKey, clientPrefabsKeyToPathMap[clientKey]);
         }
         Debug.LogError("NetResources could not find client prefab key for server prefab key '" + serverKey + "'");
         return null;
     }
 
-    public int GetClientPrefabKeyFromPath(string path)
+    public ulong GetClientPrefabKeyFromPath(string path)
     {
         return GetKeyFromPath(clientPrefabsPathToKeyMap, path);
     }
 
-    public string GetClientPrefabPathFromKey(int key)
+    public string GetClientPrefabPathFromKey(ulong key)
     {
         return GetPathFromKey(clientPrefabsKeyToPathMap, key);
     }
 
-    public int GetServerPrefabKeyFromPath(string path)
+    public ulong GetServerPrefabKeyFromPath(string path)
     {
         return GetKeyFromPath(serverPrefabsPathToKeyMap, path);
     }
 
-    public string GetServerPrefabPathFromKey(int key)
+    public string GetServerPrefabPathFromKey(ulong key)
     {
         return GetPathFromKey(serverPrefabsKeyToPathMap, key);
     }
 
-    public int GetSFXKeyFromPath(string path)
+    public ulong GetSFXKeyFromPath(string path)
     {
         return GetKeyFromPath(sfxPathToKeyMap, path);
     }
 
-    public string GetSFXPathFromKey(int key)
+    public string GetSFXPathFromKey(ulong key)
     {
         return GetPathFromKey(sfxKeyToPathMap, key);
     }
 
-    public int GetVFXKeyFromPath(string path)
+    public ulong GetVFXKeyFromPath(string path)
     {
         return GetKeyFromPath(vfxPathToKeyMap, path);
     }
 
-    public string GetVFXPathFromKey(int key)
+    public string GetVFXPathFromKey(ulong key)
     {
         return GetPathFromKey(vfxKeyToPathMap, key);
     }
 
-    private int GetKeyFromPath(Dictionary<string, int> dict, string path)
+    private ulong GetKeyFromPath(Dictionary<string, ulong> dict, string path)
     {
-        if (dict.TryGetValue(path, out int key))
+        if (dict.TryGetValue(path, out ulong key))
         {
             return key;
         }
@@ -166,7 +143,7 @@ public class NetResources : MonoBehaviour
         return 0;
     }
 
-    private string GetPathFromKey(Dictionary<int, string> dict, int key)
+    private string GetPathFromKey(Dictionary<ulong, string> dict, ulong key)
     {
         if (dict.TryGetValue(key, out string path))
         {
@@ -176,7 +153,7 @@ public class NetResources : MonoBehaviour
         return null;
     }
 
-    private async Task InitAssetRegistry(string label, Dictionary<string, int> nameToIdDict, Dictionary<int, string> idToNameDict)
+    private async Task InitAssetRegistry(string label, Dictionary<string, ulong> nameToIdDict, Dictionary<ulong, string> idToNameDict)
     {
         IList<IResourceLocation> locations = await LoadLocations(label);
         foreach (var location in locations)
@@ -185,7 +162,7 @@ public class NetResources : MonoBehaviour
             if (nameToIdDict.ContainsKey(name))
                 continue;
 
-            int id = HashPathToId(name);
+            ulong id = GenerateHashKey(name);
             nameToIdDict.Add(name, id);
             idToNameDict.Add(id, name);
         }
@@ -201,63 +178,16 @@ public class NetResources : MonoBehaviour
     {
         foreach (NetTransport transport in transportPrefabs)
         {
-            switch (transport)
-            {
-#if CNS_TRANSPORT_LOCAL
-                case LocalTransport:
-                    transport.TransportData.TransportType = TransportType.Local;
-                    break;
-#endif
-#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-                case CNetRelayTransport:
-                    transport.TransportData.TransportType = TransportType.CNetRelay;
-                    break;
-#endif
-#if CNS_TRANSPORT_CNET && CNS_TRANSPORT_CNETBROADCAST
-                case CNetBroadcastTransport:
-                    transport.TransportData.TransportType = TransportType.CNetBroadcast;
-                    break;
-#endif
-#if CNS_TRANSPORT_CNET
-                case CNetTransport:
-                    transport.TransportData.TransportType = TransportType.CNet;
-                    break;
-#endif
-#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBRELAY && CNS_TRANSPORT_LOCAL && CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
-                case LiteNetLibRelayTransport:
-                    transport.TransportData.TransportType = TransportType.LiteNetLibRelay;
-                    break;
-#endif
-#if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBBROADCAST
-                case LiteNetLibBroadcastTransport:
-                    transport.TransportData.TransportType = TransportType.LiteNetLibBroadcast;
-                    break;
-#endif
-#if CNS_TRANSPORT_LITENETLIB
-                case LiteNetLibTransport:
-                    transport.TransportData.TransportType = TransportType.LiteNetLib;
-                    break;
-#endif
-#if CNS_TRANSPORT_STEAMRELAY && CNS_SYNC_HOST
-                case SteamRelayTransport:
-                    transport.TransportData.TransportType = TransportType.SteamRelay;
-                    break;
-#endif
-            }
-            TransportPrefabs.Add(transport.TransportData.TransportType, transport);
+            transportPrefabsDict.Add(transport.GetType(), transport);
         }
     }
 
-    public static int HashPathToId(string path)
+    public static ulong GenerateServerServiceId<T>() where T : ServerService
     {
-        using (var md5 = System.Security.Cryptography.MD5.Create())
-        {
-            byte[] hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(path));
-            return BitConverter.ToInt32(hash, 0);
-        }
+        return GenerateHashKey(typeof(T).FullName);
     }
 
-    public static ulong GenerateServiceId<T>()
+    public static ulong GenerateClientServiceId<T>() where T : ClientService
     {
         return GenerateHashKey(typeof(T).FullName);
     }

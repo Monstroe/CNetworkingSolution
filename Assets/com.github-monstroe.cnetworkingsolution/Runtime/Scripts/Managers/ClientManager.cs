@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
@@ -7,22 +6,21 @@ using UnityEngine;
 [RequireComponent(typeof(SingleTransportUtility))]
 public class ClientManager : MonoBehaviour
 {
-    public delegate void LobbyConnectionAcceptedEventHandler(int lobbyId);
-    public event LobbyConnectionAcceptedEventHandler OnLobbyConnectionAccepted;
+    public delegate void ConnectionAcceptedEventHandler(ConnectionAcceptedArgs args);
+    public event ConnectionAcceptedEventHandler OnConnectionAccepted;
 
-    public delegate void LobbyConnectionRejectedEventHandler(int lobbyId, LobbyRejectionType errorType);
-    public event LobbyConnectionRejectedEventHandler OnLobbyConnectionRejected;
+    public delegate void ConnectionRejectedEventHandler(ConnectionRejectedArgs args);
+    public event ConnectionRejectedEventHandler OnConnectionRejected;
 
-    public delegate void LobbyConnectionLostEventHandler(TransportCode code);
-    public event LobbyConnectionLostEventHandler OnLobbyConnectionLost;
+    public delegate void ConnectionLostEventHandler(ConnectionLostArgs args);
+    public event ConnectionLostEventHandler OnConnectionLost;
 
-    public delegate void LobbyConnectionErrorEventHandler(TransportCode code, SocketError? socketError);
-    public event LobbyConnectionErrorEventHandler OnLobbyConnectionError;
+    public delegate void ConnectionErrorEventHandler(ConnectionErrorArgs args);
+    public event ConnectionErrorEventHandler OnConnectionError;
 
     public static ClientManager Instance { get; private set; }
     public ClientLobby CurrentLobby { get; private set; }
     public bool IsConnected { get; private set; } = false;
-    public NetMode NetMode { get; set; }
 
     [Header("Lobby Settings")]
     [SerializeField] private ClientLobby lobbyPrefab;
@@ -49,12 +47,19 @@ public class ClientManager : MonoBehaviour
         AddTransportUtilityEvents();
         CurrentLobby = Instantiate(lobbyPrefab, transform);
         CurrentLobby.Init(transportUtility);
-        NetMode = NetResources.Instance.DefaultNetMode;
     }
 
     void Start()
     {
         Debug.Log("<color=green><b>CNS</b></color>: Client initialized.");
+    }
+
+    void FixedUpdate()
+    {
+        if (IsConnected)
+        {
+            CurrentLobby.Tick();
+        }
     }
 
     void OnDestroy()
@@ -73,7 +78,15 @@ public class ClientManager : MonoBehaviour
         transportUtility.RemoveTransports();
         IsConnected = false;
         CurrentLobby.LobbyData = new LobbyData();
-        OnLobbyConnectionLost?.Invoke(code);
+        CurrentLobby.CurrentUser = new UserData();
+        CurrentLobby.ClientTick = 0;
+
+        OnConnectionLost?.Invoke(new ConnectionLostArgs()
+        {
+            Code = code
+        });
+
+        Debug.Log($"<color=yellow><b>CNS</b></color>: Client disconnected from lobby.");
     }
 
     private void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
@@ -91,20 +104,29 @@ public class ClientManager : MonoBehaviour
             bool accepted = packet.ReadBool();
             if (accepted)
             {
-                Guid userGuid = Guid.Parse(packet.ReadString());
                 int lobbyId = packet.ReadInt();
+                NetPacket responsePacket = new NetPacket(packet.ReadBytes());
 
-                Debug.Log("<color=green><b>CNS</b></color>: Client connected");
                 CurrentLobby.LobbyData.LobbyId = lobbyId;
-                CurrentLobby.CurrentUser.LobbyId = lobbyId;
                 IsConnected = true;
-                OnLobbyConnectionAccepted?.Invoke(CurrentLobby.LobbyData.LobbyId);
+
+                OnConnectionAccepted?.Invoke(new ConnectionAcceptedArgs()
+                {
+                    ResponsePacket = responsePacket
+                });
+
+                Debug.Log("<color=green><b>CNS</b></color>: Client connected to lobby");
             }
             else
             {
-                Debug.LogWarning("<color=yellow><b>CNS</b></color>: Client rejected");
-                LobbyRejectionType errorType = (LobbyRejectionType)packet.ReadByte();
-                OnLobbyConnectionRejected?.Invoke(lobbyId, errorType);
+                NetPacket responsePacket = new NetPacket(packet.ReadBytes());
+
+                OnConnectionRejected?.Invoke(new ConnectionRejectedArgs()
+                {
+                    ResponsePacket = responsePacket
+                });
+
+                Debug.LogWarning("<color=yellow><b>CNS</b></color>: Client rejected from lobby");
             }
         }
         else
@@ -138,219 +160,52 @@ public class ClientManager : MonoBehaviour
 
     private void HandleNetworkError(TransportCode code, SocketError? socketError)
     {
+        OnConnectionError?.Invoke(new ConnectionErrorArgs()
+        {
+            Code = code,
+            SocketError = socketError
+        });
+
         Debug.LogError($"<color=red><b>CNS</b></color>: Network error occurred: {code} {(socketError.HasValue ? $"(Socket Error: {socketError.Value})" : "")}");
-        OnLobbyConnectionError?.Invoke(code, socketError);
     }
 
-    public void CreateNewUser(bool invokeEvent = true)
+    public void CreateLobby(NetPacket requestPacket = null)
     {
-        if (NetMode == NetMode.Local)
+        connectionData = new ConnectionData()
         {
-            CreateUser(Guid.Empty, invokeEvent);
-            return;
-        }
-
-#if CNS_SERVER_MULTIPLE
-        StartCoroutine(WebAPI.CreateUserCoroutine(userSettings ?? NetResources.Instance.DefaultUserSettings.Clone(), (userGuid, settings) =>
-        {
-            CreateUser(userGuid, invokeEvent);
-        }));
-#elif CNS_SERVER_SINGLE
-        CreateUser(Guid.Empty, invokeEvent);
-#endif
-    }
-
-    private void CreateUser(Guid userGuid, bool invokeEvent)
-    {
-        UserData userData = new UserData()
-        {
-            GlobalGuid = userGuid
-        };
-        CurrentLobby.CurrentUser = userData;
-        if (invokeEvent)
-        {
-            OnNewUserCreated?.Invoke(CurrentLobby.CurrentUser.GlobalGuid);
-        }
-    }
-
-    public void UpdateCurrentUser(UserSettings userSettings)
-    {
-        if (IsConnected)
-        {
-            CurrentLobby.SendToServer(PacketBuilder.LobbyUserSettings(CurrentLobby.CurrentUser, userSettings), TransportMethod.Reliable);
-        }
-        else if (NetMode == NetMode.Local)
-        {
-            UpdateUser(userSettings);
-        }
-#if !(CNS_SERVER_MULTIPLE && CNS_SYNC_HOST)
-        else
-        {
-            UpdateUser(userSettings);
-        }
-#endif
-
-#if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
-        if (NetMode != NetMode.Local)
-        {
-            StartCoroutine(WebAPI.UpdateUserCoroutine(userSettings, (userGuid, settings) =>
-            {
-                // User recreated
-                CreateUser(userGuid, settings, false);
-            }, (updatedSettings) =>
-            {
-                // User updated
-                UpdateUser(updatedSettings);
-            }));
-        }
-#endif
-    }
-
-    private void UpdateUser(UserSettings userSettings)
-    {
-        CurrentLobby.CurrentUser.Settings = userSettings;
-    }
-
-    public void CreateNewLobby(LobbySettings lobbySettings = null, bool invokeEvent = true)
-    {
-        if (NetMode == NetMode.Local)
-        {
-            CreateLobby(NetResources.Instance.DefaultLobbyId, lobbySettings ?? NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
-            return;
-        }
-
-#if CNS_SERVER_MULTIPLE
-        StartCoroutine(WebAPI.CreateLobbyCoroutine(lobbySettings, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
-        {
-            // User recreated
-            CreateUser(userGuid, settings, false);
-        }, (lobbyId, lobbySettingsResponse, serverSettingsResponse) =>
-        {
-            // Lobby created
-            CreateLobby(lobbyId, lobbySettingsResponse, serverSettingsResponse, invokeEvent);
-        }));
-#elif CNS_SERVER_SINGLE
-        CreateLobby(-1, lobbySettings ?? NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
-#endif
-    }
-
-#nullable enable
-    private void CreateLobby(int lobbyId, LobbySettings lobbySettings, TransportSettings? serverSettings, bool invokeEvent)
-    {
-        connectionData = new connectionData
-        {
-            LobbyId = lobbyId,
             LobbyConnectionType = LobbyConnectionType.Create,
-            UserGuid = CurrentLobby.CurrentUser.GlobalGuid,
-            UserSettings = CurrentLobby.CurrentUser.Settings,
-            LobbySettings = lobbySettings
+            RequestPacket = requestPacket
         };
-        CurrentLobby.LobbyData.LobbyId = lobbyId;
-        CurrentLobby.LobbyData.Settings = lobbySettings;
-        if (invokeEvent)
-        {
-            OnLobbyCreateRequested?.Invoke(serverSettings);
-        }
-    }
-#nullable disable
-
-    public void UpdateCurrentLobby(LobbySettings lobbySettings)
-    {
-        if (IsConnected)
-        {
-            CurrentLobby.SendToServer(PacketBuilder.LobbySettings(lobbySettings), TransportMethod.Reliable);
-        }
-        else if (NetMode == NetMode.Local)
-        {
-            UpdateLobby(lobbySettings);
-        }
-#if !(CNS_SERVER_MULTIPLE && CNS_SYNC_HOST)
-        else
-        {
-            UpdateLobby(lobbySettings);
-        }
-#endif
-
-#if CNS_SERVER_MULTIPLE && CNS_SYNC_HOST
-        if (NetMode != NetMode.Local)
-        {
-            StartCoroutine(WebAPI.UpdateLobbyCoroutine(lobbySettings, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
-            {
-                // User recreated
-                CreateUser(userGuid, settings, false);
-            }, (updatedLobbySettings) =>
-            {
-                // Lobby updated
-                UpdateLobby(updatedLobbySettings);
-            }));
-        }
-#endif
     }
 
-    private void UpdateLobby(LobbySettings lobbySettings)
+    public void JoinLobby(int lobbyId, bool createIfNotExists = false, NetPacket requestPacket = null)
     {
-        CurrentLobby.LobbyData.Settings = lobbySettings;
-    }
-
-    public void JoinExistingLobby(int lobbyId, bool invokeEvent = true)
-    {
-        if (NetMode == NetMode.Local)
-        {
-            JoinLobby(lobbyId, NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
-            return;
-        }
-
-#if CNS_SERVER_MULTIPLE
-        StartCoroutine(WebAPI.JoinLobbyCoroutine(lobbyId, CurrentLobby.CurrentUser.Settings, (userGuid, settings) =>
-        {
-            // User recreated
-            CreateUser(userGuid, settings, false);
-        }, (joinedLobbyId, lobbySettingsResponse, serverSettingsResponse) =>
-        {
-            // Lobby joined
-            JoinLobby(joinedLobbyId, lobbySettingsResponse, serverSettingsResponse, invokeEvent);
-        }));
-#elif CNS_SERVER_SINGLE
-        JoinLobby(lobbyId, NetResources.Instance.DefaultLobbySettings.Clone(), null, invokeEvent);
-#endif
-    }
-
-#nullable enable
-    private void JoinLobby(int lobbyId, LobbySettings lobbySettings, TransportSettings? serverSettings, bool invokeEvent)
-    {
-        connectionData = new connectionData
+        connectionData = new ConnectionData()
         {
             LobbyId = lobbyId,
-            LobbyConnectionType = LobbyConnectionType.Join,
-            UserGuid = CurrentLobby.CurrentUser.GlobalGuid,
-            UserSettings = CurrentLobby.CurrentUser.Settings,
-            LobbySettings = lobbySettings
+            LobbyConnectionType = createIfNotExists ? LobbyConnectionType.JoinOrCreate : LobbyConnectionType.JoinIfExists,
+            RequestPacket = requestPacket
         };
-        CurrentLobby.LobbyData.LobbyId = lobbyId;
-        CurrentLobby.LobbyData.Settings = lobbySettings;
-        if (invokeEvent)
-        {
-            OnLobbyJoinRequested?.Invoke(lobbyId, serverSettings);
-        }
-    }
-#nullable disable
-
-    public void RemoveTransports()
-    {
-        transportUtility.RemoveTransports();
     }
 
-#nullable enable
-    public void RegisterTransport(TransportType transportType, TransportSettings? transportSettings = null)
+    public void StartTransport()
     {
-        CurrentTransportSettings = transportSettings;
-        transportUtility.RegisterTransport(transportType, NetDeviceType.Client, transportSettings);
+        transportUtility.StartTransports();
     }
-#nullable disable
+
+    public void RegisterTransport<T>() where T : NetTransport
+    {
+        transportUtility.RegisterTransport<T>(NetDeviceType.Client);
+    }
 
     public void SetTransport(NetTransport newTransport)
     {
         transportUtility.AddTransport(newTransport);
+    }
+
+    public void RemoveTransports()
+    {
+        transportUtility.RemoveTransports();
     }
 
 #if CNS_SYNC_HOST && CNS_LOBBY_MULTIPLE
@@ -391,13 +246,33 @@ public class ClientManager : MonoBehaviour
         transportUtility.OnSingleReceivedUnconnected -= HandleNetworkReceivedUnconnected;
         transportUtility.OnSingleError -= HandleNetworkError;
     }
+}
 
-    private static NetPacket ConnectionRequest(connectionData connectionData)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ServiceType.CONNECTION);
-        packet.Write((byte)CommandType.CONNECTION_REQUEST);
-        connectionData.Serialize(packet);
-        return packet;
-    }
+public class ConnectionAcceptedArgs
+{
+    public NetPacket ResponsePacket { get; internal set; }
+
+    internal ConnectionAcceptedArgs() { }
+}
+
+public class ConnectionRejectedArgs
+{
+    public NetPacket ResponsePacket { get; internal set; }
+
+    internal ConnectionRejectedArgs() { }
+}
+
+public class ConnectionLostArgs
+{
+    public TransportCode Code { get; internal set; }
+
+    internal ConnectionLostArgs() { }
+}
+
+public class ConnectionErrorArgs
+{
+    public TransportCode Code { get; internal set; }
+    public SocketError? SocketError { get; internal set; }
+
+    internal ConnectionErrorArgs() { }
 }

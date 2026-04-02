@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
@@ -10,7 +11,6 @@ public class ServerManager : MonoBehaviour
 {
     public static ServerManager Instance { get; private set; }
     public ServerData ServerData { get; private set; } = new ServerData();
-    public NetMode NetMode { get; set; }
 
     [Header("General Settings")]
     [SerializeField] private int minLobbyId = 1000;
@@ -23,8 +23,9 @@ public class ServerManager : MonoBehaviour
     [Header("Lobby Settings")]
     [SerializeField] private ServerLobby lobbyPrefab;
 
-    private ConnectionEventBus connectionEventBus = new ConnectionEventBus();
-    private DisconnectionEventBus disconnectionEventBus = new DisconnectionEventBus();
+    private readonly ConnectionRequestedEventBus connectionRequestedEventBus = new ConnectionRequestedEventBus();
+    private readonly ConnectionLostEventBus connectionLostEventBus = new ConnectionLostEventBus();
+    private readonly ConnectionErrorEventBus connectionErrorEventBus = new ConnectionErrorEventBus();
     private MultiTransportUtility transportUtility;
 
     void Awake()
@@ -46,7 +47,6 @@ public class ServerManager : MonoBehaviour
         AddTransportUtilityEvents();
         ServerData.ServerId = GenerateUniqueId();
         ServerData.SecretKey = GenerateSecretKey();
-        NetMode = NetResources.Instance.DefaultNetMode;
     }
 
     async void Start()
@@ -114,10 +114,12 @@ public class ServerManager : MonoBehaviour
         {
             if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
             {
+                ServerData.RemoveConnectedUser(userData.UserId);
                 await RemoveUser(userData);
             }
-            else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionEventResult connectionEvtResult))
+            else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionRequestedEventResult connectionEvtResult))
             {
+                ServerData.RemoveConnectingUser(connectionEvtResult.ConnectingUser.UserId);
                 await RemoveUser(connectionEvtResult.ConnectingUser);
             }
             else
@@ -141,7 +143,7 @@ public class ServerManager : MonoBehaviour
         {
             existingLobby.ReceiveData(remoteUser, packet, method);
         }
-        else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionEventResult connectionEvtResult) && (ConnectionCommandType)packet.ReadByte() == ConnectionCommandType.CONNECTION_REQUEST)
+        else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionRequestedEventResult connectionEvtResult) && (ConnectionCommandType)packet.ReadByte() == ConnectionCommandType.CONNECTION_REQUEST)
         {
             ConnectionData connectionData = await GetConnectionData(connectionEvtResult, packet);
             if (connectionData == null)
@@ -168,7 +170,7 @@ public class ServerManager : MonoBehaviour
 
             ServerData.AddConnectedUser(connectionEvtResult.ConnectingUser);
             ServerData.RemoveConnectingUser(remoteId);
-            transportUtility.SendToRemote(remoteUser.UserId, ConnectionPacketBuilder.ConnectionResponse(true, ConnectionPacketBuilder.ConnectionData(remoteUser.GlobalGuid, newLobby.LobbyData.LobbyId, connectionEvtResult.ResponsePacket)), TransportMethod.Reliable);
+            transportUtility.SendToRemote(remoteUser.UserId, ConnectionPacketBuilder.ConnectionResponse(true, ConnectionPacketBuilder.ConnectionData(newLobby.LobbyData.LobbyId, connectionEvtResult.ResponsePacket)), TransportMethod.Reliable);
             newLobby.UserJoined(remoteUser);
         }
         else
@@ -186,24 +188,35 @@ public class ServerManager : MonoBehaviour
 #endif
     }
 
-    private void HandleNetworkError(TransportCode code, SocketError? socketError)
+    private async void HandleNetworkReceivedUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
     {
+        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received unconnected packet from {iPEndPoint}. This is not supported on the server and the packet will be ignored.");
+    }
+
+    private async void HandleNetworkError(TransportCode code, SocketError? socketError)
+    {
+        _ = await connectionErrorEventBus.Fire(new ConnectionErrorEvent()
+        {
+            Code = code,
+            SocketError = socketError
+        });
+
         Debug.LogError($"<color=red><b>CNS</b></color>: Network error occurred: {code} {(socketError.HasValue ? $"(Socket Error: {socketError.Value})" : "")}");
     }
 
-    private async Task<ConnectionData> GetConnectionData(ConnectionEventResult connectingEvtData, NetPacket packet)
+    private async Task<ConnectionData> GetConnectionData(ConnectionRequestedEventResult connectingEvtData, NetPacket packet)
     {
         ConnectionData connectionData = new ConnectionData().Deserialize(packet);
         connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create ? GenerateLobbyId() : connectionData.LobbyId;
 
-        connectingEvtData = await connectionEventBus.Fire(new ConnectionDataReceivedEvent()
+        connectingEvtData = await connectionRequestedEventBus.Fire(new ConnectionDataReceivedEvent()
         {
             ConnectionData = connectionData,
             ConnectingUser = connectingEvtData.ConnectingUser,
             ConnectionTime = connectingEvtData.ConnectionTime,
             ResponsePacket = connectingEvtData.ResponsePacket
         });
-        if (connectingEvtData.UserDenied)
+        if (connectingEvtData.UserRejected)
         {
             transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
             return null;
@@ -212,7 +225,7 @@ public class ServerManager : MonoBehaviour
         return connectionData;
     }
 
-    private async Task<ServerLobby> GetLobbyData(ConnectionEventResult connectingEvtData, ConnectionData connectionData)
+    private async Task<ServerLobby> GetLobbyData(ConnectionRequestedEventResult connectingEvtData, ConnectionData connectionData)
     {
         ServerLobby lobby = null;
 
@@ -228,18 +241,15 @@ public class ServerManager : MonoBehaviour
         }
         else if (connectionData.LobbyConnectionType == LobbyConnectionType.JoinIfExists && !ServerData.ActiveLobbies.TryGetValue(connectionData.LobbyId, out lobby))
         {
-            connectingEvtData = await connectionEventBus.Fire(new LobbyNotFoundEvent()
+            connectingEvtData = await connectionRequestedEventBus.Fire(new LobbyNotFoundEvent()
             {
                 LobbyId = connectionData.LobbyId,
                 ConnectingUser = connectingEvtData.ConnectingUser,
                 ConnectionTime = connectingEvtData.ConnectionTime,
-                UserDenied = true,
+                UserRejected = true,
                 ResponsePacket = connectingEvtData.ResponsePacket
             });
-            if (connectingEvtData.UserDenied)
-            {
-                transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
-            }
+            transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
         }
 
         return lobby;
@@ -254,12 +264,12 @@ public class ServerManager : MonoBehaviour
             UserId = userId
         };
 
-        var result = await connectionEventBus.Fire(new UserRegisteredEvent
+        var result = await connectionRequestedEventBus.Fire(new UserRegisteredEvent
         {
             ConnectingUser = user,
             ConnectionTime = DateTime.UtcNow
         });
-        if (result.UserDenied)
+        if (result.UserRejected)
         {
             transportUtility.SendToRemote(user.UserId, ConnectionPacketBuilder.ConnectionResponse(false, result.ResponsePacket), TransportMethod.Reliable);
             transportUtility.KickRemote(user.UserId);
@@ -271,11 +281,6 @@ public class ServerManager : MonoBehaviour
 
     private async Task RemoveUser(UserData user)
     {
-        if (!ServerData.RemoveConnectedUser(user.UserId))
-        {
-            ServerData.RemoveConnectingUser(user.UserId);
-        }
-
         if (ServerData.ActiveLobbies.TryGetValue(user.LobbyId, out ServerLobby lobby))
         {
             await RemoveUserFromLobby(user, lobby);
@@ -290,7 +295,7 @@ public class ServerManager : MonoBehaviour
             }
         }
 
-        _ = await disconnectionEventBus.Fire(new UserRemovedEvent()
+        _ = await connectionLostEventBus.Fire(new UserRemovedEvent()
         {
             DisconnectingUser = user
         });
@@ -298,7 +303,7 @@ public class ServerManager : MonoBehaviour
         Debug.Log($"<color=green><b>CNS</b></color>: Server removed user {user.UserId}.");
     }
 
-    private async Task<ServerLobby> RegisterLobby(ConnectionEventResult connectingEvtData, int lobbyId)
+    private async Task<ServerLobby> RegisterLobby(ConnectionRequestedEventResult connectingEvtData, int lobbyId)
     {
         Scene lobbyScene = SceneManager.CreateScene($"Lobby_{lobbyId}_Scene", new CreateSceneParameters(LocalPhysicsMode.Physics3D));
         Scene previousScene = SceneManager.GetActiveScene();
@@ -312,14 +317,14 @@ public class ServerManager : MonoBehaviour
 
         if (connectingEvtData != null)
         {
-            connectingEvtData = await connectionEventBus.Fire(new LobbyRegisteredEvent()
+            connectingEvtData = await connectionRequestedEventBus.Fire(new LobbyRegisteredEvent()
             {
                 Lobby = lobby,
                 ConnectingUser = connectingEvtData.ConnectingUser,
                 ConnectionTime = connectingEvtData.ConnectionTime,
                 ResponsePacket = connectingEvtData.ResponsePacket
             });
-            if (connectingEvtData.UserDenied)
+            if (connectingEvtData.UserRejected)
             {
                 transportUtility.SendToRemote(connectingEvtData.ConnectingUser.UserId, ConnectionPacketBuilder.ConnectionResponse(false, connectingEvtData.ResponsePacket), TransportMethod.Reliable);
                 await RemoveLobby(connectingEvtData.ConnectingUser, lobby);
@@ -335,7 +340,7 @@ public class ServerManager : MonoBehaviour
     {
         ServerData.RemoveLobby(lobby.LobbyData.LobbyId);
 
-        _ = await disconnectionEventBus.Fire(new LobbyRemovedEvent()
+        _ = await connectionLostEventBus.Fire(new LobbyRemovedEvent()
         {
             Lobby = lobby,
             DisconnectingUser = disconnectingUser
@@ -350,19 +355,19 @@ public class ServerManager : MonoBehaviour
         Debug.Log($"<color=green><b>CNS</b></color>: Server removed lobby {lobby.LobbyData.LobbyId}.");
     }
 
-    private async Task<bool> AddUserToLobby(ConnectionEventResult connectingEvtData, ServerLobby lobby, ConnectionData connectionData)
+    private async Task<bool> AddUserToLobby(ConnectionRequestedEventResult connectingEvtData, ServerLobby lobby, ConnectionData connectionData)
     {
         connectingEvtData.ConnectingUser.LobbyId = connectionData.LobbyId;
         lobby.LobbyData.AddUser(connectingEvtData.ConnectingUser);
 
-        var result = await connectionEventBus.Fire(new UserAddedToLobbyEvent
+        var result = await connectionRequestedEventBus.Fire(new UserAddedToLobbyEvent
         {
             Lobby = lobby,
             ConnectingUser = connectingEvtData.ConnectingUser,
             ConnectionTime = connectingEvtData.ConnectionTime,
             ResponsePacket = connectingEvtData.ResponsePacket
         });
-        if (result.UserDenied)
+        if (result.UserRejected)
         {
             connectingEvtData.ConnectingUser.LobbyId = -1;
             lobby.LobbyData.RemoveUser(connectingEvtData.ConnectingUser);
@@ -378,7 +383,7 @@ public class ServerManager : MonoBehaviour
     {
         lobby.LobbyData.RemoveUser(user);
 
-        _ = await disconnectionEventBus.Fire(new UserRemovedFromLobbyEvent
+        _ = await connectionLostEventBus.Fire(new UserRemovedFromLobbyEvent
         {
             Lobby = lobby,
             DisconnectingUser = user
@@ -389,29 +394,36 @@ public class ServerManager : MonoBehaviour
 
     public void RegisterConnectionEventListener(INetEvent listener)
     {
-        connectionEventBus.RegisterListener(listener);
+        connectionRequestedEventBus.RegisterListener(listener);
+        connectionLostEventBus.RegisterListener(listener);
+        connectionErrorEventBus.RegisterListener(listener);
     }
 
     public void UnregisterConnectionEventListener(INetEvent listener)
     {
-        connectionEventBus.UnregisterListener(listener);
+        connectionRequestedEventBus.UnregisterListener(listener);
+        connectionLostEventBus.UnregisterListener(listener);
+        connectionErrorEventBus.UnregisterListener(listener);
     }
 
-#nullable enable
-    public void RegisterTransport(TransportType transportType, TransportSettings? transportSettings = null)
+    public void StartTransports()
     {
-        transportUtility.RegisterTransport(transportType, NetDeviceType.Server, transportSettings);
+        transportUtility.StartTransports();
     }
-#nullable disable
+
+    public void RegisterTransport<T>() where T : NetTransport
+    {
+        transportUtility.RegisterTransport<T>(NetDeviceType.Server);
+    }
 
     public void AddTransport(NetTransport transport)
     {
         transportUtility.AddTransport(transport);
     }
 
-    public void RemoveTransport(TransportType transportType)
+    public void RemoveTransport<T>() where T : NetTransport
     {
-        NetTransport transport = transportUtility.Transports.Find(t => t.TransportData.TransportType == transportType);
+        NetTransport transport = transportUtility.Transports.Find(t => t is T);
         transportUtility.RemoveTransport(transport);
     }
 
@@ -425,7 +437,7 @@ public class ServerManager : MonoBehaviour
         transportUtility.OnMultiConnected += HandleNetworkConnected;
         transportUtility.OnMultiDisconnected += HandleNetworkDisconnected;
         transportUtility.OnMultiReceived += HandleNetworkReceived;
-        //transportUtility.OnMultiReceivedUnconnected += HandleNetworkReceivedUnconnected;
+        transportUtility.OnMultiReceivedUnconnected += HandleNetworkReceivedUnconnected;
         transportUtility.OnMultiError += HandleNetworkError;
     }
 
@@ -434,7 +446,7 @@ public class ServerManager : MonoBehaviour
         transportUtility.OnMultiConnected -= HandleNetworkConnected;
         transportUtility.OnMultiDisconnected -= HandleNetworkDisconnected;
         transportUtility.OnMultiReceived -= HandleNetworkReceived;
-        //transportUtility.OnMultiReceivedUnconnected -= HandleNetworkReceivedUnconnected;
+        transportUtility.OnMultiReceivedUnconnected -= HandleNetworkReceivedUnconnected;
         transportUtility.OnMultiError -= HandleNetworkError;
     }
 
@@ -462,75 +474,40 @@ public class ServerManager : MonoBehaviour
         {
             rng.GetBytes(keyBytes);
         }
-
         return Convert.ToBase64String(keyBytes);
     }
 }
 
-internal enum ConnectionCommandType
-{
-    CONNECTION_REQUEST,
-    CONNECTION_RESPONSE,
-}
+public class UserRegisteredEvent : ConnectionRequestedEvent { }
 
-internal static class ConnectionPacketBuilder
-{
-    internal static NetPacket ConnectionRequest(ConnectionData connectionData)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ConnectionCommandType.CONNECTION_REQUEST);
-        connectionData.Serialize(packet);
-        return packet;
-    }
-
-    internal static NetPacket ConnectionResponse(bool accepted, NetPacket dataPkt = null)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write((byte)ConnectionCommandType.CONNECTION_RESPONSE);
-        packet.Write(accepted);
-        if (dataPkt != null && dataPkt.Length > 0)
-            packet.Write(dataPkt.ByteArray);
-        return packet;
-    }
-
-    internal static NetPacket ConnectionData(Guid userGuid, int lobbyId, NetPacket packet)
-    {
-        packet.Insert(0, lobbyId.ToString());
-        packet.Insert(0, userGuid.ToString());
-        return packet;
-    }
-}
-
-public class UserRegisteredEvent : ConnectionEvent { }
-
-public class ConnectionDataReceivedEvent : ConnectionEvent
+public class ConnectionDataReceivedEvent : ConnectionRequestedEvent
 {
     public ConnectionData ConnectionData { get; internal set; }
 }
 
-public class LobbyNotFoundEvent : ConnectionEvent
+public class LobbyNotFoundEvent : ConnectionRequestedEvent
 {
     public int LobbyId { get; internal set; }
 }
 
-public class LobbyRegisteredEvent : ConnectionEvent
+public class LobbyRegisteredEvent : ConnectionRequestedEvent
 {
     public ServerLobby Lobby { get; internal set; }
 }
 
-public class UserAddedToLobbyEvent : ConnectionEvent
+public class UserAddedToLobbyEvent : ConnectionRequestedEvent
 {
     public ServerLobby Lobby { get; internal set; }
 }
 
-public class UserRemovedEvent : DisconnectionEvent { }
+public class UserRemovedEvent : ConnectionLostEvent { }
 
-public class LobbyRemovedEvent : DisconnectionEvent
+public class LobbyRemovedEvent : ConnectionLostEvent
 {
     public ServerLobby Lobby { get; internal set; }
 }
 
-public class UserRemovedFromLobbyEvent : DisconnectionEvent
+public class UserRemovedFromLobbyEvent : ConnectionLostEvent
 {
     public ServerLobby Lobby { get; internal set; }
 }

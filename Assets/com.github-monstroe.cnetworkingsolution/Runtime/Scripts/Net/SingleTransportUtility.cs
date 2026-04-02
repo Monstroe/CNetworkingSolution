@@ -61,21 +61,25 @@ public class SingleTransportUtility : MonoBehaviour, ITransportUtility
         }
     }
 
-#nullable enable
-    public void RegisterTransport(TransportType transportType, NetDeviceType deviceType, TransportSettings? transportSettings = null)
+    public void StartTransports()
+    {
+        if (Transport != null)
+        {
+            Transport.StartDevice();
+        }
+    }
+
+    public void RegisterTransport<T>(NetDeviceType deviceType) where T : NetTransport
     {
         if (Transport != null)
         {
             RemoveTransports();
         }
 
-        Transport = Instantiate(NetResources.Instance.TransportPrefabs[transportType], this.transform).GetComponent<NetTransport>();
-        Transport.TransportData.TransportType = transportType;
+        Transport = Instantiate(NetResources.Instance.TransportPrefabs[typeof(T)], this.transform).GetComponent<NetTransport>();
         AddTransportEvents();
         Transport.Initialize(deviceType);
-        Transport.StartDevice(transportSettings);
     }
-#nullable disable
 
     public void AddTransport(NetTransport newTransport)
     {

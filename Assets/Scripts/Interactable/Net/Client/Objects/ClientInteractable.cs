@@ -69,7 +69,7 @@ public abstract class ClientInteractable : ClientTransform
         base.UpdateOnNonOwner();
     }
 
-    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(packet, commandType, transportMethod);
         switch (commandType)
@@ -101,7 +101,7 @@ public abstract class ClientInteractable : ClientTransform
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }

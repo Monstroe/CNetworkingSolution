@@ -1,13 +1,47 @@
+using System.Net;
+using System.Reflection;
 using UnityEngine;
 
-public class ClientBehaviour : MonoBehaviour
+public abstract class ClientBehaviour : MonoBehaviour, INetRpc
 {
     protected ClientLobby lobby;
 
     public virtual void Init(ClientLobby lobby)
     {
         this.lobby = lobby;
+        lobby.RegisterRpcContainer(this);
     }
+
+    public virtual void Remove()
+    {
+        lobby.UnregisterRpcContainer(this);
+    }
+
+    public virtual void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+    {
+        if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
+        {
+            ulong methodId = packet.ReadULong();
+            if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method))
+            {
+                ParameterInfo[] parameters = method.GetParameters();
+                object[] args = new object[parameters.Length];
+                for (int i = 0; i < args.Length; i++)
+                {
+                    args[i] = packet.ReadObject(parameters[i].ParameterType);
+                }
+
+                method.Invoke(this, args);
+            }
+            else
+            {
+                Debug.LogError($"RPC Method with ID {methodId} not found on ClientBehaviour {GetType().Name}.");
+            }
+            return;
+        }
+    }
+
+    public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { }
 
     protected void InstantiateOnNetwork(string originalPath, Vector3 position, Quaternion rotation)
     {
@@ -35,14 +69,14 @@ public class ClientBehaviour : MonoBehaviour
             return;
         }
 
-        lobby.SendToServer(ObjectClientService.ObjectSpawnRequest(originalPath, position, rotation), TransportMethod.Reliable);
+        lobby.SendToServer<ObjectServerService>(ObjectPacketBuilder.ObjectSpawnRequest(originalPath, position, rotation), TransportMethod.Reliable);
     }
 
     protected void DestroyOnNetwork(ClientObject clientObj)
     {
         if (clientObj.OwnerId == lobby.CurrentUser.PlayerId)
         {
-            lobby.SendToServer(ObjectClientService.ObjectDestroyRequest(clientObj.Id), TransportMethod.Reliable);
+            lobby.SendToServer<ObjectServerService>(ObjectPacketBuilder.ObjectDestroyRequest(clientObj.Id), TransportMethod.Reliable);
         }
         else
         {

@@ -40,16 +40,15 @@ public abstract class NetTransport : MonoBehaviour
 
     public abstract void Initialize(NetDeviceType deviceType);
 
-#nullable enable
-    public virtual bool StartDevice(TransportSettings? transportSettings = null)
+    public virtual bool StartDevice()
     {
         if (TransportData.DeviceType == NetDeviceType.Client)
         {
-            return StartClient(transportSettings);
+            return StartClient();
         }
         else if (TransportData.DeviceType == NetDeviceType.Server)
         {
-            return StartServer(transportSettings);
+            return StartServer();
         }
         else
         {
@@ -58,9 +57,8 @@ public abstract class NetTransport : MonoBehaviour
         }
     }
 
-    protected abstract bool StartClient(TransportSettings? transportSettings = null);
-    protected abstract bool StartServer(TransportSettings? transportSettings = null);
-#nullable disable
+    protected abstract bool StartClient();
+    protected abstract bool StartServer();
     public abstract void Send(uint remoteId, NetPacket packet, TransportMethod method);
     public abstract void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod method);
     public abstract void SendToAll(NetPacket packet, TransportMethod method);
@@ -105,12 +103,16 @@ public abstract class NetTransport : MonoBehaviour
 public class ConnectedArgs
 {
     public uint RemoteId { get; set; }
+
+    internal ConnectedArgs() { }
 }
 
 public class DisconnectedArgs
 {
     public uint RemoteId { get; set; }
     public TransportCode Code { get; set; }
+
+    internal DisconnectedArgs() { }
 }
 
 public class ReceivedArgs
@@ -118,18 +120,24 @@ public class ReceivedArgs
     public uint RemoteId { get; set; }
     public NetPacket Packet { get; set; }
     public TransportMethod? TransportMethod { get; set; }
+
+    internal ReceivedArgs() { }
 }
 
 public class ReceivedUnconnectedArgs
 {
     public IPEndPoint IPEndPoint { get; set; }
     public NetPacket Packet { get; set; }
+
+    internal ReceivedUnconnectedArgs() { }
 }
 
 public class ErrorArgs
 {
     public TransportCode Code { get; set; }
     public SocketError? SocketError { get; set; }
+
+    internal ErrorArgs() { }
 }
 
 public enum TransportMethod

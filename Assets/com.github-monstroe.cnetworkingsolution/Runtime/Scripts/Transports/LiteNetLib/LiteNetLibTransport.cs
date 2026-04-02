@@ -62,8 +62,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         };
     }
 
-#nullable enable
-    protected override bool StartClient(TransportSettings? transportSettings = null)
+    protected override bool StartClient()
     {
         if (initialized)
         {
@@ -72,15 +71,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
 
         initialized = true;
-
-        if (transportSettings != null)
-        {
-            address = transportSettings.ConnectionAddress ?? address;
-            port = transportSettings.ConnectionPort ?? port;
-            connectionKey = transportSettings.ConnectionKey ?? connectionKey;
-            unconnectedMessagesEnabled = transportSettings.UnconnectedPacketsEnabled ?? unconnectedMessagesEnabled;
-            broadcastReceiveEnabled = transportSettings.UnconnectedPacketsEnabled ?? broadcastReceiveEnabled;
-        }
 
         var success = netManager.Start();
         if (!success)
@@ -95,7 +85,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         return true;
     }
 
-    protected override bool StartServer(TransportSettings? transportSettings = null)
+    protected override bool StartServer()
     {
         if (initialized)
         {
@@ -104,15 +94,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         }
 
         initialized = true;
-
-        if (transportSettings != null)
-        {
-            address = transportSettings.ConnectionAddress ?? address;
-            port = transportSettings.ConnectionPort ?? port;
-            connectionKey = transportSettings.ConnectionKey ?? connectionKey;
-            unconnectedMessagesEnabled = transportSettings.UnconnectedPacketsEnabled ?? unconnectedMessagesEnabled;
-            broadcastReceiveEnabled = transportSettings.UnconnectedPacketsEnabled ?? broadcastReceiveEnabled;
-        }
 
         netManager.UnconnectedMessagesEnabled = unconnectedMessagesEnabled;
         netManager.BroadcastReceiveEnabled = broadcastReceiveEnabled;
@@ -125,7 +106,6 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
 
         return true;
     }
-#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {
@@ -338,7 +318,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         if (!connectedPeers.ContainsKey(peerId))
         {
             connectedPeers[peerId] = peer;
-            TransportData.ConnectedClientIds.Add(peerId);
+            TransportData.AddConnectedClient(peerId);
             RaiseNetworkConnected(peerId);
         }
         else
@@ -357,7 +337,7 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         var peerId = (uint)peer.Id;
         if (connectedPeers.Remove(peerId))
         {
-            TransportData.ConnectedClientIds.Remove(peerId);
+            TransportData.RemoveConnectedClient(peerId);
             RaiseNetworkDisconnected(peerId, ConvertCode(disconnectInfo.Reason));
         }
         else

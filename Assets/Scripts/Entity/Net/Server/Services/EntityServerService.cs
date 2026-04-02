@@ -6,12 +6,12 @@ public class EntityServerService : ServerService
 {
     public Dictionary<ushort, ServerEntity> ServerEntities { get; private set; } = new Dictionary<ushort, ServerEntity>();
 
-    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         // Nothing
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }

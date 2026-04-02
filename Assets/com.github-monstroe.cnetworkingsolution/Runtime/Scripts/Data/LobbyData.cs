@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public class LobbyData : INetSerializable<LobbyData>
 {
-    public int LobbyId { get; internal set; }
+    public int LobbyId { get; internal set; } = -1;
     private readonly List<UserData> lobbyUsers = new List<UserData>();
     public IReadOnlyList<UserData> LobbyUsers => lobbyUsers;
     public IReadOnlyList<UserData> GameUsers => lobbyUsers.FindAll(u => u.InGame);

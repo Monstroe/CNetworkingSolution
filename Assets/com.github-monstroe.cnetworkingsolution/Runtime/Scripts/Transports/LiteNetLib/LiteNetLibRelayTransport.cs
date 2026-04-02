@@ -6,12 +6,10 @@ using UnityEngine;
 
 public class LiteNetLibRelayTransport : LiteNetLibTransport
 {
-#nullable enable
-    protected override bool StartServer(TransportSettings? transportSettings = null)
+    protected override bool StartServer()
     {
         throw new NotImplementedException("<color=red><b>CNS</b></color>: CNetRelayTransport does not support starting a server directly. This transport is intended to be used by a client acting as a server (host).");
     }
-#nullable disable
 
     public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
     {

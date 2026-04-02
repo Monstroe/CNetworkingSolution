@@ -5,18 +5,18 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-public abstract class ServerObject : ServerBehaviour, INetObject, INetEvent
+public abstract class ServerObject : ServerBehaviour, INetObject
 {
     public ushort Id { get; private set; }
     public byte? OwnerId { get; private set; } = null;
     public UserData Owner { get; private set; } = null;
     public bool IsPlayer { get; private set; } = false;
 
-    public int PrefabKey => prefabKey;
+    public ulong PrefabKey => prefabKey;
     public string PrefabPath => prefabPath;
 
     [SerializeField, HideInInspector]
-    private int prefabKey;
+    private ulong prefabKey;
     [SerializeField, HideInInspector]
     private string prefabPath;
 
@@ -26,20 +26,17 @@ public abstract class ServerObject : ServerBehaviour, INetObject, INetEvent
 
     public virtual void Init(ushort id, ServerLobby lobby)
     {
-        this.Id = id;
+        Id = id;
         base.Init(lobby);
         type = GetType();
 
-        lobby.GetService<ObjectServerService>().RpcBus.RegisterRpcContainer(this);
-        lobby.GetService<ObjectServerService>().EventBus.RegisterListener(this);
         lobby.GetService<ObjectServerService>().ServerObjects.Add(id, this);
     }
 
-    public virtual void Remove()
+    public override void Remove()
     {
-        lobby.GetService<ObjectServerService>().RpcBus.UnregisterRpcContainer(this);
-        lobby.GetService<ObjectServerService>().EventBus.UnregisterListener(this);
         lobby.GetService<ObjectServerService>().ServerObjects.Remove(Id);
+        base.Remove();
     }
 
     public void SetOwner(byte? ownerId)
@@ -97,52 +94,20 @@ public abstract class ServerObject : ServerBehaviour, INetObject, INetEvent
 
         prefabPath = path;
         EditorUtility.SetDirty(this);
-        prefabKey = NetResources.HashPathToId(prefabPath);
+        prefabKey = NetResources.GenerateHashKey(prefabPath);
     }
 #endif
 
-    public virtual void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
-    {
-        switch (commandType)
-        {
-            case CommandType.OBJECT_RPC:
-                {
-                    uint methodId = packet.ReadUInt();
-                    if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method))
-                    {
-                        ParameterInfo[] parameters = method.GetParameters();
-                        object[] args = new object[parameters.Length];
-                        for (int i = 0; i < args.Length; i++)
-                        {
-                            args[i] = packet.ReadObject(parameters[i].ParameterType);
-                        }
-
-                        method.Invoke(this, args);
-                    }
-                    else
-                    {
-                        Debug.LogError($"RPC Method with ID {methodId} not found on ServerObject {type.Name}.");
-                    }
-                    break;
-                }
-        }
-    }
-    public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType) { }
-    public abstract void Tick();
-    public abstract void UserJoined(UserData joinedUser);
-    public abstract void UserJoinedGame(UserData joinedUser);
-    public abstract void UserLeft(UserData leftUser);
-
     public void SendToGameClientObjects(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
     {
-        lobby.SendToGame(ObjectServerService.ObjectCommunication(this, packet), transportMethod, exception);
+        lobby.SendToGame<ObjectClientService>(ObjectPacketBuilder.ObjectCommunication(this, packet), transportMethod, exception);
     }
 
     public void InvokeOnGameClientObjects(string methodName, params object[] args)
     {
-        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+        if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToGameClientObjects(ObjectServerService.ObjectRpc(methodId, method, args), attr.TransportMethod);
+            SendToGameClientObjects(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
         }
         else
         {
@@ -152,14 +117,14 @@ public abstract class ServerObject : ServerBehaviour, INetObject, INetEvent
 
     public void SendToUserClientObject(UserData user, NetPacket packet, TransportMethod transportMethod)
     {
-        lobby.SendToUser(user, ObjectServerService.ObjectCommunication(this, packet), transportMethod);
+        lobby.SendToUser<ObjectClientService>(user, ObjectPacketBuilder.ObjectCommunication(this, packet), transportMethod);
     }
 
     public void InvokeOnUserClientObject(UserData user, string methodName, params object[] args)
     {
-        if (lobby.GetService<ObjectServerService>().RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+        if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToUserClientObject(user, ObjectServerService.ObjectRpc(methodId, method, args), attr.TransportMethod);
+            SendToUserClientObject(user, ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
         }
         else
         {

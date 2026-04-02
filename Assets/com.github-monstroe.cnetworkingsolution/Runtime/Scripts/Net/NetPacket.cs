@@ -296,6 +296,12 @@ public class NetPacket
         }
     }
 
+    // Command
+    public void Insert<T>(int byteOffset, T value) where T : Enum
+    {
+        Insert(byteOffset, Convert.ToUInt16(value));
+    }
+
     // Unity Structs
     public void Insert(int byteOffset, Vector2 value)
     {
@@ -879,6 +885,12 @@ public class NetPacket
         {
             Write(item);
         }
+    }
+
+    // Command
+    public void Write<T>(T value) where T : Enum
+    {
+        Write(Convert.ToUInt16(value));
     }
 
     // Unity Structs
@@ -1707,6 +1719,13 @@ public class NetPacket
             value[i] = ReadString();
         CurrentIndex -= moveIndexPosition ? 0 : typeSize;
         return value;
+    }
+
+    // Command
+    public T ReadEnum<T>(bool moveIndexPosition = true) where T : Enum
+    {
+        ushort enumValue = ReadUShort(moveIndexPosition);
+        return (T)Enum.ToObject(typeof(T), enumValue);
     }
 
     // Unity Structs

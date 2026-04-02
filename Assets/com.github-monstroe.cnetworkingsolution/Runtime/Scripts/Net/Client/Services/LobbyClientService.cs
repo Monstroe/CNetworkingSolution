@@ -22,7 +22,7 @@ public class LobbyClientService : ClientService
     public delegate void LobbyUserKickedEventHandler(ulong userId, string kickReason);
     public event LobbyUserKickedEventHandler OnLobbyUserKicked;
 
-    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -99,22 +99,8 @@ public class LobbyClientService : ClientService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }
-
-    /* PACKETS */
-
-#if !CNS_LOBBY_SINGLE || (CNS_LOBBY_SINGLE && CNS_SYNC_HOST)
-    public static NetPacket LobbyUserKick(UserData user, string reason)
-    {
-        NetPacket packet = new NetPacket();
-        packet.Write(NetResources.GenerateServiceId<LobbyServerService>());
-        packet.Write((byte)LobbyServerService.LobbyCommandType.LOBBY_USER_KICK);
-        packet.Write(user.UserId);
-        packet.Write(reason);
-        return packet;
-    }
-#endif
 }

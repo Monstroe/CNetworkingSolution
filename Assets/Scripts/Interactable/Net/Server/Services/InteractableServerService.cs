@@ -6,12 +6,12 @@ public class InteractableServerService : ServerService
 {
     public Dictionary<ushort, ServerInteractable> ServerInteractables { get; private set; } = new Dictionary<ushort, ServerInteractable>();
 
-    public override void ReceiveData(UserData user, NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         // Nothing
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }

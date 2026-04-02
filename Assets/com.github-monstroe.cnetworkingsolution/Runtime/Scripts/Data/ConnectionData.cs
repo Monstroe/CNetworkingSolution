@@ -1,8 +1,10 @@
 public class ConnectionData : INetSerializable<ConnectionData>
 {
-    public int LobbyId { get; set; }
-    public LobbyConnectionType LobbyConnectionType { get; private set; }
-    public NetPacket RequestPacket { get; private set; }
+    public int LobbyId { get; set; } = -1;
+    public LobbyConnectionType LobbyConnectionType { get; internal set; }
+    public NetPacket RequestPacket { get; internal set; }
+
+    internal ConnectionData() { }
 
     public ConnectionData Deserialize(NetPacket packet)
     {

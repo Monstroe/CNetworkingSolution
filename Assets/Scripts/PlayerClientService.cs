@@ -8,7 +8,7 @@ public class PlayerClientService : ClientService
 
     [SerializeField] private ClientPlayer clientPlayerPrefab;
 
-    public override void ReceiveData(NetPacket packet, CommandType commandType, TransportMethod? transportMethod)
+    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         switch (commandType)
         {
@@ -84,7 +84,7 @@ public class PlayerClientService : ClientService
         }
     }
 
-    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, CommandType commandType)
+    public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
     {
         // Nothing
     }
