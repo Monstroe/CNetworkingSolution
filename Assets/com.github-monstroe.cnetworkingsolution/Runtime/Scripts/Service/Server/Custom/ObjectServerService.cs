@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using UnityEngine;
 
+[ServiceId("ObjectService")]
 public class ObjectServerService : ServerService
 {
     public delegate void ObjectSpawnedEventHandler(ServerObject obj);

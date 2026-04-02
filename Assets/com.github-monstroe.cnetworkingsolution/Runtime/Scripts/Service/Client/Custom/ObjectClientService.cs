@@ -3,6 +3,7 @@ using System.Net;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
+[ServiceId("ObjectService")]
 public class ObjectClientService : ClientService
 {
     public delegate void ObjectSpawnedEventHandler(ClientObject obj);
