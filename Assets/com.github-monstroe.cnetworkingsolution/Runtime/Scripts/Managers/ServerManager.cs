@@ -143,7 +143,7 @@ public class ServerManager : MonoBehaviour
         {
             existingLobby.ReceiveData(remoteUser, packet, method);
         }
-        else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionRequestedEventResult connectionEvtResult) && (ConnectionCommandType)packet.ReadByte() == ConnectionCommandType.CONNECTION_REQUEST)
+        else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionRequestedEventResult connectionEvtResult) && packet.ReadEnum<ConnectionCommandType>() == ConnectionCommandType.CONNECTION_REQUEST)
         {
             ConnectionData connectionData = await GetConnectionData(connectionEvtResult, packet);
             if (connectionData == null)

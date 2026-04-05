@@ -66,7 +66,6 @@ public class RpcBus
         var methodMap = new Dictionary<ulong, RpcMethodInfo>();
         foreach (RpcMethodInfo method in methods)
         {
-
             methodMap[method.MethodId] = method;
         }
 

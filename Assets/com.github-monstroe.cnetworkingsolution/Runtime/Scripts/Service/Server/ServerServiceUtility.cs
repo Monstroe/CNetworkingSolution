@@ -101,4 +101,9 @@ public class ServerServiceUtility
         }
         return false;
     }
+
+    public bool TryGetServiceId<T>(out ulong serviceId) where T : ServerService
+    {
+        return serviceBus.TryGetServiceId<T>(out serviceId);
+    }
 }

@@ -99,7 +99,7 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.ReceiveData(packet, method);
         }
-        else if ((ConnectionCommandType)packet.ReadByte() == ConnectionCommandType.CONNECTION_RESPONSE)
+        else if (packet.ReadEnum<ConnectionCommandType>() == ConnectionCommandType.CONNECTION_RESPONSE)
         {
             bool accepted = packet.ReadBool();
             if (accepted)

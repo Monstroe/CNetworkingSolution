@@ -1,0 +1,17 @@
+{
+    "name": "Monstroe.CNetworkingSolution.Samples.LiteNetLibTransport",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8747631f7a8e4d74fb6397f012daf2be",
+        "GUID:2d19ab8e6b631d04991836a52b5b00f3"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -14,19 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_GroupName: CNS_ServerObjectsGroup
   m_GUID: 0bd7cdf125f961246bf8786a85d06fc0
-  m_SerializeEntries:
-  - m_GUID: 11b159572a614dd47b933a6fb574fb05
-    m_Address: Assets/GameAssets/Objects/Server/FX/ServerFX.prefab
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - CNS_ServerPrefabs
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 3f2465832a0c0d14eb630d03c6b46522
-    m_Address: Assets/GameAssets/Objects/Server/Items/ServerBasicItem.prefab
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - CNS_ServerPrefabs
-    FlaggedDuringContentUpdateRestriction: 0
+  m_SerializeEntries: []
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 5bae0df7c2591ef4891617a16b261582, type: 2}
   m_SchemaSet:

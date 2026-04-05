@@ -43,4 +43,9 @@ public class ClientServiceUtility
         }
         return false;
     }
+
+    public bool TryGetServiceId<T>(out ulong serviceId) where T : ClientService
+    {
+        return serviceBus.TryGetServiceId<T>(out serviceId);
+    }
 }

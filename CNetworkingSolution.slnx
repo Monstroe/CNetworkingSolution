@@ -1,7 +1,15 @@
 ﻿<Solution>
-  <Project Path="Assembly-CSharp.csproj" />
-  <Project Path="LiteNetLib.csproj" />
   <Project Path="CNet.csproj" />
   <Project Path="Monstroe.CNetworkingSolution.Runtime.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.Player.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.Utility.csproj" />
+  <Project Path="LiteNetLib.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.LiteNetLibTransport.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.SampleScene.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.Chat.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.CNetTransport.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.FX.csproj" />
+  <Project Path="Monstroe.CNetworkingSolution.Samples.LocalTransport.csproj" />
 </Solution>
