@@ -177,22 +177,22 @@ public class ClientPlayer : ClientTransform
     protected override void StartOnOwner()
     {
         base.StartOnOwner();
-        playerInput.actions.Enable();
         ControlsEnabled = true;
-        LocalPlayer = this;
+        playerInput.actions.Enable();
         cameraTransform.GetComponent<Camera>().enabled = true;
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         }
+        LocalPlayer = this;
     }
 
     protected override void StartOnNonOwner()
     {
         base.StartOnNonOwner();
-        playerInput.actions.Disable();
         ControlsEnabled = false;
-        cameraTransform.GetComponent<Camera>().enabled = false;
+        Destroy(playerInput);
+        Destroy(cameraTransform.GetComponent<Camera>());
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
