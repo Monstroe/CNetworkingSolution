@@ -44,6 +44,11 @@ public class RpcBus
                         {
                             throw new Exception($"Method {type.Name}.{method.Name} has unsupported parameter type {p.ParameterType.FullName} for RPC.");
                         }
+
+                        if (p.GetCustomAttribute<RpcSenderAttribute>() != null && p.ParameterType != typeof(UserData))
+                        {
+                            throw new Exception($"Method {type.Name}.{method.Name} has invalid RpcSender parameter {p.Name}. Only UserData type is allowed for RpcSender.");
+                        }
                     }
 
                     ulong id = NetResources.GenerateHashKey(method.Name);

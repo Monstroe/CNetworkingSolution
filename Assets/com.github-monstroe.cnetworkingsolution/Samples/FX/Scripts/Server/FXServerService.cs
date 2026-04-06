@@ -3,9 +3,9 @@ using UnityEngine;
 [ServiceId("FXService")]
 public class FXServerService : ServerService
 {
-    [Header("Directories")]
-    [SerializeField] private string sfxDirectory = "Assets/GameAssets/SFX/";
-    [SerializeField] private string vfxDirectory = "Assets/GameAssets/VFX/";
+    [Header("FX Directories")]
+    [SerializeField] private string sfxDirectory = "Assets/FX/SFX/";
+    [SerializeField] private string vfxDirectory = "Assets/FX/VFX/";
 
     public void PlaySFX(string name, float volume, Vector3? pos = null)
     {

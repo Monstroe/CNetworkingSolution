@@ -1,6 +1,4 @@
 using System.Linq;
-using System.Threading.Tasks;
-using UnityEngine;
 
 [ServiceId("LobbyService")]
 public class LobbyServerService : ServerService
@@ -12,16 +10,15 @@ public class LobbyServerService : ServerService
         LobbyUserJoinedRpc(joinedUser);
     }
 
-    public override void UserLeft(UserData leftUser)
+    public override void LateUserLeft(UserData leftUser)
     {
-        base.UserLeft(leftUser);
-        LobbyUserLeftRpc(leftUser);
+        base.LateUserLeft(leftUser);
+        LobbyUserLeftRpc(leftUser, leftUser.UserId);
     }
 
     [ClientRpc]
-    private async void LobbyInitRpc(UserData joinedUser, ulong tick, ulong userId, UserData[] users)
+    private async void LobbyInitRpc([RpcSender] UserData joinedUser, ulong tick, ulong userId, UserData[] users)
     {
-        joinedUser.InLobby = true;
         LobbyInitializedEvent evt = new LobbyInitializedEvent()
         {
             JoinedUser = joinedUser,
@@ -50,7 +47,7 @@ public class LobbyServerService : ServerService
     }
 
     [ClientRpc]
-    private async void LobbyUserLeftRpc(UserData leftUser)
+    private async void LobbyUserLeftRpc([RpcSender] UserData leftUser, ulong userId)
     {
         LobbyUserLeftEvent evt = new LobbyUserLeftEvent()
         {
@@ -59,7 +56,7 @@ public class LobbyServerService : ServerService
         var result = await lobby.TriggerGameEvent(evt);
         if (!result.Canceled)
         {
-            InvokeOnLobbyClientServices(nameof(LobbyUserLeftRpc), exception: leftUser, leftUser.UserId);
+            InvokeOnLobbyClientServices(nameof(LobbyUserLeftRpc), exception: leftUser, userId);
         }
     }
 }

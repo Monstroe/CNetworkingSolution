@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -89,13 +90,8 @@ public abstract class EventBus<T1, T2, T3, T4> where T1 : NetEvent where T2 : Ne
     public async Task<T2> Fire(T1 e)
     {
         var eventType = e.GetType();
-
-        if (!registeredEventHandlers.TryGetValue(eventType, out List<T4> handlers))
-        {
-            return null;
-        }
-
-        return await HandleEvents(e, handlers);
+        registeredEventHandlers.TryGetValue(eventType, out List<T4> handlers);
+        return await HandleEvents(e, handlers ?? new List<T4>());
     }
 
     internal abstract Task<T2> HandleEvents(T1 e, List<T4> handlers);

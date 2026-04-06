@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using UnityEngine;
@@ -56,11 +57,15 @@ public abstract class ServerBehaviour : MonoBehaviour, INetEvent, INetRpc
     }
 
     public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { }
-    public virtual void Tick() { }
     public virtual void UserJoined(UserData joinedUser) { }
+    public virtual void LateUserJoined(UserData joinedUser) { }
     public virtual void UserJoinedGame(UserData joinedUser) { }
-    public virtual void UserLeft(UserData leftUser) { }
+    public virtual void LateUserJoinedGame(UserData joinedUser) { }
     public virtual void UserLeftGame(UserData leftUser) { }
+    public virtual void LateUserLeftGame(UserData leftUser) { }
+    public virtual void UserLeft(UserData leftUser) { }
+    public virtual void LateUserLeft(UserData leftUser) { }
+    public virtual void Tick() { }
 
     protected ServerObject InstantiateOnServer(string originalPath, byte? ownerId = null, bool initAndSendToUsers = true)
     {
@@ -192,8 +197,9 @@ public abstract class ServerBehaviour : MonoBehaviour, INetEvent, INetRpc
             }
             instance.transform.SetParent(parent);
 
-            instance.SetOwner(ownerId);
-            instance.SetAsPlayer(isPlayer);
+            instance.OwnerId = ownerId;
+            instance.Owner = ownerId != null ? lobby.LobbyData.GameUsers.FirstOrDefault(u => u.PlayerId == ownerId) : null;
+            instance.IsPlayer = isPlayer;
 
             if (initAndSendToUsers)
             {

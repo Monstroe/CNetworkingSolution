@@ -52,6 +52,9 @@ public class MainMenu : MonoBehaviour
 
     public void StartSinglePlayer()
     {
+        Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
+        ServerManager.Instance.RegisterTransport<LocalTransport>();
+        ServerManager.Instance.StartTransports();
         ClientManager.Instance.SetConnectionData(new ConnectionData()
         {
             LobbyConnectionType = LobbyConnectionType.JoinOrCreate

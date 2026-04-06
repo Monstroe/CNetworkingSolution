@@ -7,57 +7,6 @@ public class ClientPlayer : ClientTransform
 {
     public static ClientPlayer LocalPlayer { get; private set; }
 
-    [Header("Player Movement")]
-    [SerializeField] private float moveSpeed;
-    [SerializeField] private float jumpHeight;
-    [SerializeField] private float gravity;
-    [SerializeField] private float sprintMultiplier;
-    [SerializeField] private float crouchMultiplier;
-    [SerializeField] private float crouchLower;
-    [SerializeField] private Transform cameraParent;
-
-    [Space]
-    [Header("Player Rotation")]
-    [SerializeField] private Transform cameraTransform;
-    [SerializeField] private float mouseSensitivity;
-
-    [Header("Player Movement Controls")]
-    [SerializeField] private InputActionProperty playerMove;
-    [SerializeField] private InputActionProperty playerLook;
-    [SerializeField] private InputActionProperty playerJump;
-    [SerializeField] private InputActionProperty playerSprint;
-    [SerializeField] private InputActionProperty playerCrouch;
-
-    private Vector2 playerMoveValue;
-    private Vector2 playerLookValue;
-    private float playerJumpValue;
-    private float playerSprintValue;
-    private float playerCrouchValue;
-
-    // Movement
-    private PlayerInput playerInput;
-    private CharacterController cc;
-    private Vector3 moveDir, forwardDir, rightDir;
-    private float xRotation, yRotation;
-    private Vector3 xVelocity;
-    private float yVelocity;
-
-    // Jumping
-    private bool sprintJump;
-
-    // Crouching
-    private float standingHeight;
-    private float crouchingHeight;
-
-    // Animations
-    private bool previousGroundedState = false;
-    private bool previousCrouchingState = false;
-    private bool previousWalkingState = false;
-    private bool previousSprintingState = false;
-
-    private bool locked = false;
-    private bool justGrounded = true;
-
     public bool ControlsEnabled { get; set; } = false;
 
     public bool IsGrounded
@@ -122,14 +71,68 @@ public class ClientPlayer : ClientTransform
         }
     }
 
+    [Header("Player Movement")]
+    [SerializeField] private float moveSpeed;
+    [SerializeField] private float jumpHeight;
+    [SerializeField] private float gravity;
+    [SerializeField] private float sprintMultiplier;
+    [SerializeField] private float crouchMultiplier;
+    [SerializeField] private float crouchLower;
+    [SerializeField] private Transform cameraParent;
+
+    [Space]
+    [Header("Player Rotation")]
+    [SerializeField] private Transform cameraTransform;
+    [SerializeField] private float mouseSensitivity;
+
+    [Header("Player Movement Controls")]
+    [SerializeField] private InputActionProperty playerMove;
+    [SerializeField] private InputActionProperty playerLook;
+    [SerializeField] private InputActionProperty playerJump;
+    [SerializeField] private InputActionProperty playerSprint;
+    [SerializeField] private InputActionProperty playerCrouch;
+
+    private Vector2 playerMoveValue;
+    private Vector2 playerLookValue;
+    private float playerJumpValue;
+    private float playerSprintValue;
+    private float playerCrouchValue;
+
+    // Movement
+    private PlayerInput playerInput;
+    private CharacterController cc;
+    private Vector3 moveDir, forwardDir, rightDir;
+    private float xRotation, yRotation;
+    private Vector3 xVelocity;
+    private float yVelocity;
+
+    // Jumping
+    private bool sprintJump;
+
+    // Crouching
+    private float standingHeight;
+    private float crouchingHeight;
+
     // Animations
     private Animator anim;
+
+    private bool previousGroundedState = false;
+    private bool previousCrouchingState = false;
+    private bool previousWalkingState = false;
+    private bool previousSprintingState = false;
+
     private bool groundedState = false;
     private bool crouchingState = false;
     private bool walkingState = false;
     private bool sprintingState = false;
     private bool jumpingState = false;
     private bool grabbingState = false;
+
+    // Misc
+    private SkinnedMeshRenderer[] meshRenderers;
+    private bool locked = false;
+    private bool justGrounded = true;
+    private float footstepTimer = 0;
 
     public override void Init(ushort id, ClientLobby lobby)
     {
@@ -139,6 +142,7 @@ public class ClientPlayer : ClientTransform
         anim = GetComponentInChildren<Animator>();
         playerInput = GetComponent<PlayerInput>();
         cc = GetComponent<CharacterController>();
+        meshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
         standingHeight = cameraParent.localPosition.y;
         crouchingHeight = cameraParent.localPosition.y - crouchLower;
     }
@@ -177,6 +181,10 @@ public class ClientPlayer : ClientTransform
         ControlsEnabled = true;
         LocalPlayer = this;
         cameraTransform.GetComponent<Camera>().enabled = true;
+        foreach (var mr in meshRenderers)
+        {
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
+        }
     }
 
     protected override void StartOnNonOwner()
@@ -185,6 +193,10 @@ public class ClientPlayer : ClientTransform
         playerInput.actions.Disable();
         ControlsEnabled = false;
         cameraTransform.GetComponent<Camera>().enabled = false;
+        foreach (var mr in meshRenderers)
+        {
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        }
     }
 
     protected override void UpdateOnOwner()
@@ -267,6 +279,17 @@ public class ClientPlayer : ClientTransform
             cc.Move(xVelocity * Time.deltaTime);
             cc.Move(Vector3.up * yVelocity * Time.deltaTime);
         }
+
+        // Footstep SFX
+        if (moveDir.sqrMagnitude > 0.01f && IsGrounded)
+        {
+            if (footstepTimer > (IsSprinting ? (.55f / sprintMultiplier) : .55f))
+            {
+                footstepTimer = 0;
+                ClientManager.Instance.CurrentLobby.GetService<FXClientService>().PlaySFX("Footstep.wav", 0.5f, transform.position);
+            }
+        }
+        footstepTimer += Time.deltaTime;
 
         // Networking
         //SendCustomTransformToServerObject(transform.position, cameraParent.rotation);

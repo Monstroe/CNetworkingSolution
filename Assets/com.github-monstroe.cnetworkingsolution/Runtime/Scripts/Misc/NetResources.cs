@@ -191,9 +191,3 @@ public class NetResources : MonoBehaviour
         }
     }
 }
-
-public enum NetMode
-{
-    Local,
-    Online,
-}

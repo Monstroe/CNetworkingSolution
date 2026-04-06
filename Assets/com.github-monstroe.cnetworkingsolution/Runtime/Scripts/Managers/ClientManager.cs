@@ -19,11 +19,12 @@ public class ClientManager : MonoBehaviour
     public event ConnectionErrorEventHandler OnConnectionError;
 
     public static ClientManager Instance { get; private set; }
-    public ClientLobby CurrentLobby { get; private set; }
+    public ClientLobby CurrentLobby { get => lobbyInstance; set => lobbyInstance = value; }
     public bool IsConnected { get; private set; } = false;
 
     [Header("Lobby Settings")]
     [SerializeField] private ClientLobby lobbyPrefab;
+    [SerializeField] private ClientLobby lobbyInstance;
 
     private SingleTransportUtility transportUtility;
     private ConnectionData connectionData;
@@ -45,12 +46,15 @@ public class ClientManager : MonoBehaviour
 
         transportUtility = GetComponent<SingleTransportUtility>();
         AddTransportUtilityEvents();
-        CurrentLobby = Instantiate(lobbyPrefab, transform);
-        CurrentLobby.Init(transportUtility);
     }
 
     void Start()
     {
+        if (CurrentLobby)
+        {
+            CurrentLobby.Init(transportUtility);
+        }
+
         Debug.Log("<color=green><b>CNS</b></color>: Client initialized.");
     }
 
@@ -70,6 +74,12 @@ public class ClientManager : MonoBehaviour
 
     private void HandleNetworkConnected(ulong remoteId)
     {
+        if (!CurrentLobby)
+        {
+            CurrentLobby = Instantiate(lobbyPrefab, transform);
+            CurrentLobby.Init(transportUtility);
+        }
+
         transportUtility.SendToAllRemotes(ConnectionPacketBuilder.ConnectionRequest(connectionData), TransportMethod.Reliable);
     }
 
@@ -95,7 +105,7 @@ public class ClientManager : MonoBehaviour
         try
         {
 #endif
-        if (CurrentLobby.CurrentUser.InLobby)
+        if (CurrentLobby.LobbyData.LobbyId > -1)
         {
             CurrentLobby.ReceiveData(packet, method);
         }

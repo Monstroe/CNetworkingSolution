@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -8,10 +7,10 @@ public abstract class ClientObject : ClientBehaviour, INetObject
 {
     public ushort Id { get; private set; }
 
-    public byte? OwnerId { get; private set; } = null;
-    public UserData Owner { get; private set; } = null;
+    public byte? OwnerId { get; internal set; } = null;
+    public UserData Owner { get; internal set; } = null;
     public bool IsOwner { get => OwnerId == lobby.CurrentUser.PlayerId; }
-    public bool IsPlayer { get; private set; } = false;
+    public bool IsPlayer { get; internal set; } = false;
     public bool IsLocalPlayer { get => IsOwner && IsPlayer; }
 
     public ulong PrefabKey => prefabKey;
@@ -28,9 +27,6 @@ public abstract class ClientObject : ClientBehaviour, INetObject
     [Tooltip("Reference to the corresponding server prefab for this client object.")]
     [SerializeField] private ServerObject serverPrefab;
 
-    private bool ownerInitialized = false;
-    private bool isPlayerInitialized = false;
-
     public virtual void Init(ushort id, ClientLobby lobby)
     {
         Id = id;
@@ -45,39 +41,17 @@ public abstract class ClientObject : ClientBehaviour, INetObject
         base.Remove();
     }
 
-    internal void SetOwner(byte? ownerId)
-    {
-        if (ownerInitialized)
-        {
-            Debug.LogError("SetOwner cannot be called more than once on ClientObject " + type.Name + ". Please change the owner through the server using ServerObject.SetOwner.");
-            return;
-        }
-        SetOwnerRpc(ownerId);
-    }
-
-    internal void SetAsPlayer(bool isPlayer)
-    {
-        if (isPlayerInitialized)
-        {
-            Debug.LogError("SetAsPlayer cannot be called more than once on ClientObject " + type.Name + ". Please change whether this object is a player through the server using ServerObject.SetAsPlayer.");
-            return;
-        }
-        SetAsPlayerRpc(isPlayer);
-    }
-
     [ClientRpc]
     private void SetOwnerRpc(byte? ownerId)
     {
         OwnerId = ownerId;
         Owner = OwnerId != null ? lobby.LobbyData.GameUsers.FirstOrDefault(u => u.PlayerId == OwnerId) : null;
-        ownerInitialized = true;
     }
 
     [ClientRpc]
     private void SetAsPlayerRpc(bool isPlayer)
     {
         IsPlayer = isPlayer;
-        isPlayerInitialized = true;
     }
 
 #if UNITY_EDITOR

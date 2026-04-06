@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -35,7 +34,7 @@ internal static class ReservedPacketBuilder
 {
     public static NetPacket Rpc(ulong methodId, MethodInfo method, params object[] args)
     {
-        var parameters = method.GetParameters();
+        ParameterInfo[] parameters = method.GetParameters().Where(p => p.GetCustomAttribute<RpcSenderAttribute>() == null && p.GetCustomAttribute<RpcIgnoreAttribute>() == null).ToArray();
         if (args.Length != parameters.Length)
         {
             throw new ArgumentException("RPC argument count mismatch");

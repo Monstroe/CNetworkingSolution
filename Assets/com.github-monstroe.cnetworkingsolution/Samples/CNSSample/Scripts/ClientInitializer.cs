@@ -7,7 +7,7 @@ public class ClientInitializer : MonoBehaviour
     public static ClientInitializer Instance { get; private set; }
 
     [Header("Game Initialization")]
-    [SerializeField] private float pregameLoadDuration = 3f;
+    [SerializeField] private float pregameLoadDuration = 1f;
     [SerializeField] private float gameLoadDuration = 1f;
     [SerializeField] private float fadeDuration = 1f;
     [Header("Scene Management")]

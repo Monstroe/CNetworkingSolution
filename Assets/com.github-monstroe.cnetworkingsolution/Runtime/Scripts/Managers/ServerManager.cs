@@ -28,6 +28,15 @@ public class ServerManager : MonoBehaviour
     private readonly ConnectionErrorEventBus connectionErrorEventBus = new ConnectionErrorEventBus();
     private MultiTransportUtility transportUtility;
 
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        minLobbyId = Mathf.Max(0, minLobbyId);
+        maxLobbyId = Mathf.Max(minLobbyId + 1, maxLobbyId);
+        maxSecondsBeforeUnverifiedUserRemoval = Mathf.Max(1, maxSecondsBeforeUnverifiedUserRemoval);
+    }
+#endif
+
     void Awake()
     {
         if (Instance == null)
@@ -91,46 +100,54 @@ public class ServerManager : MonoBehaviour
 
     private async void HandleNetworkConnected(ulong remoteId)
     {
+#if !UNITY_EDITOR
         try
         {
-            if (!ServerData.ConnectedUsers.ContainsKey(remoteId) && !ServerData.ConnectingUsers.ContainsKey(remoteId))
-            {
-                await RegisterUser(remoteId);
-            }
-            else
-            {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} attempted to connect again.");
-            }
+#endif
+        if (!ServerData.ConnectedUsers.ContainsKey(remoteId) && !ServerData.ConnectingUsers.ContainsKey(remoteId))
+        {
+            await RegisterUser(remoteId);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} attempted to connect again.");
+        }
+#if !UNITY_EDITOR
         }
         catch (Exception ex)
         {
             Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling connection for user {remoteId}: {ex.Message}");
         }
+#endif
     }
 
     private async void HandleNetworkDisconnected(ulong remoteId, TransportCode code)
     {
+#if !UNITY_EDITOR
         try
         {
-            if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
-            {
-                ServerData.RemoveConnectedUser(userData.UserId);
-                await RemoveUser(userData);
-            }
-            else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionRequestedEventResult connectionEvtResult))
-            {
-                ServerData.RemoveConnectingUser(connectionEvtResult.ConnectingUser.UserId);
-                await RemoveUser(connectionEvtResult.ConnectingUser);
-            }
-            else
-            {
-                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} already disconnected.");
-            }
+#endif
+        if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
+        {
+            ServerData.RemoveConnectedUser(userData.UserId);
+            await RemoveUser(userData);
+        }
+        else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionRequestedEventResult connectionEvtResult))
+        {
+            ServerData.RemoveConnectingUser(connectionEvtResult.ConnectingUser.UserId);
+            await RemoveUser(connectionEvtResult.ConnectingUser);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} already disconnected.");
+        }
+#if !UNITY_EDITOR
         }
         catch (Exception ex)
         {
             Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error handling disconnection for user {remoteId}: {ex.Message}");
         }
+#endif
     }
 
     private async void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
@@ -139,12 +156,13 @@ public class ServerManager : MonoBehaviour
         try
         {
 #endif
-        if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData remoteUser) && remoteUser.InLobby && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
+        if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData remoteUser) && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
         {
             existingLobby.ReceiveData(remoteUser, packet, method);
         }
         else if (ServerData.ConnectingUsers.TryGetValue(remoteId, out ConnectionRequestedEventResult connectionEvtResult) && packet.ReadEnum<ConnectionCommandType>() == ConnectionCommandType.CONNECTION_REQUEST)
         {
+            remoteUser = connectionEvtResult.ConnectingUser;
             ConnectionData connectionData = await GetConnectionData(connectionEvtResult, packet);
             if (connectionData == null)
             {
@@ -172,6 +190,7 @@ public class ServerManager : MonoBehaviour
             ServerData.RemoveConnectingUser(remoteId);
             transportUtility.SendToRemote(remoteUser.UserId, ConnectionPacketBuilder.ConnectionResponse(true, ConnectionPacketBuilder.ConnectionData(newLobby.LobbyData.LobbyId, connectionEvtResult.ResponsePacket)), TransportMethod.Reliable);
             newLobby.UserJoined(remoteUser);
+            newLobby.LateUserJoined(remoteUser);
         }
         else
         {
@@ -316,8 +335,10 @@ public class ServerManager : MonoBehaviour
                 if (user.InGame)
                 {
                     lobby.UserLeftGame(user);
+                    lobby.LateUserLeftGame(user);
                 }
                 lobby.UserLeft(user);
+                lobby.LateUserLeft(user);
             }
         }
 

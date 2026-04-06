@@ -11,13 +11,13 @@ public class FXClientService : ClientService
     public delegate void VFXReceivedEventHandler(ulong vfxKey, Vector3 position, float scale);
     public event VFXReceivedEventHandler OnVFXReceived;
 
-    [Header("Prefabs")]
+    [Header("FX Prefabs")]
     [SerializeField] private GameObject sfxPrefab;
     [SerializeField] private GameObject vfxPrefab;
 
-    [Header("Directories")]
-    [SerializeField] private string sfxDirectory = "Assets/GameAssets/SFX/";
-    [SerializeField] private string vfxDirectory = "Assets/GameAssets/VFX/";
+    [Header("FX Directories")]
+    [SerializeField] private string sfxDirectory = "Assets/FX/SFX/";
+    [SerializeField] private string vfxDirectory = "Assets/FX/VFX/";
 
     public void PlaySFX(string name, float volume, Vector3? pos = null)
     {

@@ -14,7 +14,7 @@ public class ChatClientService : ClientService
 
     public void SendChat(string message)
     {
-        InvokeOnServerService(nameof(SendChatRpc), message);
+        InvokeOnServerService(nameof(SendChatRpc), lobby.CurrentUser.PlayerId, message);
     }
 
     [ClientRpc]

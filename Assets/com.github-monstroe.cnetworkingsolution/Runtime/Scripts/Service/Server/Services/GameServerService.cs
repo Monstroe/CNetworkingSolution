@@ -9,14 +9,14 @@ public class GameServerService : ServerService
         InvokeOnGameClientServices(nameof(GameUserJoinedRpc), joinedUser.PlayerId);
     }
 
-    public override void UserLeftGame(UserData leftUser)
+    public override void LateUserLeftGame(UserData leftUser)
     {
-        base.UserLeftGame(leftUser);
+        base.LateUserLeftGame(leftUser);
         InvokeOnGameClientServices(nameof(GameUserLeftRpc), leftUser.PlayerId);
     }
 
     [ServerRpc]
-    private async void GameUserJoinedRpc([RpcSender] UserData joinedUser)
+    private async void GameUserJoinedRpc([RpcSender] UserData joinedUser, byte playerId)
     {
         if (joinedUser.InGame)
         {
@@ -24,7 +24,12 @@ public class GameServerService : ServerService
             return;
         }
 
-        joinedUser.InGame = true;
+        if (joinedUser.PlayerId != playerId)
+        {
+            Debug.LogWarning($"Received GameUserJoinedRpc with player ID {playerId}, but the sender's player ID is {joinedUser.PlayerId}.");
+            return;
+        }
+
         GameUserJoinedEvent evt = new GameUserJoinedEvent()
         {
             JoinedUser = joinedUser
@@ -33,11 +38,12 @@ public class GameServerService : ServerService
         if (!result.Canceled)
         {
             lobby.UserJoinedGame(joinedUser);
+            lobby.LateUserJoinedGame(joinedUser);
         }
     }
 
     [ServerRpc]
-    private async void GameUserLeftRpc([RpcSender] UserData leftUser)
+    private async void GameUserLeftRpc([RpcSender] UserData leftUser, byte playerId)
     {
         if (!leftUser.InGame)
         {
@@ -45,7 +51,12 @@ public class GameServerService : ServerService
             return;
         }
 
-        leftUser.InGame = false;
+        if (leftUser.PlayerId != playerId)
+        {
+            Debug.LogWarning($"Received GameUserLeftRpc with player ID {playerId}, but the sender's player ID is {leftUser.PlayerId}.");
+            return;
+        }
+
         GameUserLeftEvent evt = new GameUserLeftEvent()
         {
             LeftUser = leftUser
@@ -54,6 +65,7 @@ public class GameServerService : ServerService
         if (!result.Canceled)
         {
             lobby.UserLeftGame(leftUser);
+            lobby.LateUserLeftGame(leftUser);
         }
     }
 }

@@ -65,22 +65,46 @@ public class ServerLobby : MonoBehaviour
     internal void UserJoined(UserData user)
     {
         user.PlayerId = GeneratePlayerId();
+        user.InLobby = true;
         services.UserJoined(user);
+    }
+
+    internal void LateUserJoined(UserData user)
+    {
+        services.LateUserJoined(user);
     }
 
     internal void UserJoinedGame(UserData user)
     {
+        user.InGame = true;
         services.UserJoinedGame(user);
     }
 
-    internal void UserLeft(UserData user)
+    internal void LateUserJoinedGame(UserData user)
     {
-        services.UserLeft(user);
+        services.LateUserJoinedGame(user);
     }
 
     internal void UserLeftGame(UserData user)
     {
+        user.InGame = false;
         services.UserLeftGame(user);
+    }
+
+    internal void LateUserLeftGame(UserData user)
+    {
+        services.LateUserLeftGame(user);
+    }
+
+    internal void UserLeft(UserData user)
+    {
+        user.InLobby = false;
+        services.UserLeft(user);
+    }
+
+    internal void LateUserLeft(UserData user)
+    {
+        services.LateUserLeft(user);
     }
 
     internal void Tick()

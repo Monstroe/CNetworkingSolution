@@ -21,7 +21,7 @@ public class GameClientService : ClientService
             return;
         }
 
-        InvokeOnServerService(nameof(GameUserJoinedRpc));
+        InvokeOnServerService(nameof(GameUserJoinedRpc), lobby.CurrentUser.PlayerId);
     }
 
     public void LeaveGame()
@@ -32,7 +32,7 @@ public class GameClientService : ClientService
             return;
         }
 
-        InvokeOnServerService(nameof(GameUserLeftRpc));
+        InvokeOnServerService(nameof(GameUserLeftRpc), lobby.CurrentUser.PlayerId);
     }
 
     [ClientRpc]

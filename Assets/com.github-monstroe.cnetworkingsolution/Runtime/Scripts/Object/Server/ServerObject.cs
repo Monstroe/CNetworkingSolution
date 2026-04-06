@@ -6,9 +6,9 @@ using UnityEngine;
 public abstract class ServerObject : ServerBehaviour, INetObject
 {
     public ushort Id { get; private set; }
-    public byte? OwnerId { get; private set; } = null;
-    public UserData Owner { get; private set; } = null;
-    public bool IsPlayer { get; private set; } = false;
+    public byte? OwnerId { get; internal set; } = null;
+    public UserData Owner { get; internal set; } = null;
+    public bool IsPlayer { get; internal set; } = false;
 
     public ulong PrefabKey => prefabKey;
     public string PrefabPath => prefabPath;
@@ -17,9 +17,6 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     private ulong prefabKey;
     [SerializeField, HideInInspector]
     private string prefabPath;
-
-    private bool ownerInitialized = false;
-    private bool isPlayerInitialized = false;
 
     public virtual void Init(ushort id, ServerLobby lobby)
     {
@@ -50,22 +47,14 @@ public abstract class ServerObject : ServerBehaviour, INetObject
     {
         OwnerId = ownerId;
         Owner = OwnerId != null ? lobby.LobbyData.GameUsers.FirstOrDefault(u => u.PlayerId == OwnerId) : null;
-        if (ownerInitialized)
-        {
-            InvokeOnGameClientObjects(nameof(SetOwnerRpc), ownerId);
-        }
-        ownerInitialized = true;
+        InvokeOnGameClientObjects(nameof(SetOwnerRpc), ownerId);
     }
 
     [ClientRpc]
     private void SetAsPlayerRpc(bool isPlayer)
     {
         IsPlayer = isPlayer;
-        if (isPlayerInitialized)
-        {
-            InvokeOnGameClientObjects(nameof(SetAsPlayerRpc), isPlayer);
-        }
-        isPlayerInitialized = true;
+        InvokeOnGameClientObjects(nameof(SetAsPlayerRpc), isPlayer);
     }
 
 #if UNITY_EDITOR

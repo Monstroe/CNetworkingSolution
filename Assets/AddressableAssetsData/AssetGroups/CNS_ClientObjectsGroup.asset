@@ -14,7 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_GroupName: CNS_ClientObjectsGroup
   m_GUID: 7ba3ac2a22d7bed4ea3c1e32a8177f00
-  m_SerializeEntries: []
+  m_SerializeEntries:
+  - m_GUID: 7847069604c8e91429e8fac63b117dfc
+    m_Address: Assets/com.github-monstroe.cnetworkingsolution/Samples/Player/Prefabs/Client/ClientPlayer.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - CNS_ClientPrefabs
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 5bae0df7c2591ef4891617a16b261582, type: 2}
   m_SchemaSet:

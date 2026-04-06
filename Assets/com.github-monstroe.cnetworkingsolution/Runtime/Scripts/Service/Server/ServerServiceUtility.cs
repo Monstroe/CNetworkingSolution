@@ -18,6 +18,17 @@ public class ServerServiceUtility
         }
     }
 
+    public void LateUserJoined(UserData user)
+    {
+        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        {
+            foreach (ServerService service in serviceList)
+            {
+                service.LateUserJoined(user);
+            }
+        }
+    }
+
     public void UserJoinedGame(UserData user)
     {
         foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
@@ -25,6 +36,39 @@ public class ServerServiceUtility
             foreach (ServerService service in serviceList)
             {
                 service.UserJoinedGame(user);
+            }
+        }
+    }
+
+    public void LateUserJoinedGame(UserData user)
+    {
+        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        {
+            foreach (ServerService service in serviceList)
+            {
+                service.LateUserJoinedGame(user);
+            }
+        }
+    }
+
+    public void UserLeftGame(UserData user)
+    {
+        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        {
+            foreach (ServerService service in serviceList)
+            {
+                service.UserLeftGame(user);
+            }
+        }
+    }
+
+    public void LateUserLeftGame(UserData user)
+    {
+        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        {
+            foreach (ServerService service in serviceList)
+            {
+                service.LateUserLeftGame(user);
             }
         }
     }
@@ -40,13 +84,13 @@ public class ServerServiceUtility
         }
     }
 
-    public void UserLeftGame(UserData user)
+    public void LateUserLeft(UserData user)
     {
         foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
         {
             foreach (ServerService service in serviceList)
             {
-                service.UserLeftGame(user);
+                service.LateUserLeft(user);
             }
         }
     }

@@ -7,17 +7,12 @@ using UnityEngine;
 [ServiceId("ObjectService")]
 public class ObjectServerService : ServerService
 {
-    public delegate void ObjectSpawnedEventHandler(ServerObject obj);
-    public event ObjectSpawnedEventHandler OnObjectSpawned;
-
-    public delegate void ObjectDestroyedEventHandler(ServerObject obj);
-    public event ObjectDestroyedEventHandler OnObjectDestroyed;
-
     public Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
     public Dictionary<ushort, ServerTransform> ServerTransforms { get; private set; } = new Dictionary<ushort, ServerTransform>();
 
     public NetMap Map { get; private set; }
 
+    [Header("Map Settings")]
     [Tooltip("The map prefab to be instantiated on the server.")]
     [SerializeField] private NetMap mapPrefab;
 
@@ -101,21 +96,21 @@ public class ObjectServerService : ServerService
         }
     }
 
-    public override void Tick()
-    {
-        base.Tick();
-        foreach (var serverObject in ServerObjects.Values)
-        {
-            serverObject.Tick();
-        }
-    }
-
     public override void UserJoined(UserData joinedUser)
     {
         base.UserJoined(joinedUser);
         foreach (var serverObject in ServerObjects.Values)
         {
             serverObject.UserJoined(joinedUser);
+        }
+    }
+
+    public override void LateUserJoined(UserData joinedUser)
+    {
+        base.LateUserJoined(joinedUser);
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.LateUserJoined(joinedUser);
         }
     }
 
@@ -157,12 +152,12 @@ public class ObjectServerService : ServerService
         }
     }
 
-    public override void UserLeft(UserData leftUser)
+    public override void LateUserJoinedGame(UserData joinedUser)
     {
-        base.UserLeft(leftUser);
+        base.LateUserJoinedGame(joinedUser);
         foreach (var serverObject in ServerObjects.Values)
         {
-            serverObject.UserLeft(leftUser);
+            serverObject.LateUserJoinedGame(joinedUser);
         }
     }
 
@@ -172,6 +167,42 @@ public class ObjectServerService : ServerService
         foreach (var serverObject in ServerObjects.Values)
         {
             serverObject.UserLeftGame(leftUser);
+        }
+    }
+
+    public override void LateUserLeftGame(UserData leftUser)
+    {
+        base.LateUserLeftGame(leftUser);
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.LateUserLeftGame(leftUser);
+        }
+    }
+
+    public override void UserLeft(UserData leftUser)
+    {
+        base.UserLeft(leftUser);
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.UserLeft(leftUser);
+        }
+    }
+
+    public override void LateUserLeft(UserData leftUser)
+    {
+        base.LateUserLeft(leftUser);
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.LateUserLeft(leftUser);
+        }
+    }
+
+    public override void Tick()
+    {
+        base.Tick();
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.Tick();
         }
     }
 
@@ -193,7 +224,6 @@ public class ObjectServerService : ServerService
             }
 
             serverObj.Init(id, lobby);
-            OnObjectSpawned?.Invoke(serverObj);
         }
     }
 
@@ -204,7 +234,6 @@ public class ObjectServerService : ServerService
             destroyedStartingObjectIds.Add(serverObj.Id);
         }
 
-        OnObjectDestroyed?.Invoke(serverObj);
         DestroyOnServer(serverObj, true);
     }
 }

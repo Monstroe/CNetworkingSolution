@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -17,13 +18,10 @@ public class ObjectClientService : ClientService
 
     public NetMap Map { get => mapInstance; private set => mapInstance = value; }
 
+    [Header("Map Settings")]
     [Tooltip("The current instance of the map on the client.")]
+    [SerializeField] private NetMap mapPrefab;
     [SerializeField] private NetMap mapInstance;
-
-    public void SetMapInstance(NetMap mapObj)
-    {
-        mapInstance = mapObj;
-    }
 
     public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
@@ -43,6 +41,10 @@ public class ObjectClientService : ClientService
             case ObjectCommandType.OBJECTS_INIT:
                 {
                     ushort[] startingObjectIds = packet.ReadUShorts();
+                    if (!Map)
+                    {
+                        Map = Instantiate(mapPrefab);
+                    }
                     List<ClientObject> startingClientObjects = Map.GetStartingClientObjects();
                     for (int i = 0; i < startingClientObjects.Count; i++)
                     {
@@ -73,8 +75,9 @@ public class ObjectClientService : ClientService
                         ClientObject obj = Instantiate(handle, pos, rot).GetComponent<ClientObject>();
                         if (ownerId.HasValue)
                         {
-                            obj.SetOwner(ownerId.Value);
-                            obj.SetAsPlayer(isPlayer);
+                            obj.OwnerId = ownerId;
+                            obj.Owner = ownerId != null ? lobby.LobbyData.GameUsers.FirstOrDefault(u => u.PlayerId == ownerId) : null;
+                            obj.IsPlayer = isPlayer;
                         }
                         obj.Init(objectId, lobby);
                         OnObjectSpawned?.Invoke(obj);

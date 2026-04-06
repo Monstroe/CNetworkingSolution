@@ -9,8 +9,6 @@ public class UserData : INetSerializable<UserData>
     public bool InLobby { get; internal set; } = false;
     public bool InGame { get; internal set; } = false;
 
-    internal UserData() { }
-
     public bool IsHost(LobbyData lobby)
     {
         return lobby.HostUser != null && lobby.HostUser.UserId == UserId;
@@ -24,6 +22,7 @@ public class UserData : INetSerializable<UserData>
             UserId = packet.ReadULong(),
             PlayerId = packet.ReadByte(),
             LobbyId = packet.ReadInt(),
+            InLobby = packet.ReadBool(),
             InGame = packet.ReadBool()
         };
     }
@@ -34,6 +33,7 @@ public class UserData : INetSerializable<UserData>
         packet.Write(UserId);
         packet.Write(PlayerId);
         packet.Write(LobbyId);
+        packet.Write(InLobby);
         packet.Write(InGame);
     }
 }

@@ -7,6 +7,8 @@ public class TransportData
     private readonly List<uint> connectedClientIds = new List<uint>();
     public IReadOnlyList<uint> ConnectedClientIds => connectedClientIds;
 
+    internal TransportData() { }
+
     public void AddConnectedClient(uint clientId)
     {
         if (!connectedClientIds.Contains(clientId))
@@ -19,8 +21,6 @@ public class TransportData
     {
         return connectedClientIds.Remove(clientId);
     }
-
-    internal TransportData() { }
 }
 
 public enum NetDeviceType

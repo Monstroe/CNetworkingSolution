@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using UnityEngine;
 
 [ServiceId("PlayerService")]
@@ -8,19 +7,20 @@ public class PlayerServerService : ServerService
 {
     public Dictionary<UserData, ServerPlayer> ServerPlayers { get; private set; } = new Dictionary<UserData, ServerPlayer>();
 
+    [Header("Player Settings")]
     [SerializeField] private ServerPlayer serverPlayerPrefab;
     [Space]
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private float minDistanceFromPlayers = 5f;
 
-    public override void UserJoinedGame(UserData joinedUser)
+    public override void LateUserJoinedGame(UserData joinedUser)
     {
-        base.UserJoinedGame(joinedUser);
+        base.LateUserJoinedGame(joinedUser);
         // Spawn new player
         Transform spawnPoint = GetRandomSpawnPoint();
         Vector3 position = GetGroundPosition(spawnPoint.position);
         Quaternion rotation = spawnPoint.rotation;
-        InstantiateOnServer(serverPlayerPrefab.gameObject, position, rotation, joinedUser.PlayerId);
+        InstantiateOnServerAsPlayer(serverPlayerPrefab.gameObject, position, rotation, joinedUser.PlayerId);
     }
 
     public override void UserLeftGame(UserData leftUser)
@@ -45,8 +45,7 @@ public class PlayerServerService : ServerService
 
     private Vector3 GetGroundPosition(Vector3 position)
     {
-        RaycastHit hit;
-        if (Physics.Raycast(position + Vector3.up * 100, Vector3.down, out hit, 200f))
+        if (Physics.Raycast(position + Vector3.up * 100, Vector3.down, out RaycastHit hit, 200f))
         {
             return hit.point;
         }
