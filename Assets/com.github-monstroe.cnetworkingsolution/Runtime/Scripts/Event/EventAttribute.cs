@@ -1,7 +1,7 @@
 using System;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class EventAttribute : Attribute
+public abstract class EventAttribute : Attribute
 {
     public EventPriority Priority { get; }
 

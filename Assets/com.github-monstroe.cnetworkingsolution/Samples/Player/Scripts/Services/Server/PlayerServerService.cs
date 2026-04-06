@@ -23,9 +23,9 @@ public class PlayerServerService : ServerService
         InstantiateOnServer(serverPlayerPrefab.gameObject, position, rotation, joinedUser.PlayerId);
     }
 
-    public override void UserLeft(UserData leftUser)
+    public override void UserLeftGame(UserData leftUser)
     {
-        base.UserLeft(leftUser);
+        base.UserLeftGame(leftUser);
         if (ServerPlayers.TryGetValue(leftUser, out ServerPlayer player))
         {
             DestroyOnServer(player);

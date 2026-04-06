@@ -1,4 +1,3 @@
-#if CNS_TRANSPORT_CNET
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -353,4 +352,3 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         ReceivePacket(remoteEP, packet, protocol);
     }
 }
-#endif

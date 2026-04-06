@@ -40,6 +40,17 @@ public class ServerServiceUtility
         }
     }
 
+    public void UserLeftGame(UserData user)
+    {
+        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        {
+            foreach (ServerService service in serviceList)
+            {
+                service.UserLeftGame(user);
+            }
+        }
+    }
+
     public void Tick()
     {
         foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)

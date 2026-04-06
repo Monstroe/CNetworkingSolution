@@ -1,7 +1,7 @@
 using System;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public sealed class RpcAttribute : Attribute
+public abstract class RpcAttribute : Attribute
 {
     public TransportMethod TransportMethod { get; }
 

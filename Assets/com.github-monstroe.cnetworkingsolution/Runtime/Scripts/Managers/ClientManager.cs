@@ -169,23 +169,9 @@ public class ClientManager : MonoBehaviour
         Debug.LogError($"<color=red><b>CNS</b></color>: Network error occurred: {code} {(socketError.HasValue ? $"(Socket Error: {socketError.Value})" : "")}");
     }
 
-    public void CreateLobby(NetPacket requestPacket = null)
+    public void SetConnectionData(ConnectionData newConnectionData)
     {
-        connectionData = new ConnectionData()
-        {
-            LobbyConnectionType = LobbyConnectionType.Create,
-            RequestPacket = requestPacket
-        };
-    }
-
-    public void JoinLobby(int lobbyId, bool createIfNotExists = false, NetPacket requestPacket = null)
-    {
-        connectionData = new ConnectionData()
-        {
-            LobbyId = lobbyId,
-            LobbyConnectionType = createIfNotExists ? LobbyConnectionType.JoinOrCreate : LobbyConnectionType.JoinIfExists,
-            RequestPacket = requestPacket
-        };
+        connectionData = newConnectionData;
     }
 
     public void StartTransport()

@@ -6,7 +6,7 @@ public class UserData : INetSerializable<UserData>
     public ulong UserId { get; internal set; }
     public byte PlayerId { get; internal set; }
     public int LobbyId { get; internal set; } = -1;
-    public bool InLobby => LobbyId > -1;
+    public bool InLobby { get; internal set; } = false;
     public bool InGame { get; internal set; } = false;
 
     internal UserData() { }

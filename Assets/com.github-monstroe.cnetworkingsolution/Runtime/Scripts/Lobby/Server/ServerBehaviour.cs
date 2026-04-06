@@ -29,13 +29,20 @@ public abstract class ServerBehaviour : MonoBehaviour, INetEvent, INetRpc
         if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
         {
             ulong methodId = packet.ReadULong();
-            if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method))
+            if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method) && method.GetCustomAttribute<ClientRpcAttribute>() == null)
             {
                 ParameterInfo[] parameters = method.GetParameters();
                 object[] args = new object[parameters.Length];
                 for (int i = 0; i < args.Length; i++)
                 {
-                    args[i] = packet.ReadObject(parameters[i].ParameterType);
+                    if (parameters[i].ParameterType == typeof(UserData) && parameters[i].GetCustomAttribute<RpcSenderAttribute>() != null)
+                    {
+                        args[i] = user;
+                    }
+                    else
+                    {
+                        args[i] = packet.ReadObject(parameters[i].ParameterType);
+                    }
                 }
 
                 method.Invoke(this, args);
@@ -53,6 +60,7 @@ public abstract class ServerBehaviour : MonoBehaviour, INetEvent, INetRpc
     public virtual void UserJoined(UserData joinedUser) { }
     public virtual void UserJoinedGame(UserData joinedUser) { }
     public virtual void UserLeft(UserData leftUser) { }
+    public virtual void UserLeftGame(UserData leftUser) { }
 
     protected ServerObject InstantiateOnServer(string originalPath, byte? ownerId = null, bool initAndSendToUsers = true)
     {

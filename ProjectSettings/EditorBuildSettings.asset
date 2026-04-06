@@ -6,13 +6,13 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/com.github-monstroe.cnetworkingsolution/Samples/SampleScene/Scenes/Menu.unity
+    path: Assets/com.github-monstroe.cnetworkingsolution/Samples/CNSSample/Scenes/CNSSampleScene.unity
     guid: db4635a0369f9e54fa665f1d53513ead
   - enabled: 1
-    path: Assets/com.github-monstroe.cnetworkingsolution/Samples/SampleScene/Scenes/Game.unity
+    path: Assets/com.github-monstroe.cnetworkingsolution/Samples/CNSSample/Scenes/Game.unity
     guid: fce7a7cec550f1d45a97ff154dc7ac25
   - enabled: 1
-    path: Assets/com.github-monstroe.cnetworkingsolution/Samples/SampleScene/Scenes/Server.unity
+    path: Assets/com.github-monstroe.cnetworkingsolution/Samples/CNSSample/Scenes/Server.unity
     guid: 99c9720ab356a0642a771bea13969a05
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: fdf0bc71d6f1c2441b689a60f6ea03d1, type: 2}

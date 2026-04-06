@@ -1,0 +1,23 @@
+{
+    "name": "Monstroe.CNetworkingSolution.Samples.SampleScene",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8747631f7a8e4d74fb6397f012daf2be",
+        "GUID:715b7965d2b3c824ba39c3a83a592f69",
+        "GUID:f2de15780b353304b811e952e4b8a4f3",
+        "GUID:4e3ae26b4187d4949aa9d13f87ef79e7",
+        "GUID:972ac84b3e65bb741afcb9c6aaa1f340",
+        "GUID:10cbfbd5186dff64c942ecbc10682ad5",
+        "GUID:9faca1c83f895dd4ea47a61ec5cf9216",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

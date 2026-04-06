@@ -25,8 +25,6 @@ public class ObjectServerService : ServerService
     private List<ushort> spawnedStartingObjectIds = new List<ushort>();
     private List<ushort> destroyedStartingObjectIds = new List<ushort>();
 
-    // The object server service is special because it handles all networked object communication
-    // Server services should run first (with the exception of the game and lobby service), then server objects
     public override void Init(ServerLobby lobby)
     {
         base.Init(lobby);
@@ -165,6 +163,15 @@ public class ObjectServerService : ServerService
         foreach (var serverObject in ServerObjects.Values)
         {
             serverObject.UserLeft(leftUser);
+        }
+    }
+
+    public override void UserLeftGame(UserData leftUser)
+    {
+        base.UserLeftGame(leftUser);
+        foreach (var serverObject in ServerObjects.Values)
+        {
+            serverObject.UserLeftGame(leftUser);
         }
     }
 

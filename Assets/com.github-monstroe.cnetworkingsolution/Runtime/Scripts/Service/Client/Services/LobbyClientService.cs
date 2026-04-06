@@ -13,46 +13,43 @@ public class LobbyClientService : ClientService
     public delegate void LobbyUserLeftEventHandler(UserData user);
     public event LobbyUserLeftEventHandler OnLobbyUserLeft;
 
-    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+    [ClientRpc]
+    private void LobbyInitRpc(ulong tick, ulong userId, UserData[] users)
     {
-        base.ReceiveData(packet, commandType, transportMethod);
-        switch ((LobbyCommandType)commandType)
+        lobby.ClientTick = tick; // Update the client tick
+        for (int i = 0; i < users.Length; i++)
         {
-            case LobbyCommandType.LOBBY_INIT:
-                {
-                    ulong tick = packet.ReadULong();
-                    lobby.ClientTick = tick; // Update the client tick
-                    int userCount = packet.ReadByte();
-                    for (int i = 0; i < userCount; i++)
-                    {
-                        UserData user = new UserData().Deserialize(packet);
-                        lobby.LobbyData.AddUser(user);
-                    }
-                    lobby.CurrentUser = lobby.LobbyData.LobbyUsers[lobby.LobbyData.LobbyUsers.Count - 1]; // Set the local user data
-                    OnLobbyInitialized?.Invoke(tick, lobby.LobbyData);
-                    break;
-                }
-            case LobbyCommandType.LOBBY_USER_JOINED:
-                {
-                    UserData user = new UserData().Deserialize(packet);
-                    lobby.LobbyData.AddUser(user);
-                    OnLobbyUserJoined?.Invoke(user);
-                    break;
-                }
-            case LobbyCommandType.LOBBY_USER_LEFT:
-                {
-                    ulong userId = packet.ReadULong();
-                    UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.UserId == userId);
-                    if (user == null)
-                    {
-                        Debug.LogWarning($"Received LOBBY_USER_LEFT for user ID {userId}, but no such user was found in the lobby.");
-                        return;
-                    }
-
-                    lobby.LobbyData.RemoveUser(user);
-                    OnLobbyUserLeft?.Invoke(user);
-                    break;
-                }
+            lobby.LobbyData.AddUser(users[i]);
         }
+
+        lobby.CurrentUser = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.UserId == userId); // Set the local user data
+        if (lobby.CurrentUser == null)
+        {
+            Debug.LogWarning($"Received LobbyInitRpc for user ID {userId}, but no such user was found in the lobby.");
+            return;
+        }
+
+        OnLobbyInitialized?.Invoke(tick, lobby.LobbyData);
+    }
+
+    [ClientRpc]
+    private void LobbyUserJoinedRpc(UserData user)
+    {
+        lobby.LobbyData.AddUser(user);
+        OnLobbyUserJoined?.Invoke(user);
+    }
+
+    [ClientRpc]
+    private void LobbyUserLeftRpc(ulong userId)
+    {
+        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.UserId == userId);
+        if (user == null)
+        {
+            Debug.LogWarning($"Received LobbyUserLeftRpc for user ID {userId}, but no such user was found in the lobby.");
+            return;
+        }
+
+        lobby.LobbyData.RemoveUser(user);
+        OnLobbyUserLeft?.Invoke(user);
     }
 }

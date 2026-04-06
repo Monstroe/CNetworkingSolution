@@ -1,19 +1,9 @@
-using System.Linq;
-using UnityEngine;
-
 [ServiceId("ChatService")]
 public class ChatServerService : ServerService
 {
-    [Rpc]
-    private async void SendChatRpc(byte playerId, string message)
+    [ServerRpc]
+    private async void SendChatRpc([RpcSender] UserData user, string message)
     {
-        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
-        if (user == null)
-        {
-            Debug.LogWarning($"User with PlayerId {playerId} not found in lobby.");
-            return;
-        }
-
         ChatMessageReceivedEvent chatEvent = new ChatMessageReceivedEvent()
         {
             User = user,
@@ -26,20 +16,21 @@ public class ChatServerService : ServerService
         }
     }
 
-    [Rpc]
-    private void ChatUserJoinedRpc(byte playerId, string welcomeMessage)
+    [ServerRpc]
+    private void ChatUserJoinedRpc([RpcSender] UserData user, string welcomeMessage)
     {
-        InvokeOnGameClientServices(nameof(ChatUserJoinedRpc), playerId, welcomeMessage);
+        InvokeOnGameClientServices(nameof(ChatUserJoinedRpc), user.PlayerId, welcomeMessage);
     }
 
-    [Rpc]
-    private void ChatUserLeftRpc(byte playerId, string farewellMessage)
+    [ServerRpc]
+    private void ChatUserLeftRpc([RpcSender] UserData user, string farewellMessage)
     {
-        InvokeOnGameClientServices(nameof(ChatUserLeftRpc), playerId, farewellMessage);
+        InvokeOnGameClientServices(nameof(ChatUserLeftRpc), user.PlayerId, farewellMessage);
     }
 
     public override void UserJoinedGame(UserData joinedUser)
     {
+        base.UserJoinedGame(joinedUser);
         ChatUserJoinedEvent joinEvent = new ChatUserJoinedEvent()
         {
             JoinedUser = joinedUser,
@@ -49,12 +40,13 @@ public class ChatServerService : ServerService
         var result = lobby.TriggerGameEvent(joinEvent).Result;
         if (!result.Canceled)
         {
-            ChatUserJoinedRpc(joinEvent.JoinedUser.PlayerId, joinEvent.WelcomeMessage);
+            ChatUserJoinedRpc(joinEvent.JoinedUser, joinEvent.WelcomeMessage);
         }
     }
 
     public override void UserLeft(UserData leftUser)
     {
+        base.UserLeft(leftUser);
         ChatUserLeftEvent leftEvent = new ChatUserLeftEvent()
         {
             LeftUser = leftUser,
@@ -64,7 +56,7 @@ public class ChatServerService : ServerService
         var result = lobby.TriggerGameEvent(leftEvent).Result;
         if (!result.Canceled)
         {
-            ChatUserLeftRpc(leftEvent.LeftUser.PlayerId, leftEvent.FarewellMessage);
+            ChatUserLeftRpc(leftEvent.LeftUser, leftEvent.FarewellMessage);
         }
     }
 }

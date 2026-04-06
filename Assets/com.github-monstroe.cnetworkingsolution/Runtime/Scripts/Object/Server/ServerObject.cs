@@ -45,7 +45,7 @@ public abstract class ServerObject : ServerBehaviour, INetObject
         SetAsPlayerRpc(isPlayer);
     }
 
-    [Rpc]
+    [ClientRpc]
     private void SetOwnerRpc(byte? ownerId)
     {
         OwnerId = ownerId;
@@ -57,7 +57,7 @@ public abstract class ServerObject : ServerBehaviour, INetObject
         ownerInitialized = true;
     }
 
-    [Rpc]
+    [ClientRpc]
     private void SetAsPlayerRpc(bool isPlayer)
     {
         IsPlayer = isPlayer;
@@ -101,9 +101,14 @@ public abstract class ServerObject : ServerBehaviour, INetObject
 
     public void InvokeOnLobbyClientObjects(string methodName, params object[] args)
     {
+        InvokeOnLobbyClientObjects(methodName, null, args);
+    }
+
+    public void InvokeOnLobbyClientObjects(string methodName, UserData exception = null, params object[] args)
+    {
         if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToLobbyClientObjects(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+            SendToLobbyClientObjects(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
         }
         else
         {
@@ -118,9 +123,14 @@ public abstract class ServerObject : ServerBehaviour, INetObject
 
     public void InvokeOnGameClientObjects(string methodName, params object[] args)
     {
+        InvokeOnGameClientObjects(methodName, null, args);
+    }
+
+    public void InvokeOnGameClientObjects(string methodName, UserData exception = null, params object[] args)
+    {
         if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToGameClientObjects(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+            SendToGameClientObjects(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
         }
         else
         {

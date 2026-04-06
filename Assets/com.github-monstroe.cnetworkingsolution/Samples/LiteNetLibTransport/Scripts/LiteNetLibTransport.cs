@@ -1,4 +1,3 @@
-#if CNS_TRANSPORT_LITENETLIB
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -407,4 +406,3 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         return (int)Mathf.Ceil(seconds * 1000);
     }
 }
-#endif

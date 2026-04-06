@@ -188,8 +188,30 @@ public class ServerManager : MonoBehaviour
 #endif
     }
 
-    private async void HandleNetworkReceivedUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
+    private void HandleNetworkReceivedUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
     {
+#if !UNITY_EDITOR
+        try
+        {
+#endif
+
+        if (maxLobbyId - minLobbyId == 1 && ServerData.ActiveLobbies.TryGetValue(minLobbyId, out ServerLobby lobby))
+        {
+            lobby.ReceiveDataUnconnected(iPEndPoint, packet);
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received unconnected packet from {iPEndPoint}. This is not supported on this server configuration and the packet will be ignored.");
+        }
+#if !UNITY_EDITOR
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing unconnected received data from {iPEndPoint}: {ex.Message}");
+        }
+#endif
+
+
         Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received unconnected packet from {iPEndPoint}. This is not supported on the server and the packet will be ignored.");
     }
 
@@ -207,7 +229,7 @@ public class ServerManager : MonoBehaviour
     private async Task<ConnectionData> GetConnectionData(ConnectionRequestedEventResult connectingEvtData, NetPacket packet)
     {
         ConnectionData connectionData = new ConnectionData().Deserialize(packet);
-        connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create ? GenerateLobbyId() : connectionData.LobbyId;
+        connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create || (connectionData.LobbyConnectionType == LobbyConnectionType.JoinOrCreate && (connectionData.LobbyId > maxLobbyId || connectionData.LobbyId < minLobbyId)) ? GenerateLobbyId() : connectionData.LobbyId;
 
         connectingEvtData = await connectionRequestedEventBus.Fire(new ConnectionDataReceivedEvent()
         {
@@ -235,7 +257,7 @@ public class ServerManager : MonoBehaviour
             return null;
         }
 
-        if ((connectionData.LobbyConnectionType == LobbyConnectionType.Create || connectionData.LobbyConnectionType == LobbyConnectionType.JoinOrCreate) && !ServerData.ActiveLobbies.ContainsKey(connectionData.LobbyId))
+        if ((connectionData.LobbyConnectionType == LobbyConnectionType.Create || connectionData.LobbyConnectionType == LobbyConnectionType.JoinOrCreate) && !ServerData.ActiveLobbies.TryGetValue(connectionData.LobbyId, out lobby))
         {
             lobby = await RegisterLobby(connectingEvtData, connectionData.LobbyId);
         }
@@ -291,6 +313,10 @@ public class ServerManager : MonoBehaviour
             }
             else
             {
+                if (user.InGame)
+                {
+                    lobby.UserLeftGame(user);
+                }
                 lobby.UserLeft(user);
             }
         }

@@ -65,7 +65,7 @@ public abstract class ClientObject : ClientBehaviour, INetObject
         SetAsPlayerRpc(isPlayer);
     }
 
-    [Rpc]
+    [ClientRpc]
     private void SetOwnerRpc(byte? ownerId)
     {
         OwnerId = ownerId;
@@ -73,7 +73,7 @@ public abstract class ClientObject : ClientBehaviour, INetObject
         ownerInitialized = true;
     }
 
-    [Rpc]
+    [ClientRpc]
     private void SetAsPlayerRpc(bool isPlayer)
     {
         IsPlayer = isPlayer;

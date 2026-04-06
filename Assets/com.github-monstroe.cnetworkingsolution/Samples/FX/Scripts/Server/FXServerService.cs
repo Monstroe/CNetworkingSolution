@@ -17,7 +17,7 @@ public class FXServerService : ServerService
         InvokeOnGameClientServices(nameof(PlaySFXRpc), key, volume, pos);
     }
 
-    [Rpc]
+    [ServerRpc]
     private async void PlaySFXRpc(ulong key, float volume, Vector3? pos = null)
     {
         SFXRequestReceivedEvent evt = new SFXRequestReceivedEvent()
@@ -43,7 +43,7 @@ public class FXServerService : ServerService
         InvokeOnGameClientServices(nameof(PlayVFXRpc), key, pos, scale);
     }
 
-    [Rpc]
+    [ServerRpc]
     private async void PlayVFXRpc(ulong key, Vector3 pos, float scale)
     {
         VFXRequestReceivedEvent evt = new VFXRequestReceivedEvent()

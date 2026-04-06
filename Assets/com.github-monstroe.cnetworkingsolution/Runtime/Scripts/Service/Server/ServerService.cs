@@ -62,9 +62,14 @@ public abstract class ServerService : ServerBehaviour
 
     public void InvokeOnLobbyClientServices(string methodName, params object[] args)
     {
+        InvokeOnLobbyClientServices(methodName, null, args);
+    }
+
+    public void InvokeOnLobbyClientServices(string methodName, UserData exception = null, params object[] args)
+    {
         if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToLobbyClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+            SendToLobbyClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
         }
         else
         {
@@ -79,9 +84,14 @@ public abstract class ServerService : ServerBehaviour
 
     public void InvokeOnGameClientServices(string methodName, params object[] args)
     {
+        InvokeOnGameClientServices(methodName, null, args);
+    }
+
+    public void InvokeOnGameClientServices(string methodName, UserData exception = null, params object[] args)
+    {
         if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
         {
-            SendToGameClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+            SendToGameClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
         }
         else
         {

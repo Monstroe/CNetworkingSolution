@@ -26,8 +26,8 @@ public class ServerPlayer : ServerTransform
         lobby.GetService<PlayerServerService>().ServerPlayers.Remove(Owner);
     }
 
-    [Rpc]
-    private void SyncAnimRpc(byte ownerId, bool isWalking, bool isSprinting, bool isCrouching, bool isGrounded, bool jumped, bool grabbed)
+    [ServerRpc]
+    private void SyncAnimRpc(bool isWalking, bool isSprinting, bool isCrouching, bool isGrounded, bool jumped, bool grabbed)
     {
         IsWalking = isWalking;
         IsSprinting = isSprinting;
@@ -36,6 +36,6 @@ public class ServerPlayer : ServerTransform
         Jumped = jumped;
         Grabbed = grabbed;
 
-        InvokeOnGameClientObjects(nameof(SyncAnimRpc), ownerId, isWalking, isSprinting, isCrouching, isGrounded, jumped, grabbed);
+        InvokeOnGameClientObjects(nameof(SyncAnimRpc), exception: Owner, isWalking, isSprinting, isCrouching, isGrounded, jumped, grabbed);
     }
 }

@@ -19,15 +19,3 @@ internal enum ObjectCommandType
     OBJECT_TRANSFORM,
     OBJECTS_INIT
 }
-
-internal enum LobbyCommandType
-{
-    LOBBY_USER_JOINED,
-    LOBBY_USER_LEFT,
-    LOBBY_INIT
-}
-
-internal enum GameCommandType
-{
-    GAME_USER_JOINED
-}

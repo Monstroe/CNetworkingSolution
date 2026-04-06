@@ -1,7 +1,7 @@
 using System;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class GameEventAttribute : EventAttribute
+public sealed class GameEventAttribute : EventAttribute
 {
     public bool IgnoreCancelled { get; }
 

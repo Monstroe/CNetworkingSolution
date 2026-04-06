@@ -25,7 +25,7 @@ public abstract class ClientBehaviour : MonoBehaviour, INetRpc
         if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
         {
             ulong methodId = packet.ReadULong();
-            if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method))
+            if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method) && method.GetCustomAttribute<ServerRpcAttribute>() == null)
             {
                 ParameterInfo[] parameters = method.GetParameters();
                 object[] args = new object[parameters.Length];

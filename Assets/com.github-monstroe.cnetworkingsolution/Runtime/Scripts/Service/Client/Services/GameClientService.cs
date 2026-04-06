@@ -4,41 +4,69 @@ using UnityEngine;
 [ServiceId("GameService")]
 public class GameClientService : ClientService
 {
-    public delegate void GameStartedEventHandler();
-    public event GameStartedEventHandler OnGameStarted;
-
     public delegate void GameInitializedEventHandler();
     public event GameInitializedEventHandler OnGameInitialized;
 
     public delegate void GameUserJoinedEventHandler(UserData user);
     public event GameUserJoinedEventHandler OnGameUserJoined;
 
-    public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
-    {
-        base.ReceiveData(packet, commandType, transportMethod);
-        switch ((GameCommandType)commandType)
-        {
-            case GameCommandType.GAME_USER_JOINED:
-                {
-                    byte playerId = packet.ReadByte();
-                    UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
-                    if (user == null)
-                    {
-                        Debug.LogWarning($"Received GAME_USER_JOINED for player ID {playerId}, but no such user was found in the lobby.");
-                        return;
-                    }
+    public delegate void GameUserLeftEventHandler(UserData user);
+    public event GameUserLeftEventHandler OnGameUserLeft;
 
-                    user.InGame = true;
-                    if (lobby.CurrentUser.PlayerId == playerId)
-                    {
-                        OnGameInitialized?.Invoke();
-                    }
-                    else
-                    {
-                        OnGameUserJoined?.Invoke(user);
-                    }
-                    break;
-                }
+    public void JoinGame()
+    {
+        if (lobby.CurrentUser.InGame)
+        {
+            Debug.LogWarning("Current user is already marked as in-game.");
+            return;
         }
+
+        InvokeOnServerService(nameof(GameUserJoinedRpc));
+    }
+
+    public void LeaveGame()
+    {
+        if (!lobby.CurrentUser.InGame)
+        {
+            Debug.LogWarning("Current user is not marked as in-game.");
+            return;
+        }
+
+        InvokeOnServerService(nameof(GameUserLeftRpc));
+    }
+
+    [ClientRpc]
+    private void GameUserJoinedRpc(byte playerId)
+    {
+        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
+        if (user == null)
+        {
+            Debug.LogWarning($"Received GameUserJoinedRpc for player ID {playerId}, but no such user was found in the lobby.");
+            return;
+        }
+
+        user.InGame = true;
+        if (lobby.CurrentUser.PlayerId == playerId)
+        {
+            OnGameInitialized?.Invoke();
+        }
+        else
+        {
+            OnGameUserJoined?.Invoke(user);
+        }
+    }
+
+    [ServerRpc]
+    private void GameUserLeftRpc(byte playerId)
+    {
+        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
+        if (user == null)
+        {
+            Debug.LogWarning($"Received GameUserLeftRpc for player ID {playerId}, but no such user was found in the lobby.");
+            return;
+        }
+
+        user.InGame = false;
+        OnGameUserLeft?.Invoke(user);
     }
 }

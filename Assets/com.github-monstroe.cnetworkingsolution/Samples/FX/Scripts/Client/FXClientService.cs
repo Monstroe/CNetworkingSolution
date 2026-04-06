@@ -29,7 +29,7 @@ public class FXClientService : ClientService
         InvokeOnServerService(nameof(PlaySFXRpc), key, volume, pos);
     }
 
-    [Rpc]
+    [ClientRpc]
     private void PlaySFXRpc(ulong key, float volume, Vector3? pos = null)
     {
         string sfxPath = NetResources.Instance.GetSFXPathFromKey(key);
@@ -78,7 +78,7 @@ public class FXClientService : ClientService
     }
 
 
-    [Rpc]
+    [ClientRpc]
     private void PlayVFXRpc(ulong key, Vector3 pos, float scale)
     {
         string vfxPath = NetResources.Instance.GetVFXPathFromKey(key);

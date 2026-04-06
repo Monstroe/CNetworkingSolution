@@ -5,6 +5,8 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class ClientPlayer : ClientTransform
 {
+    public static ClientPlayer LocalPlayer { get; private set; }
+
     [Header("Player Movement")]
     [SerializeField] private float moveSpeed;
     [SerializeField] private float jumpHeight;
@@ -55,7 +57,6 @@ public class ClientPlayer : ClientTransform
 
     private bool locked = false;
     private bool justGrounded = true;
-    private float footstepTimer = 0;
 
     public bool ControlsEnabled { get; set; } = false;
 
@@ -148,12 +149,9 @@ public class ClientPlayer : ClientTransform
         lobby.GetService<PlayerClientService>().ClientPlayers.Remove(Owner);
     }
 
-    [Rpc]
-    private void SyncAnimRpc(byte ownerId, bool isWalking, bool isSprinting, bool isCrouching, bool isGrounded, bool jumped, bool grabbed)
+    [ClientRpc]
+    private void SyncAnimRpc(bool isWalking, bool isSprinting, bool isCrouching, bool isGrounded, bool jumped, bool grabbed)
     {
-        if (OwnerId == ownerId)
-            return;
-
         IsWalking = isWalking;
         IsSprinting = isSprinting;
         IsCrouching = isCrouching;
@@ -177,6 +175,7 @@ public class ClientPlayer : ClientTransform
         base.StartOnOwner();
         playerInput.actions.Enable();
         ControlsEnabled = true;
+        LocalPlayer = this;
         cameraTransform.GetComponent<Camera>().enabled = true;
     }
 
@@ -269,17 +268,6 @@ public class ClientPlayer : ClientTransform
             cc.Move(Vector3.up * yVelocity * Time.deltaTime);
         }
 
-        // Footstep SFX
-        if (moveDir.sqrMagnitude > 0.01f && IsGrounded)
-        {
-            if (footstepTimer > (IsSprinting ? (.55f / sprintMultiplier) : .55f))
-            {
-                footstepTimer = 0;
-                lobby.GetService<FXClientService>().PlaySFX("Footstep.wav", 0.5f, transform.position);
-            }
-        }
-        footstepTimer += Time.deltaTime;
-
         // Networking
         //SendCustomTransformToServerObject(transform.position, cameraParent.rotation);
     }
@@ -309,7 +297,7 @@ public class ClientPlayer : ClientTransform
 
         if (previousGroundedState != IsGrounded || previousCrouchingState != IsCrouching || previousWalkingState != IsWalking || previousSprintingState != IsSprinting)
         {
-            InvokeOnServerObject(nameof(SyncAnimRpc), OwnerId, IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed);
+            InvokeOnServerObject(nameof(SyncAnimRpc), IsWalking, IsSprinting, IsCrouching, IsGrounded, Jumped, Grabbed);
         }
     }
 

@@ -1,7 +1,7 @@
 using System;
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class ConnectionRequestedEventAttribute : EventAttribute
+public sealed class ConnectionRequestedEventAttribute : EventAttribute
 {
     public bool IgnoreRejected { get; }
 

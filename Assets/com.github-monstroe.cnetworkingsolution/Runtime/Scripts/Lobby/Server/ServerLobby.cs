@@ -78,6 +78,11 @@ public class ServerLobby : MonoBehaviour
         services.UserLeft(user);
     }
 
+    internal void UserLeftGame(UserData user)
+    {
+        services.UserLeftGame(user);
+    }
+
     internal void Tick()
     {
         if (physicsScene.HasValue)
@@ -196,7 +201,7 @@ public class ServerLobby : MonoBehaviour
         transportUtility.KickRemote(user.UserId);
     }
 
-    public void ShutdownLobby()
+    public void CloseLobby()
     {
         foreach (var user in LobbyData.LobbyUsers.ToList())
         {
