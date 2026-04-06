@@ -46,15 +46,15 @@ public class ClientManager : MonoBehaviour
 
         transportUtility = GetComponent<SingleTransportUtility>();
         AddTransportUtilityEvents();
-    }
 
-    void Start()
-    {
         if (CurrentLobby)
         {
             CurrentLobby.Init(transportUtility);
         }
+    }
 
+    void Start()
+    {
         Debug.Log("<color=green><b>CNS</b></color>: Client initialized.");
     }
 

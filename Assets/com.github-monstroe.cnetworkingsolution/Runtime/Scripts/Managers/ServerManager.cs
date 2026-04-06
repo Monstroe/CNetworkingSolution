@@ -37,7 +37,7 @@ public class ServerManager : MonoBehaviour
     }
 #endif
 
-    void Awake()
+    async void Awake()
     {
         if (Instance == null)
         {
@@ -56,10 +56,7 @@ public class ServerManager : MonoBehaviour
         AddTransportUtilityEvents();
         ServerData.ServerId = GenerateUniqueId();
         ServerData.SecretKey = GenerateSecretKey();
-    }
 
-    async void Start()
-    {
         if (spawnLobbiesOnStart)
         {
             for (int i = minLobbyId; i < maxLobbyId; i++)
@@ -67,7 +64,10 @@ public class ServerManager : MonoBehaviour
                 _ = await RegisterLobby(null, i);
             }
         }
+    }
 
+    void Start()
+    {
         Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
     }
 
