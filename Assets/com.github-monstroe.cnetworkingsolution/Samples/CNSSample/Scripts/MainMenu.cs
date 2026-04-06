@@ -32,12 +32,6 @@ public class MainMenu : MonoBehaviour
         ResetMenu();
     }
 
-    void OnDestroy()
-    {
-        ClientManager.Instance.OnConnectionAccepted -= ConnectionAccepted;
-        ClientManager.Instance.OnConnectionRejected -= ConnectionRejected;
-    }
-
     private void ConnectionAccepted(ConnectionAcceptedArgs args)
     {
         mainMenu.SetActive(false);
@@ -77,11 +71,15 @@ public class MainMenu : MonoBehaviour
 
     public void CreateLobby()
     {
+        Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
+        ServerManager.Instance.RegisterTransport<LocalTransport>();
+        ServerManager.Instance.RegisterTransport<CNetTransport>();
+        ServerManager.Instance.StartTransports();
         ClientManager.Instance.SetConnectionData(new ConnectionData()
         {
             LobbyConnectionType = LobbyConnectionType.Create
         });
-        ClientManager.Instance.RegisterTransport<CNetTransport>();
+        ClientManager.Instance.RegisterTransport<LocalTransport>();
         ClientManager.Instance.StartTransport();
     }
 

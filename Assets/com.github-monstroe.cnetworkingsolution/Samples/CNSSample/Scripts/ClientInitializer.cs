@@ -38,12 +38,6 @@ public class ClientInitializer : MonoBehaviour
         LoadPreGame();
     }
 
-    void OnDestroy()
-    {
-        ClientManager.Instance.OnConnectionAccepted -= ConnectionAccepted;
-        ClientManager.Instance.OnConnectionLost -= ConnectionLost;
-    }
-
     private void ConnectionAccepted(ConnectionAcceptedArgs args)
     {
         initialized = false;

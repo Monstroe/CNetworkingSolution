@@ -36,13 +36,6 @@ public class ChatMenu : MonoBehaviour
         ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived += ReceivedMessage;
     }
 
-    void OnDestroy()
-    {
-        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined -= AddUserJoinedMessage;
-        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft -= AddUserLeftMessage;
-        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived -= ReceivedMessage;
-    }
-
     // Update is called once per frame
     void Update()
     {
