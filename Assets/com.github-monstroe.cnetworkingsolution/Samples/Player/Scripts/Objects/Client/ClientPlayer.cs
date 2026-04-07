@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(PlayerInput))]
 [RequireComponent(typeof(CharacterController))]
 public class ClientPlayer : ClientTransform
 {
@@ -178,8 +177,6 @@ public class ClientPlayer : ClientTransform
     {
         base.StartOnOwner();
         ControlsEnabled = true;
-        playerInput.actions.Enable();
-        cameraTransform.gameObject.SetActive(true);
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
@@ -191,7 +188,7 @@ public class ClientPlayer : ClientTransform
     {
         base.StartOnNonOwner();
         ControlsEnabled = false;
-        playerInput.actions.Disable();
+        Destroy(playerInput);
         cameraTransform.gameObject.SetActive(false);
         foreach (var mr in meshRenderers)
         {
