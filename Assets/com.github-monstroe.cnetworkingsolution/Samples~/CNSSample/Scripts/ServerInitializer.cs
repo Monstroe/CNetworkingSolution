@@ -1,4 +1,5 @@
 using UnityEngine;
+using CNetworkingSolution;
 
 public class ServerInitializer : MonoBehaviour
 {

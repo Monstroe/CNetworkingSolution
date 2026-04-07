@@ -1,7 +1,10 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
-public sealed class RpcIgnoreAttribute : Attribute
+namespace CNetworkingSolution
 {
-    public RpcIgnoreAttribute() { }
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+    public sealed class RpcIgnoreAttribute : Attribute
+    {
+        public RpcIgnoreAttribute() { }
+    }
 }

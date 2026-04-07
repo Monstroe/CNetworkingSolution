@@ -1,3 +1,6 @@
-public interface INetEvent
+namespace CNetworkingSolution
 {
+    public interface INetEvent
+    {
+    }
 }

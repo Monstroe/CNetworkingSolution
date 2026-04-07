@@ -1,75 +1,78 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class ServerTransform : ServerObject
+namespace CNetworkingSolution
 {
-    public Rigidbody RB { get; private set; }
-
-    [Header("ServerTransform Settings")]
-    [Range(0f, 1f)]
-    [Tooltip("Speed at which this object syncs it's position and rotation (relative to FixedUpdate)")]
-    [SerializeField] private float transformSyncSpeed = 1f;
-
-    private Vector3 receivedPosition;
-    private Quaternion receivedRotation;
-
-    private float timer = 0f;
-
-    public override void Init(ushort id, ServerLobby lobby)
+    [RequireComponent(typeof(Rigidbody))]
+    public class ServerTransform : ServerObject
     {
-        base.Init(id, lobby);
-        RB = GetComponent<Rigidbody>();
-        this.receivedPosition = RB.position;
-        this.receivedRotation = RB.rotation;
-        lobby.GetService<ObjectServerService>().ServerTransforms.Add(id, this);
-    }
+        public Rigidbody RB { get; private set; }
 
-    public override void Remove()
-    {
-        base.Remove();
-        lobby.GetService<ObjectServerService>().ServerTransforms.Remove(Id);
-    }
+        [Header("ServerTransform Settings")]
+        [Range(0f, 1f)]
+        [Tooltip("Speed at which this object syncs it's position and rotation (relative to FixedUpdate)")]
+        [SerializeField] private float transformSyncSpeed = 1f;
 
-    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
-    {
-        base.ReceiveData(user, packet, commandType, transportMethod);
-        switch ((ObjectCommandType)commandType)
+        private Vector3 receivedPosition;
+        private Quaternion receivedRotation;
+
+        private float timer = 0f;
+
+        public override void Init(ushort id, ServerLobby lobby)
         {
-            case ObjectCommandType.OBJECT_TRANSFORM:
-                {
-                    if (OwnerId != null && OwnerId == user.PlayerId)
+            base.Init(id, lobby);
+            RB = GetComponent<Rigidbody>();
+            this.receivedPosition = RB.position;
+            this.receivedRotation = RB.rotation;
+            lobby.GetService<ObjectServerService>().ServerTransforms.Add(id, this);
+        }
+
+        public override void Remove()
+        {
+            base.Remove();
+            lobby.GetService<ObjectServerService>().ServerTransforms.Remove(Id);
+        }
+
+        public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+        {
+            base.ReceiveData(user, packet, commandType, transportMethod);
+            switch ((ObjectCommandType)commandType)
+            {
+                case ObjectCommandType.OBJECT_TRANSFORM:
                     {
-                        receivedPosition = packet.ReadVector3();
-                        receivedRotation = packet.ReadQuaternion();
+                        if (OwnerId != null && OwnerId == user.PlayerId)
+                        {
+                            receivedPosition = packet.ReadVector3();
+                            receivedRotation = packet.ReadQuaternion();
+                        }
+                        break;
                     }
-                    break;
-                }
-        }
-    }
-
-    public override void Tick()
-    {
-        if (OwnerId != null)
-        {
-            ReceiveTransform(receivedPosition, receivedRotation);
-        }
-        else
-        {
-            receivedPosition = RB.position;
-            receivedRotation = RB.rotation;
+            }
         }
 
-        timer += transformSyncSpeed;
-        if (timer >= 1)
+        public override void Tick()
         {
-            timer = 0;
-            SendToGameClientObjects(ObjectPacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, OwnerId != null ? Owner : null);
-        }
-    }
+            if (OwnerId != null)
+            {
+                ReceiveTransform(receivedPosition, receivedRotation);
+            }
+            else
+            {
+                receivedPosition = RB.position;
+                receivedRotation = RB.rotation;
+            }
 
-    protected virtual void ReceiveTransform(Vector3 pos, Quaternion rot)
-    {
-        RB.MovePosition(pos);
-        RB.MoveRotation(rot.normalized);
+            timer += transformSyncSpeed;
+            if (timer >= 1)
+            {
+                timer = 0;
+                SendToGameClientObjects(ObjectPacketBuilder.ObjectTransform(RB.position, RB.rotation), TransportMethod.Unreliable, OwnerId != null ? Owner : null);
+            }
+        }
+
+        protected virtual void ReceiveTransform(Vector3 pos, Quaternion rot)
+        {
+            RB.MovePosition(pos);
+            RB.MoveRotation(rot.normalized);
+        }
     }
 }

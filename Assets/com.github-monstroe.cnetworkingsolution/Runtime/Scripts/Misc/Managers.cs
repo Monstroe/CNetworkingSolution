@@ -1,10 +1,13 @@
 using UnityEngine;
 
-public class Managers : MonoBehaviour
+namespace CNetworkingSolution
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public class Managers : MonoBehaviour
     {
-        DontDestroyOnLoad(this.gameObject);
+        // Start is called once before the first execution of Update after the MonoBehaviour is created
+        void Start()
+        {
+            DontDestroyOnLoad(this.gameObject);
+        }
     }
 }

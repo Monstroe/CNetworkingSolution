@@ -1,30 +1,33 @@
 using System.Collections.Generic;
 
-public class TransportData
+namespace CNetworkingSolution
 {
-    public NetDeviceType DeviceType { get; set; }
-
-    private readonly List<uint> connectedClientIds = new List<uint>();
-    public IReadOnlyList<uint> ConnectedClientIds => connectedClientIds;
-
-    internal TransportData() { }
-
-    public void AddConnectedClient(uint clientId)
+    public class TransportData
     {
-        if (!connectedClientIds.Contains(clientId))
+        public NetDeviceType DeviceType { get; set; }
+
+        private readonly List<uint> connectedClientIds = new List<uint>();
+        public IReadOnlyList<uint> ConnectedClientIds => connectedClientIds;
+
+        internal TransportData() { }
+
+        public void AddConnectedClient(uint clientId)
         {
-            connectedClientIds.Add(clientId);
+            if (!connectedClientIds.Contains(clientId))
+            {
+                connectedClientIds.Add(clientId);
+            }
+        }
+
+        public bool RemoveConnectedClient(uint clientId)
+        {
+            return connectedClientIds.Remove(clientId);
         }
     }
 
-    public bool RemoveConnectedClient(uint clientId)
+    public enum NetDeviceType
     {
-        return connectedClientIds.Remove(clientId);
+        Client,
+        Server
     }
-}
-
-public enum NetDeviceType
-{
-    Client,
-    Server
 }

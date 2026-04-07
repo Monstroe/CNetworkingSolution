@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.VFX;
+using CNetworkingSolution;
 
 [ServiceId("FXService")]
 public class FXClientService : ClientService

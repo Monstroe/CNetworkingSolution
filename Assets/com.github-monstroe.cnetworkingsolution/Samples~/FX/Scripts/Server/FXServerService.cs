@@ -1,4 +1,5 @@
 using UnityEngine;
+using CNetworkingSolution;
 
 [ServiceId("FXService")]
 public class FXServerService : ServerService

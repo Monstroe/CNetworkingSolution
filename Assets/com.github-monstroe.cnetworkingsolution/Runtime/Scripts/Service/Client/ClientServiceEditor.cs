@@ -2,29 +2,32 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(ClientService), true)]
-public class ClientServiceEditor : Editor
+namespace CNetworkingSolution
 {
-    public override void OnInspectorGUI()
+    [CustomEditor(typeof(ClientService), true)]
+    public class ClientServiceEditor : Editor
     {
-        DrawDefaultInspector();
-
-        ClientService obj = (ClientService)target;
-
-        EditorGUILayout.Space();
-        EditorGUILayout.HelpBox(
-            "This component automatically detects the service's type and generates a unique id based on that type. Use the button below to manually update the type and id if needed.",
-            MessageType.Info
-        );
-        EditorGUILayout.Space();
-
-        if (GUILayout.Button("Get Service Type"))
+        public override void OnInspectorGUI()
         {
-            obj.ResetServiceId(obj.GetType());
-        }
+            DrawDefaultInspector();
 
-        EditorGUILayout.LabelField("Service Id", obj.ServiceId.ToString());
-        EditorGUILayout.LabelField("Service Type", obj.GetType().FullName);
+            ClientService obj = (ClientService)target;
+
+            EditorGUILayout.Space();
+            EditorGUILayout.HelpBox(
+                "This component automatically detects the service's type and generates a unique id based on that type. Use the button below to manually update the type and id if needed.",
+                MessageType.Info
+            );
+            EditorGUILayout.Space();
+
+            if (GUILayout.Button("Get Service Type"))
+            {
+                obj.ResetServiceId(obj.GetType());
+            }
+
+            EditorGUILayout.LabelField("Service Id", obj.ServiceId.ToString());
+            EditorGUILayout.LabelField("Service Type", obj.GetType().FullName);
+        }
     }
 }
 #endif

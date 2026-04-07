@@ -1,51 +1,54 @@
 using System;
 using System.Collections.Generic;
 
-public class ClientServiceUtility
+namespace CNetworkingSolution
 {
-    private readonly Dictionary<ulong, ClientService> services = new Dictionary<ulong, ClientService>();
-    private readonly ServiceBus serviceBus = new ServiceBus();
-
-    public bool RegisterService<T>(T service, out ulong serviceId) where T : ClientService
+    public class ClientServiceUtility
     {
-        if (serviceBus.RegisterService(service.GetType(), out serviceId) && !services.ContainsKey(serviceId))
+        private readonly Dictionary<ulong, ClientService> services = new Dictionary<ulong, ClientService>();
+        private readonly ServiceBus serviceBus = new ServiceBus();
+
+        public bool RegisterService<T>(T service, out ulong serviceId) where T : ClientService
         {
-            services[serviceId] = service;
-            return true;
+            if (serviceBus.RegisterService(service.GetType(), out serviceId) && !services.ContainsKey(serviceId))
+            {
+                services[serviceId] = service;
+                return true;
+            }
+            return false;
         }
-        return false;
-    }
 
-    public bool UnregisterService(ulong serviceId)
-    {
-        if (services.TryGetValue(serviceId, out ClientService service) && serviceBus.UnregisterService(service.GetType()))
+        public bool UnregisterService(ulong serviceId)
         {
-            services.Remove(serviceId);
-            return true;
+            if (services.TryGetValue(serviceId, out ClientService service) && serviceBus.UnregisterService(service.GetType()))
+            {
+                services.Remove(serviceId);
+                return true;
+            }
+            return false;
         }
-        return false;
-    }
 
-    public T GetService<T>(out ulong serviceId) where T : ClientService
-    {
-        if (serviceBus.TryGetServiceId<T>(out serviceId) && services.TryGetValue(serviceId, out ClientService service))
+        public T GetService<T>(out ulong serviceId) where T : ClientService
         {
-            return (T)service;
+            if (serviceBus.TryGetServiceId<T>(out serviceId) && services.TryGetValue(serviceId, out ClientService service))
+            {
+                return (T)service;
+            }
+            return null;
         }
-        return null;
-    }
 
-    public bool GetService(ulong serviceId, out ClientService service)
-    {
-        if (services.TryGetValue(serviceId, out service))
+        public bool GetService(ulong serviceId, out ClientService service)
         {
-            return true;
+            if (services.TryGetValue(serviceId, out service))
+            {
+                return true;
+            }
+            return false;
         }
-        return false;
-    }
 
-    public bool TryGetServiceId<T>(out ulong serviceId) where T : ClientService
-    {
-        return serviceBus.TryGetServiceId<T>(out serviceId);
+        public bool TryGetServiceId<T>(out ulong serviceId) where T : ClientService
+        {
+            return serviceBus.TryGetServiceId<T>(out serviceId);
+        }
     }
 }

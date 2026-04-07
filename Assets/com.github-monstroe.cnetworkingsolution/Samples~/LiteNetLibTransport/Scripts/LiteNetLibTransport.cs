@@ -1,9 +1,11 @@
+#if CNS_TRANSPORT_LITENETLIB
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 using LiteNetLib;
+using CNetworkingSolution;
 
 public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEventListener
 {
@@ -406,3 +408,4 @@ public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEve
         return (int)Mathf.Ceil(seconds * 1000);
     }
 }
+#endif

@@ -1,9 +1,11 @@
+#if CNS_TRANSPORT_CNET
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using CNet;
 using UnityEngine;
+using CNetworkingSolution;
 
 public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 {
@@ -99,7 +101,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         return true;
     }
 
-    public override void Send(uint remoteId, NetPacket packet, TransportMethod protocol)
+    public override void Send(uint remoteId, CNetworkingSolution.NetPacket packet, TransportMethod protocol)
     {
         var transportProtocol = ConvertProtocol(protocol);
         if (connectedEPs.TryGetValue(remoteId, out NetEndPoint remoteEP))
@@ -112,7 +114,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    public override void SendToList(List<uint> remoteIds, NetPacket packet, TransportMethod protocol)
+    public override void SendToList(List<uint> remoteIds, CNetworkingSolution.NetPacket packet, TransportMethod protocol)
     {
         var transportProtocol = ConvertProtocol(protocol);
         foreach (var remoteId in remoteIds)
@@ -128,7 +130,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    public override void SendToAll(NetPacket packet, TransportMethod protocol)
+    public override void SendToAll(CNetworkingSolution.NetPacket packet, TransportMethod protocol)
     {
         var transportProtocol = ConvertProtocol(protocol);
         foreach (var remoteEP in connectedEPs.Values)
@@ -145,17 +147,17 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    public override void SendUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
+    public override void SendUnconnected(IPEndPoint ipEndPoint, CNetworkingSolution.NetPacket packet)
     {
         Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendUnconnected is not supported by CNetTransport.");
     }
 
-    public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, NetPacket packet)
+    public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, CNetworkingSolution.NetPacket packet)
     {
         Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendToListUnconnected is not supported by CNetTransport.");
     }
 
-    public override void BroadcastUnconnected(NetPacket packet)
+    public override void BroadcastUnconnected(CNetworkingSolution.NetPacket packet)
     {
         Debug.LogWarning("<color=yellow><b>CNS</b></color>: BroadcastUnconnected is not supported by CNetTransport.");
     }
@@ -301,7 +303,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     protected virtual void ReceivePacket(NetEndPoint remoteEP, CNet.NetPacket packet, TransportProtocol protocol)
     {
-        NetPacket receivedPacket = new NetPacket(packet.ByteSegment);
+        CNetworkingSolution.NetPacket receivedPacket = new CNetworkingSolution.NetPacket(packet.ByteSegment);
         RaiseNetworkReceived(remoteEP.ID, receivedPacket, ConvertProtocolBack(protocol));
     }
 
@@ -352,3 +354,4 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         ReceivePacket(remoteEP, packet, protocol);
     }
 }
+#endif

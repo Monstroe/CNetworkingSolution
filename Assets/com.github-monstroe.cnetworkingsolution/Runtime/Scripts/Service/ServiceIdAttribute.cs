@@ -1,12 +1,15 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-public sealed class ServiceIdAttribute : Attribute
+namespace CNetworkingSolution
 {
-    public string ServiceId { get; }
-
-    public ServiceIdAttribute(string serviceId)
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public sealed class ServiceIdAttribute : Attribute
     {
-        ServiceId = serviceId;
+        public string ServiceId { get; }
+
+        public ServiceIdAttribute(string serviceId)
+        {
+            ServiceId = serviceId;
+        }
     }
 }

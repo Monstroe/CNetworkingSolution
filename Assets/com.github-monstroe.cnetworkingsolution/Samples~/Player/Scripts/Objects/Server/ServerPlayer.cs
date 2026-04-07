@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using CNetworkingSolution;
 
 public class ServerPlayer : ServerTransform
 {

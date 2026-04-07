@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using CNetworkingSolution;
 
 [RequireComponent(typeof(CharacterController))]
 public class ClientPlayer : ClientTransform

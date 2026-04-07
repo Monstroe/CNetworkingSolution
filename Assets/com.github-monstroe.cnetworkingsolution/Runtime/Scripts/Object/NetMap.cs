@@ -2,10 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class NetMap : MonoBehaviour
+namespace CNetworkingSolution
 {
-    internal List<ClientObject> GetStartingClientObjects()
+    public class NetMap : MonoBehaviour
     {
-        return gameObject.GetComponentsInChildren<ClientObject>(true).OrderBy(n => n.transform.GetSiblingIndex()).ToList();
+        internal List<ClientObject> GetStartingClientObjects()
+        {
+            return gameObject.GetComponentsInChildren<ClientObject>(true).OrderBy(n => n.transform.GetSiblingIndex()).ToList();
+        }
     }
 }

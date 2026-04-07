@@ -1,4 +1,7 @@
-public interface INetObject
+namespace CNetworkingSolution
 {
-    public ushort Id { get; }
+    public interface INetObject
+    {
+        public ushort Id { get; }
+    }
 }

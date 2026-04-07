@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CNetworkingSolution;
 
 [ServiceId("PlayerService")]
 public class PlayerClientService : ClientService

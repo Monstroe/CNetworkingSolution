@@ -1,164 +1,167 @@
 using System;
 using System.Collections.Generic;
 
-public class ServerServiceUtility
+namespace CNetworkingSolution
 {
-    private readonly Dictionary<ulong, ServerService> services = new Dictionary<ulong, ServerService>();
-    private readonly SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
-    private readonly ServiceBus serviceBus = new ServiceBus();
-
-    public void UserJoined(UserData user)
+    public class ServerServiceUtility
     {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        private readonly Dictionary<ulong, ServerService> services = new Dictionary<ulong, ServerService>();
+        private readonly SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
+        private readonly ServiceBus serviceBus = new ServiceBus();
+
+        public void UserJoined(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.UserJoined(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.UserJoined(user);
+                }
             }
         }
-    }
 
-    public void LateUserJoined(UserData user)
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void LateUserJoined(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.LateUserJoined(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.LateUserJoined(user);
+                }
             }
         }
-    }
 
-    public void UserJoinedGame(UserData user)
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void UserJoinedGame(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.UserJoinedGame(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.UserJoinedGame(user);
+                }
             }
         }
-    }
 
-    public void LateUserJoinedGame(UserData user)
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void LateUserJoinedGame(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.LateUserJoinedGame(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.LateUserJoinedGame(user);
+                }
             }
         }
-    }
 
-    public void UserLeftGame(UserData user)
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void UserLeftGame(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.UserLeftGame(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.UserLeftGame(user);
+                }
             }
         }
-    }
 
-    public void LateUserLeftGame(UserData user)
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void LateUserLeftGame(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.LateUserLeftGame(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.LateUserLeftGame(user);
+                }
             }
         }
-    }
 
-    public void UserLeft(UserData user)
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void UserLeft(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.UserLeft(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.UserLeft(user);
+                }
             }
         }
-    }
 
-    public void LateUserLeft(UserData user)
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void LateUserLeft(UserData user)
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.LateUserLeft(user);
+                foreach (ServerService service in serviceList)
+                {
+                    service.LateUserLeft(user);
+                }
             }
         }
-    }
 
-    public void Tick()
-    {
-        foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+        public void Tick()
         {
-            foreach (ServerService service in serviceList)
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
             {
-                service.Tick();
+                foreach (ServerService service in serviceList)
+                {
+                    service.Tick();
+                }
             }
         }
-    }
 
-    public bool RegisterService<T>(T service, out ulong serviceId) where T : ServerService
-    {
-        int executionOrder = service.ExecutionOrder;
-        if (serviceBus.RegisterService(service.GetType(), out serviceId) && !services.ContainsKey(serviceId))
+        public bool RegisterService<T>(T service, out ulong serviceId) where T : ServerService
         {
-            services[serviceId] = service;
-            if (!serviceOrderCache.TryGetValue(executionOrder, out List<ServerService> list))
+            int executionOrder = service.ExecutionOrder;
+            if (serviceBus.RegisterService(service.GetType(), out serviceId) && !services.ContainsKey(serviceId))
             {
-                list = new List<ServerService>();
-                serviceOrderCache[executionOrder] = list;
+                services[serviceId] = service;
+                if (!serviceOrderCache.TryGetValue(executionOrder, out List<ServerService> list))
+                {
+                    list = new List<ServerService>();
+                    serviceOrderCache[executionOrder] = list;
+                }
+                list.Add(service);
+                return true;
             }
-            list.Add(service);
-            return true;
+            return false;
         }
-        return false;
-    }
 
-    public bool UnregisterService(ulong serviceId)
-    {
-        if (services.TryGetValue(serviceId, out ServerService service) && serviceBus.UnregisterService(service.GetType()))
+        public bool UnregisterService(ulong serviceId)
         {
-            services.Remove(serviceId);
-            List<ServerService> executionList = serviceOrderCache[service.ExecutionOrder];
-            executionList.Remove(service);
-            if (executionList.Count == 0)
+            if (services.TryGetValue(serviceId, out ServerService service) && serviceBus.UnregisterService(service.GetType()))
             {
-                serviceOrderCache.Remove(service.ExecutionOrder);
+                services.Remove(serviceId);
+                List<ServerService> executionList = serviceOrderCache[service.ExecutionOrder];
+                executionList.Remove(service);
+                if (executionList.Count == 0)
+                {
+                    serviceOrderCache.Remove(service.ExecutionOrder);
+                }
+                return true;
             }
-            return true;
+            return false;
         }
-        return false;
-    }
 
-    public T GetService<T>(out ulong serviceId) where T : ServerService
-    {
-        if (serviceBus.TryGetServiceId<T>(out serviceId) && services.TryGetValue(serviceId, out ServerService service))
+        public T GetService<T>(out ulong serviceId) where T : ServerService
         {
-            return (T)service;
+            if (serviceBus.TryGetServiceId<T>(out serviceId) && services.TryGetValue(serviceId, out ServerService service))
+            {
+                return (T)service;
+            }
+            return null;
         }
-        return null;
-    }
 
-    public bool GetService(ulong serviceId, out ServerService service)
-    {
-        if (services.TryGetValue(serviceId, out service))
+        public bool GetService(ulong serviceId, out ServerService service)
         {
-            return true;
+            if (services.TryGetValue(serviceId, out service))
+            {
+                return true;
+            }
+            return false;
         }
-        return false;
-    }
 
-    public bool TryGetServiceId<T>(out ulong serviceId) where T : ServerService
-    {
-        return serviceBus.TryGetServiceId<T>(out serviceId);
+        public bool TryGetServiceId<T>(out ulong serviceId) where T : ServerService
+        {
+            return serviceBus.TryGetServiceId<T>(out serviceId);
+        }
     }
 }

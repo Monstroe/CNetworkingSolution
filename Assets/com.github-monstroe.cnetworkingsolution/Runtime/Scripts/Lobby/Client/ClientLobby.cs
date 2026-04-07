@@ -2,189 +2,192 @@ using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
 
-public class ClientLobby : MonoBehaviour
+namespace CNetworkingSolution
 {
-    public LobbyData LobbyData { get; internal set; } = new LobbyData();
-    public UserData CurrentUser { get; internal set; } = new UserData();
-    public ulong ClientTick { get; internal set; } = 0;
-
-    private ITransportUtility transportUtility;
-    private readonly ClientServiceUtility services = new ClientServiceUtility();
-    private readonly ClientServiceUtility unconnectedServices = new ClientServiceUtility();
-
-    internal RpcBus RpcBus { get; } = new RpcBus();
-
-    internal void Init(ITransportUtility transport)
+    public class ClientLobby : MonoBehaviour
     {
-        transportUtility = transport;
+        public LobbyData LobbyData { get; internal set; } = new LobbyData();
+        public UserData CurrentUser { get; internal set; } = new UserData();
+        public ulong ClientTick { get; internal set; } = 0;
 
-        foreach (var service in this.GetComponentsInChildren<ClientService>())
+        private ITransportUtility transportUtility;
+        private readonly ClientServiceUtility services = new ClientServiceUtility();
+        private readonly ClientServiceUtility unconnectedServices = new ClientServiceUtility();
+
+        internal RpcBus RpcBus { get; } = new RpcBus();
+
+        internal void Init(ITransportUtility transport)
         {
-            service.Init(this);
-        }
-    }
+            transportUtility = transport;
 
-    internal void ReceiveData(NetPacket packet, TransportMethod? transportMethod)
-    {
-        ulong serviceId = packet.ReadULong();
-        ushort commandType = packet.ReadUShort();
-        if (services.GetService(serviceId, out ClientService service))
+            foreach (var service in this.GetComponentsInChildren<ClientService>())
+            {
+                service.Init(this);
+            }
+        }
+
+        internal void ReceiveData(NetPacket packet, TransportMethod? transportMethod)
         {
-            service.ReceiveData(packet, commandType, transportMethod);
+            ulong serviceId = packet.ReadULong();
+            ushort commandType = packet.ReadUShort();
+            if (services.GetService(serviceId, out ClientService service))
+            {
+                service.ReceiveData(packet, commandType, transportMethod);
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for id {serviceId}.");
+            }
         }
-        else
+
+        internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No service found for id {serviceId}.");
+            ulong serviceId = packet.ReadULong();
+            ushort commandType = packet.ReadUShort();
+            if (unconnectedServices.GetService(serviceId, out ClientService unconnectedService))
+            {
+                unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for id {serviceId}.");
+            }
         }
-    }
 
-    internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet)
-    {
-        ulong serviceId = packet.ReadULong();
-        ushort commandType = packet.ReadUShort();
-        if (unconnectedServices.GetService(serviceId, out ClientService unconnectedService))
+        internal void Tick()
         {
-            unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            ClientTick++;
         }
-        else
+
+        internal void SendToServer(ulong serviceId, NetPacket packet, TransportMethod method)
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No unconnected service found for id {serviceId}.");
+            if (packet != null)
+            {
+                packet.Insert(0, serviceId);
+                transportUtility.SendToAllRemotes(packet, method);
+            }
         }
-    }
 
-    internal void Tick()
-    {
-        ClientTick++;
-    }
-
-    internal void SendToServer(ulong serviceId, NetPacket packet, TransportMethod method)
-    {
-        if (packet != null)
+        internal void SendToUnconnected(IPEndPoint iPEndPoint, ulong serviceId, NetPacket packet)
         {
-            packet.Insert(0, serviceId);
-            transportUtility.SendToAllRemotes(packet, method);
+            if (packet != null)
+            {
+                packet.Insert(0, serviceId);
+                transportUtility.SendToUnconnectedRemote(iPEndPoint, packet);
+            }
         }
-    }
 
-    internal void SendToUnconnected(IPEndPoint iPEndPoint, ulong serviceId, NetPacket packet)
-    {
-        if (packet != null)
+        internal void SendToUnconnected(List<IPEndPoint> iPEndPoints, ulong serviceId, NetPacket packet)
         {
-            packet.Insert(0, serviceId);
-            transportUtility.SendToUnconnectedRemote(iPEndPoint, packet);
+            if (packet != null)
+            {
+                packet.Insert(0, serviceId);
+                transportUtility.SendToUnconnectedRemotes(iPEndPoints, packet);
+            }
         }
-    }
 
-    internal void SendToUnconnected(List<IPEndPoint> iPEndPoints, ulong serviceId, NetPacket packet)
-    {
-        if (packet != null)
+        internal void BroadcastToUnconnected(ulong serviceId, NetPacket packet)
         {
-            packet.Insert(0, serviceId);
-            transportUtility.SendToUnconnectedRemotes(iPEndPoints, packet);
+            if (packet != null)
+            {
+                packet.Insert(0, serviceId);
+                transportUtility.BroadcastToUnconnectedRemotes(packet);
+            }
         }
-    }
 
-    internal void BroadcastToUnconnected(ulong serviceId, NetPacket packet)
-    {
-        if (packet != null)
+        public void SendToServer<T>(NetPacket packet, TransportMethod method) where T : ClientService
         {
-            packet.Insert(0, serviceId);
-            transportUtility.BroadcastToUnconnectedRemotes(packet);
+            if (services.TryGetServiceId<T>(out ulong serviceId))
+            {
+                SendToServer(serviceId, packet, method);
+            }
         }
-    }
 
-    public void SendToServer<T>(NetPacket packet, TransportMethod method) where T : ClientService
-    {
-        if (services.TryGetServiceId<T>(out ulong serviceId))
+        public void SendToUnconnected<T>(IPEndPoint iPEndPoint, NetPacket packet) where T : ClientService
         {
-            SendToServer(serviceId, packet, method);
+            if (unconnectedServices.TryGetServiceId<T>(out ulong serviceId))
+            {
+                SendToUnconnected(iPEndPoint, serviceId, packet);
+            }
         }
-    }
 
-    public void SendToUnconnected<T>(IPEndPoint iPEndPoint, NetPacket packet) where T : ClientService
-    {
-        if (unconnectedServices.TryGetServiceId<T>(out ulong serviceId))
+        public void SendToUnconnected<T>(List<IPEndPoint> iPEndPoints, NetPacket packet) where T : ClientService
         {
-            SendToUnconnected(iPEndPoint, serviceId, packet);
+            if (unconnectedServices.TryGetServiceId<T>(out ulong serviceId))
+            {
+                SendToUnconnected(iPEndPoints, serviceId, packet);
+            }
         }
-    }
 
-    public void SendToUnconnected<T>(List<IPEndPoint> iPEndPoints, NetPacket packet) where T : ClientService
-    {
-        if (unconnectedServices.TryGetServiceId<T>(out ulong serviceId))
+        public void BroadcastToUnconnected<T>(NetPacket packet) where T : ClientService
         {
-            SendToUnconnected(iPEndPoints, serviceId, packet);
+            if (unconnectedServices.TryGetServiceId<T>(out ulong serviceId))
+            {
+                BroadcastToUnconnected(serviceId, packet);
+            }
         }
-    }
 
-    public void BroadcastToUnconnected<T>(NetPacket packet) where T : ClientService
-    {
-        if (unconnectedServices.TryGetServiceId<T>(out ulong serviceId))
+        public void DisconnectFromLobby()
         {
-            BroadcastToUnconnected(serviceId, packet);
+            transportUtility.DisconnectTransports();
         }
-    }
 
-    public void DisconnectFromLobby()
-    {
-        transportUtility.DisconnectTransports();
-    }
-
-    public bool RegisterService<T>(T service, out ulong serviceId) where T : ClientService
-    {
-        return services.RegisterService(service, out serviceId);
-    }
-
-    public bool UnregisterService(ClientService service)
-    {
-        return services.UnregisterService(service.ServiceId);
-    }
-
-    public T GetService<T>() where T : ClientService
-    {
-        ClientService service = services.GetService<T>(out ulong serviceId);
-        if (service != null)
+        public bool RegisterService<T>(T service, out ulong serviceId) where T : ClientService
         {
-            return (T)service;
+            return services.RegisterService(service, out serviceId);
         }
-        else
+
+        public bool UnregisterService(ClientService service)
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService with id {serviceId} not found.");
-            return null;
+            return services.UnregisterService(service.ServiceId);
         }
-    }
 
-    public bool RegisterUnconnectedService<T>(T service, out ulong serviceId) where T : ClientService
-    {
-        return unconnectedServices.RegisterService(service, out serviceId);
-    }
-
-    public bool UnregisterUnconnectedService(ClientService service)
-    {
-        return unconnectedServices.UnregisterService(service.ServiceId);
-    }
-
-    public T GetUnconnectedService<T>() where T : ClientService
-    {
-        ClientService service = unconnectedServices.GetService<T>(out ulong serviceId);
-        if (service != null)
+        public T GetService<T>() where T : ClientService
         {
-            return (T)service;
+            ClientService service = services.GetService<T>(out ulong serviceId);
+            if (service != null)
+            {
+                return (T)service;
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService with id {serviceId} not found.");
+                return null;
+            }
         }
-        else
+
+        public bool RegisterUnconnectedService<T>(T service, out ulong serviceId) where T : ClientService
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService with id {serviceId} not found.");
-            return null;
+            return unconnectedServices.RegisterService(service, out serviceId);
         }
-    }
 
-    public void RegisterRpcContainer(INetRpc rpcContainer)
-    {
-        RpcBus.RegisterRpcContainer(rpcContainer);
-    }
+        public bool UnregisterUnconnectedService(ClientService service)
+        {
+            return unconnectedServices.UnregisterService(service.ServiceId);
+        }
 
-    public void UnregisterRpcContainer(INetRpc rpcContainer)
-    {
-        RpcBus.UnregisterRpcContainer(rpcContainer);
+        public T GetUnconnectedService<T>() where T : ClientService
+        {
+            ClientService service = unconnectedServices.GetService<T>(out ulong serviceId);
+            if (service != null)
+            {
+                return (T)service;
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService with id {serviceId} not found.");
+                return null;
+            }
+        }
+
+        public void RegisterRpcContainer(INetRpc rpcContainer)
+        {
+            RpcBus.RegisterRpcContainer(rpcContainer);
+        }
+
+        public void UnregisterRpcContainer(INetRpc rpcContainer)
+        {
+            RpcBus.UnregisterRpcContainer(rpcContainer);
+        }
     }
 }

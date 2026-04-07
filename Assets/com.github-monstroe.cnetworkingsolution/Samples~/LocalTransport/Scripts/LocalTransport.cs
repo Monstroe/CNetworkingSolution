@@ -1,6 +1,8 @@
+#if CNS_TRANSPORT_LOCAL
 using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
+using CNetworkingSolution;
 
 public class LocalTransport : NetTransport
 {
@@ -170,3 +172,4 @@ public class LocalTransport : NetTransport
         return true;
     }
 }
+#endif

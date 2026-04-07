@@ -1,4 +1,7 @@
-public interface IDeepClone<T>
+namespace CNetworkingSolution
 {
-    public T Clone();
+    public interface IDeepClone<T>
+    {
+        public T Clone();
+    }
 }

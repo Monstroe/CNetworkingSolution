@@ -1,72 +1,75 @@
 using System.Linq;
 using UnityEngine;
 
-[ServiceId("GameService")]
-public class GameClientService : ClientService
+namespace CNetworkingSolution
 {
-    public delegate void GameInitializedEventHandler();
-    public event GameInitializedEventHandler OnGameInitialized;
-
-    public delegate void GameUserJoinedEventHandler(UserData user);
-    public event GameUserJoinedEventHandler OnGameUserJoined;
-
-    public delegate void GameUserLeftEventHandler(UserData user);
-    public event GameUserLeftEventHandler OnGameUserLeft;
-
-    public void JoinGame()
+    [ServiceId("GameService")]
+    public class GameClientService : ClientService
     {
-        if (lobby.CurrentUser.InGame)
+        public delegate void GameInitializedEventHandler();
+        public event GameInitializedEventHandler OnGameInitialized;
+
+        public delegate void GameUserJoinedEventHandler(UserData user);
+        public event GameUserJoinedEventHandler OnGameUserJoined;
+
+        public delegate void GameUserLeftEventHandler(UserData user);
+        public event GameUserLeftEventHandler OnGameUserLeft;
+
+        public void JoinGame()
         {
-            Debug.LogWarning("Current user is already marked as in-game.");
-            return;
+            if (lobby.CurrentUser.InGame)
+            {
+                Debug.LogWarning("Current user is already marked as in-game.");
+                return;
+            }
+
+            InvokeOnServerService(nameof(GameUserJoinedRpc), lobby.CurrentUser.PlayerId);
         }
 
-        InvokeOnServerService(nameof(GameUserJoinedRpc), lobby.CurrentUser.PlayerId);
-    }
-
-    public void LeaveGame()
-    {
-        if (!lobby.CurrentUser.InGame)
+        public void LeaveGame()
         {
-            Debug.LogWarning("Current user is not marked as in-game.");
-            return;
+            if (!lobby.CurrentUser.InGame)
+            {
+                Debug.LogWarning("Current user is not marked as in-game.");
+                return;
+            }
+
+            InvokeOnServerService(nameof(GameUserLeftRpc), lobby.CurrentUser.PlayerId);
         }
 
-        InvokeOnServerService(nameof(GameUserLeftRpc), lobby.CurrentUser.PlayerId);
-    }
-
-    [ClientRpc]
-    private void GameUserJoinedRpc(byte playerId)
-    {
-        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
-        if (user == null)
+        [ClientRpc]
+        private void GameUserJoinedRpc(byte playerId)
         {
-            Debug.LogWarning($"Received GameUserJoinedRpc for player ID {playerId}, but no such user was found in the lobby.");
-            return;
+            UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
+            if (user == null)
+            {
+                Debug.LogWarning($"Received GameUserJoinedRpc for player ID {playerId}, but no such user was found in the lobby.");
+                return;
+            }
+
+            user.InGame = true;
+            if (lobby.CurrentUser.PlayerId == playerId)
+            {
+                OnGameInitialized?.Invoke();
+            }
+            else
+            {
+                OnGameUserJoined?.Invoke(user);
+            }
         }
 
-        user.InGame = true;
-        if (lobby.CurrentUser.PlayerId == playerId)
+        [ClientRpc]
+        private void GameUserLeftRpc(byte playerId)
         {
-            OnGameInitialized?.Invoke();
-        }
-        else
-        {
-            OnGameUserJoined?.Invoke(user);
-        }
-    }
+            UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
+            if (user == null)
+            {
+                Debug.LogWarning($"Received GameUserLeftRpc for player ID {playerId}, but no such user was found in the lobby.");
+                return;
+            }
 
-    [ClientRpc]
-    private void GameUserLeftRpc(byte playerId)
-    {
-        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
-        if (user == null)
-        {
-            Debug.LogWarning($"Received GameUserLeftRpc for player ID {playerId}, but no such user was found in the lobby.");
-            return;
+            user.InGame = false;
+            OnGameUserLeft?.Invoke(user);
         }
-
-        user.InGame = false;
-        OnGameUserLeft?.Invoke(user);
     }
 }

@@ -1,12 +1,15 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public abstract class EventAttribute : Attribute
+namespace CNetworkingSolution
 {
-    public EventPriority Priority { get; }
-
-    public EventAttribute(EventPriority priority = EventPriority.Normal)
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public abstract class EventAttribute : Attribute
     {
-        Priority = priority;
+        public EventPriority Priority { get; }
+
+        public EventAttribute(EventPriority priority = EventPriority.Normal)
+        {
+            Priority = priority;
+        }
     }
 }

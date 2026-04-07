@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using CNetworkingSolution;
 
 public class ChatMenu : MonoBehaviour
 {

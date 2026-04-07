@@ -1,4 +1,5 @@
 using UnityEngine;
+using CNetworkingSolution;
 
 [ServiceId("ChatService")]
 public class ChatServerService : ServerService

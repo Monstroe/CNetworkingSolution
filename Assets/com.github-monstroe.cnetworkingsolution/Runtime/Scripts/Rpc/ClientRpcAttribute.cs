@@ -1,7 +1,10 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public sealed class ClientRpcAttribute : RpcAttribute
+namespace CNetworkingSolution
 {
-    public ClientRpcAttribute(TransportMethod transportMethod = TransportMethod.Reliable) : base(transportMethod) { }
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class ClientRpcAttribute : RpcAttribute
+    {
+        public ClientRpcAttribute(TransportMethod transportMethod = TransportMethod.Reliable) : base(transportMethod) { }
+    }
 }

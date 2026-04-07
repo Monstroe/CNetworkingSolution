@@ -1,4 +1,5 @@
 using System.Linq;
+using CNetworkingSolution;
 
 [ServiceId("ChatService")]
 public class ChatClientService : ClientService

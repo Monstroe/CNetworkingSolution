@@ -1,3 +1,6 @@
-public interface INetRpc
+namespace CNetworkingSolution
 {
+    public interface INetRpc
+    {
+    }
 }

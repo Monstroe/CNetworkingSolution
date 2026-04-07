@@ -1,3 +1,6 @@
-public interface INetService
+namespace CNetworkingSolution
 {
+    public interface INetService
+    {
+    }
 }

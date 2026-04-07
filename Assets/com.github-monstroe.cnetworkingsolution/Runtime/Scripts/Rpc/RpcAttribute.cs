@@ -1,12 +1,15 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public abstract class RpcAttribute : Attribute
+namespace CNetworkingSolution
 {
-    public TransportMethod TransportMethod { get; }
-
-    public RpcAttribute(TransportMethod transportMethod = TransportMethod.Reliable)
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public abstract class RpcAttribute : Attribute
     {
-        TransportMethod = transportMethod;
+        public TransportMethod TransportMethod { get; }
+
+        public RpcAttribute(TransportMethod transportMethod = TransportMethod.Reliable)
+        {
+            TransportMethod = transportMethod;
+        }
     }
 }

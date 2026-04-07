@@ -1,7 +1,10 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public sealed class ConnectionErrorEventAttribute : EventAttribute
+namespace CNetworkingSolution
 {
-    public ConnectionErrorEventAttribute(EventPriority priority = EventPriority.Normal) : base(priority) { }
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class ConnectionErrorEventAttribute : EventAttribute
+    {
+        public ConnectionErrorEventAttribute(EventPriority priority = EventPriority.Normal) : base(priority) { }
+    }
 }

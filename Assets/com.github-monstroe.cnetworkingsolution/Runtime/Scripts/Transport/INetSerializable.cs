@@ -1,9 +1,12 @@
-public interface INetSerializable
+namespace CNetworkingSolution
 {
-    public void Serialize(NetPacket packet);
-}
+    public interface INetSerializable
+    {
+        public void Serialize(NetPacket packet);
+    }
 
-public interface INetSerializable<T> : INetSerializable
-{
-    public T Deserialize(NetPacket packet);
+    public interface INetSerializable<T> : INetSerializable
+    {
+        public T Deserialize(NetPacket packet);
+    }
 }

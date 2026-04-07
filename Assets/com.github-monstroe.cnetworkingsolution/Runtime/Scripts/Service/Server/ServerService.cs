@@ -3,116 +3,119 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-public abstract class ServerService : ServerBehaviour
+namespace CNetworkingSolution
 {
-    public int ExecutionOrder => executionOrder;
-    public ulong ServiceId => serviceId;
-
-    [SerializeField, HideInInspector]
-    private ulong serviceId;
-
-    [Header("Server Service Settings")]
-    [SerializeField] protected int executionOrder = 0;
-
-    public override void Init(ServerLobby lobby)
+    public abstract class ServerService : ServerBehaviour
     {
-        base.Init(lobby);
-        if (lobby.RegisterService(this, out serviceId))
-        {
-            Debug.Log($"<color=green><b>CNS</b></color>: ServerService {type.Name} registered.");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {type.Name} is already registered.");
-        }
-    }
+        public int ExecutionOrder => executionOrder;
+        public ulong ServiceId => serviceId;
 
-    public override void Remove()
-    {
-        if (lobby.UnregisterService(this))
+        [SerializeField, HideInInspector]
+        private ulong serviceId;
+
+        [Header("Server Service Settings")]
+        [SerializeField] protected int executionOrder = 0;
+
+        public override void Init(ServerLobby lobby)
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: ServerService {type.Name} unregistered.");
+            base.Init(lobby);
+            if (lobby.RegisterService(this, out serviceId))
+            {
+                Debug.Log($"<color=green><b>CNS</b></color>: ServerService {type.Name} registered.");
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {type.Name} is already registered.");
+            }
         }
-        else
+
+        public override void Remove()
         {
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {type.Name} was not registered.");
+            if (lobby.UnregisterService(this))
+            {
+                Debug.Log($"<color=green><b>CNS</b></color>: ServerService {type.Name} unregistered.");
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerService {type.Name} was not registered.");
+            }
+            base.Remove();
         }
-        base.Remove();
-    }
 
 #if UNITY_EDITOR
-    void OnValidate()
-    {
-        if (Application.isPlaying)
-            return;
-        ResetServiceId(GetType());
-    }
+        void OnValidate()
+        {
+            if (Application.isPlaying)
+                return;
+            ResetServiceId(GetType());
+        }
 
-    internal void ResetServiceId(Type type)
-    {
-        EditorUtility.SetDirty(this);
-        serviceId = ServiceBus.GetServiceId(type);
-    }
+        internal void ResetServiceId(Type type)
+        {
+            EditorUtility.SetDirty(this);
+            serviceId = ServiceBus.GetServiceId(type);
+        }
 #endif
 
-    public void SendToLobbyClientServices(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
-    {
-        lobby.SendToLobby(serviceId, packet, transportMethod, exception);
-    }
-
-    public void InvokeOnLobbyClientServices(string methodName, params object[] args)
-    {
-        InvokeOnLobbyClientServices(methodName, null, args);
-    }
-
-    public void InvokeOnLobbyClientServices(string methodName, UserData exception = null, params object[] args)
-    {
-        if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+        public void SendToLobbyClientServices(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
         {
-            SendToLobbyClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
+            lobby.SendToLobby(serviceId, packet, transportMethod, exception);
         }
-        else
+
+        public void InvokeOnLobbyClientServices(string methodName, params object[] args)
         {
-            Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+            InvokeOnLobbyClientServices(methodName, null, args);
         }
-    }
 
-    public void SendToGameClientServices(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
-    {
-        lobby.SendToGame(serviceId, packet, transportMethod, exception);
-    }
-
-    public void InvokeOnGameClientServices(string methodName, params object[] args)
-    {
-        InvokeOnGameClientServices(methodName, null, args);
-    }
-
-    public void InvokeOnGameClientServices(string methodName, UserData exception = null, params object[] args)
-    {
-        if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+        public void InvokeOnLobbyClientServices(string methodName, UserData exception = null, params object[] args)
         {
-            SendToGameClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
+            if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+            {
+                SendToLobbyClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
+            }
+            else
+            {
+                Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+            }
         }
-        else
-        {
-            Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
-        }
-    }
 
-    public void SendToUserClientService(UserData user, NetPacket packet, TransportMethod transportMethod)
-    {
-        lobby.SendToUser(user, serviceId, packet, transportMethod);
-    }
-
-    public void InvokeOnUserClientService(UserData user, string methodName, params object[] args)
-    {
-        if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+        public void SendToGameClientServices(NetPacket packet, TransportMethod transportMethod, UserData exception = null)
         {
-            SendToUserClientService(user, ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+            lobby.SendToGame(serviceId, packet, transportMethod, exception);
         }
-        else
+
+        public void InvokeOnGameClientServices(string methodName, params object[] args)
         {
-            Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+            InvokeOnGameClientServices(methodName, null, args);
+        }
+
+        public void InvokeOnGameClientServices(string methodName, UserData exception = null, params object[] args)
+        {
+            if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+            {
+                SendToGameClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
+            }
+            else
+            {
+                Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+            }
+        }
+
+        public void SendToUserClientService(UserData user, NetPacket packet, TransportMethod transportMethod)
+        {
+            lobby.SendToUser(user, serviceId, packet, transportMethod);
+        }
+
+        public void InvokeOnUserClientService(UserData user, string methodName, params object[] args)
+        {
+            if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+            {
+                SendToUserClientService(user, ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+            }
+            else
+            {
+                Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+            }
         }
     }
 }
