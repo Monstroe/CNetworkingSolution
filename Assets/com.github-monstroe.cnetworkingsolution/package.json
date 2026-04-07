@@ -26,19 +26,9 @@
   },
   "samples": [
     {
-      "displayName": "Chat Sample",
-      "description": "Basic chat system using CNS (uses TextMeshPro).",
-      "path": "Samples~/Chat"
-    },
-    {
-      "displayName": "Player Sample",
-      "description": "Player movement and input handling (uses Input System).",
-      "path": "Samples~/Player"
-    },
-    {
-      "displayName": "FX Sample",
-      "description": "Networked SFX and VFX (uses Addressables and VFX Graph).",
-      "path": "Samples~/FX"
+      "displayName": "Transport - Local",
+      "description": "Local loopback transport.",
+      "path": "Samples~/LocalTransport"
     },
     {
       "displayName": "Transport - CNet",
@@ -51,9 +41,19 @@
       "path": "Samples~/LiteNetLibTransport"
     },
     {
-      "displayName": "Transport - Local",
-      "description": "Local loopback transport.",
-      "path": "Samples~/LocalTransport"
+      "displayName": "FX Sample",
+      "description": "Networked SFX and VFX.",
+      "path": "Samples~/FX"
+    },
+    {
+      "displayName": "Player Sample",
+      "description": "Player movement and input handling.",
+      "path": "Samples~/Player"
+    },
+    {
+      "displayName": "Chat Sample",
+      "description": "Basic chat system.",
+      "path": "Samples~/Chat"
     },
     {
       "displayName": "Utility",
@@ -62,7 +62,7 @@
     },
     {
       "displayName": "Full Sample (CNSSample)",
-      "description": "Complete example scene combining Chat, Player, FX, and Local/CNet transports (IMPORT THESE BEFOREHAND).",
+      "description": "Complete example scene combining FX, Player, Chat, and Local/CNet transports.",
       "path": "Samples~/CNSSample"
     }
   ]
