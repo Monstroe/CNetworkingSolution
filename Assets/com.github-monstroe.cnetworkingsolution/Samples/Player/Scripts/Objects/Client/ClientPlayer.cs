@@ -142,8 +142,15 @@ public class ClientPlayer : ClientTransform
         playerInput = GetComponent<PlayerInput>();
         cc = GetComponent<CharacterController>();
         meshRenderers = GetComponentsInChildren<SkinnedMeshRenderer>();
+
         standingHeight = cameraParent.localPosition.y;
         crouchingHeight = cameraParent.localPosition.y - crouchLower;
+
+        if (!IsLocalPlayer)
+        {
+            playerInput.enabled = false;
+            cameraTransform.gameObject.SetActive(false);
+        }
     }
 
     public override void Remove()
@@ -188,8 +195,6 @@ public class ClientPlayer : ClientTransform
     {
         base.StartOnNonOwner();
         ControlsEnabled = false;
-        Destroy(playerInput);
-        cameraTransform.gameObject.SetActive(false);
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
