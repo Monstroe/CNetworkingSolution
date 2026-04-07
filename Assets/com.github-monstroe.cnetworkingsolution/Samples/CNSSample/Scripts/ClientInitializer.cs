@@ -50,8 +50,6 @@ public class ClientInitializer : MonoBehaviour
             ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
         }
 
-        Debug.Log("Connection lost. Returning to main menu.");
-
         FadeScreen.Instance.Display(true, fadeDuration, () =>
         {
             SceneManager.LoadSceneAsync(mainSceneName);

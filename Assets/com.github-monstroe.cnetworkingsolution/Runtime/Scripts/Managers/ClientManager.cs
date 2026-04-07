@@ -125,7 +125,6 @@ public class ClientManager : MonoBehaviour
             }
             else
             {
-                Debug.Log("Packet Unread Length: " + packet.UnreadLength);
                 NetPacket responsePacket = packet.UnreadLength > sizeof(int) ? new NetPacket(packet.ReadBytes()) : null;
 
                 OnConnectionRejected?.Invoke(new ConnectionRejectedArgs()
