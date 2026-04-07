@@ -49,6 +49,11 @@ To install the package, you can choose one of the following ways:
 https://github.com/Monstroe/CNetworkingSolution.git?path=/Assets/com.github-monstroe.cnetworkingsolution
 ```
 
+### Extra Notes
+
+1. When using some of the samples, ensure that "Active Input Handling" is set to "Both" in Player Settings.
+2. When Unity Addressables imports, ensure you have defined `CNS_SFX`, `CNS_VFX`, `CNS_ServerPrefabs`, and `CNS_ClientPrefabs` as labels in your project. If you are using the samples, you may need to re-add some of the defined SFX/prefabs into their corresponding labels or the sample project will NOT function.
+
 ### Scripting Define Symbols
 
 Each transport supported out of the box comes with it's own Scripting Define Symbol. Please see the following:
