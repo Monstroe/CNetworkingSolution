@@ -145,12 +145,6 @@ public class ClientPlayer : ClientTransform
 
         standingHeight = cameraParent.localPosition.y;
         crouchingHeight = cameraParent.localPosition.y - crouchLower;
-
-        if (!IsLocalPlayer)
-        {
-            playerInput.enabled = false;
-            cameraTransform.gameObject.SetActive(false);
-        }
     }
 
     public override void Remove()
@@ -184,6 +178,9 @@ public class ClientPlayer : ClientTransform
     {
         base.StartOnOwner();
         ControlsEnabled = true;
+        playerInput.enabled = true;
+        cameraTransform.gameObject.SetActive(true);
+
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
@@ -195,6 +192,9 @@ public class ClientPlayer : ClientTransform
     {
         base.StartOnNonOwner();
         ControlsEnabled = false;
+        playerInput.enabled = false;
+        cameraTransform.gameObject.SetActive(false);
+
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
@@ -292,9 +292,6 @@ public class ClientPlayer : ClientTransform
             }
         }
         footstepTimer += Time.deltaTime;
-
-        // Networking
-        //SendCustomTransformToServerObject(transform.position, cameraParent.rotation);
     }
 
     void Rotate()
@@ -330,13 +327,4 @@ public class ClientPlayer : ClientTransform
     {
         yVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * height);
     }
-
-    /*public void SetTransform(Vector3 position, Quaternion rotation)
-    {
-        locked = true;
-        transform.position = position;
-        xRotation = rotation.eulerAngles.x;
-        xRotation = Mathf.Clamp(xRotation, -89, 89);
-        yRotation = rotation.eulerAngles.y;
-    }*/
 }

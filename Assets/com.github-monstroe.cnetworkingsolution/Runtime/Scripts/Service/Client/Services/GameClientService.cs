@@ -56,7 +56,7 @@ public class GameClientService : ClientService
         }
     }
 
-    [ServerRpc]
+    [ClientRpc]
     private void GameUserLeftRpc(byte playerId)
     {
         UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
