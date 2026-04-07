@@ -15,14 +15,8 @@ MonoBehaviour:
   m_GroupName: CNS_ClientObjectsGroup
   m_GUID: 7ba3ac2a22d7bed4ea3c1e32a8177f00
   m_SerializeEntries:
-  - m_GUID: 230b8af2c1e083f498710feb0d3d9ebf
-    m_Address: Assets/GameAssets/Objects/Client/Items/ClientBasicItem.prefab
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - CNS_ClientPrefabs
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 3739d763e31224847bd22a4ae0a142fe
-    m_Address: Assets/GameAssets/Objects/Client/FX/ClientFX.prefab
+  - m_GUID: 7847069604c8e91429e8fac63b117dfc
+    m_Address: Assets/com.github-monstroe.cnetworkingsolution/Samples/Player/Prefabs/Client/ClientPlayer.prefab
     m_ReadOnly: 0
     m_SerializedLabels:
     - CNS_ClientPrefabs

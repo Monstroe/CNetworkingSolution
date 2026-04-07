@@ -1,0 +1,17 @@
+{
+    "name": "Monstroe.CNetworkingSolution.Samples.CNetTransport",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8747631f7a8e4d74fb6397f012daf2be",
+        "GUID:0a89add7764fcaf4dafc38f437de752d"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

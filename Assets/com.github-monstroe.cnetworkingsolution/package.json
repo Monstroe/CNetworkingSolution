@@ -1,0 +1,69 @@
+{
+  "name": "com.github-monstroe.cnetworkingsolution",
+  "displayName": "CNetworkingSolution (CNS)",
+  "version": "1.0.0",
+  "unity": "6000.3",
+  "description": "High level modular networking system for Unity",
+  "author": {
+    "name": "Monstroe",
+    "url": "https://github.com/Monstroe"
+  },
+  "keywords": [
+    "multiplayer",
+    "networking",
+    "unity",
+    "sdk"
+  ],
+  "license": "MIT",
+  "licensesUrl": "https://github.com/Monstroe/CNetworkingSolution/blob/main/LICENSE",
+  "changelogUrl": "https://github.com/Monstroe/CNetworkingSolution/releases",
+  "documentationUrl": "https://github.com/Monstroe/CNetworkingSolution",
+  "dependencies": {
+    "com.unity.addressables": "2.8.0",
+    "com.unity.textmeshpro": "4.0.0",
+    "com.unity.inputsystem": "1.18.0",
+    "com.unity.visualeffectgraph": "17.3.0"
+  },
+  "samples": [
+    {
+      "displayName": "Chat Sample",
+      "description": "Basic chat system using CNS (uses TextMeshPro).",
+      "path": "Samples~/Chat"
+    },
+    {
+      "displayName": "Player Sample",
+      "description": "Player movement and input handling (uses Input System).",
+      "path": "Samples~/Player"
+    },
+    {
+      "displayName": "FX Sample",
+      "description": "Networked SFX and VFX (uses Addressables and VFX Graph).",
+      "path": "Samples~/FX"
+    },
+    {
+      "displayName": "Transport - CNet",
+      "description": "CNet Transport.",
+      "path": "Samples~/CNetTransport"
+    },
+    {
+      "displayName": "Transport - LiteNetLib",
+      "description": "LiteNetLib Transport.",
+      "path": "Samples~/LiteNetLibTransport"
+    },
+    {
+      "displayName": "Transport - Local",
+      "description": "Local loopback transport.",
+      "path": "Samples~/LocalTransport"
+    },
+    {
+      "displayName": "Utility",
+      "description": "Utility helper classes.",
+      "path": "Samples~/Utility"
+    },
+    {
+      "displayName": "Full Sample (CNSSample)",
+      "description": "Complete example scene combining Chat, Player, FX, and Local/CNet transports (IMPORT THESE BEFOREHAND).",
+      "path": "Samples~/CNSSample"
+    }
+  ]
+}

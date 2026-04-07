@@ -16,21 +16,16 @@ MonoBehaviour:
   m_GUID: 6d56d296fc6dfe4418fd17ef315c3e13
   m_SerializeEntries:
   - m_GUID: 8a59da5f9cc413b42ac51b7f468f4597
-    m_Address: Assets/GameAssets/SFX/Footstep.wav
+    m_Address: Assets/com.github-monstroe.cnetworkingsolution/Samples/Player/FX/SFX/Footstep.wav
     m_ReadOnly: 0
     m_SerializedLabels:
     - CNS_SFX
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: a2c13a3de89d9f84393a9485913493b0
-    m_Address: Assets/GameAssets/SFX/Collide.wav
+    m_Address: Assets/com.github-monstroe.cnetworkingsolution/Samples/Player/FX/SFX/Collide.wav
     m_ReadOnly: 0
     m_SerializedLabels:
     - CNS_SFX
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: a8dc795f6a1ec6f46a85c1f53576b74d
-    m_Address: Assets/Prefabs/Map.prefab
-    m_ReadOnly: 0
-    m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 5bae0df7c2591ef4891617a16b261582, type: 2}

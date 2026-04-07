@@ -1,0 +1,16 @@
+{
+    "name": "Monstroe.CNetworkingSolution.Samples.Utility",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8747631f7a8e4d74fb6397f012daf2be"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

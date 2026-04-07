@@ -1,0 +1,17 @@
+{
+    "name": "Monstroe.CNetworkingSolution.Samples.Player",
+    "rootNamespace": "",
+    "references": [
+        "GUID:8747631f7a8e4d74fb6397f012daf2be",
+        "GUID:75469ad4d38634e559750d17036d5f7c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
