@@ -186,6 +186,9 @@ public class ClientPlayer : ClientTransform
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
         }
         LocalPlayer = this;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     protected override void StartOnNonOwner()

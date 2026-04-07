@@ -14,6 +14,9 @@ public class MainMenu : MonoBehaviour
         ClientManager.Instance.OnConnectionAccepted += ConnectionAccepted;
         ClientManager.Instance.OnConnectionRejected += ConnectionRejected;
         ResetMenu();
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     void OnDestroy()
