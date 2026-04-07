@@ -86,7 +86,7 @@ public abstract class ClientTransform : ClientObject
         transform.SetPositionAndRotation(Vector3.Lerp(transform.position, pos, lerpSpeed * Time.deltaTime), Quaternion.Slerp(transform.rotation, rot, lerpSpeed * Time.deltaTime));
     }
 
-    public void SendCustomTransformToServerObject(Vector3 pos, Quaternion rot)
+    public void SetCustomTransform(Vector3 pos, Quaternion rot)
     {
         sentPosition = pos;
         sentRotation = rot;

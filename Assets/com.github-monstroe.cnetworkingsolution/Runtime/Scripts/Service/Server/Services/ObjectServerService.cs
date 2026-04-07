@@ -41,7 +41,7 @@ public class ObjectServerService : ServerService
         }
     }
 
-    public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+    public override async void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
     {
         base.ReceiveData(user, packet, commandType, transportMethod);
         switch ((ObjectCommandType)commandType)
@@ -50,8 +50,7 @@ public class ObjectServerService : ServerService
                 {
                     ushort objectId = packet.ReadUShort();
                     ushort objectCommand = packet.ReadUShort();
-                    ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
-                    if (serverObject != null)
+                    if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject))
                     {
                         serverObject.ReceiveData(user, packet, objectCommand, transportMethod);
                     }
@@ -62,7 +61,18 @@ public class ObjectServerService : ServerService
                     ulong clientPrefabKey = packet.ReadULong();
                     Vector3 position = packet.ReadVector3();
                     Quaternion rotation = packet.ReadQuaternion();
-                    SpawnObject(user, clientPrefabKey, position, rotation, transportMethod, false, false);
+
+                    ObjectSpawnRequestReceivedEvent spawnRequestEvent = new ObjectSpawnRequestReceivedEvent()
+                    {
+                        ClientPrefabKey = clientPrefabKey,
+                        Position = position,
+                        Rotation = rotation
+                    };
+                    var result = await lobby.TriggerGameEvent(spawnRequestEvent);
+                    if (!result.Canceled)
+                    {
+                        SpawnObject(user, clientPrefabKey, position, rotation, transportMethod, false, false);
+                    }
                     break;
                 }
             case ObjectCommandType.OBJECT_DESTROY_REQUEST:
@@ -70,7 +80,15 @@ public class ObjectServerService : ServerService
                     ushort objectId = packet.ReadUShort();
                     if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject) && user.PlayerId == serverObject.OwnerId)
                     {
-                        DestroyObject(serverObject);
+                        ObjectDestroyRequestReceivedEvent destroyRequestEvent = new ObjectDestroyRequestReceivedEvent()
+                        {
+                            ObjectId = objectId
+                        };
+                        var result = await lobby.TriggerGameEvent(destroyRequestEvent);
+                        if (!result.Canceled)
+                        {
+                            DestroyObject(serverObject);
+                        }
                     }
                     break;
                 }
@@ -236,4 +254,16 @@ public class ObjectServerService : ServerService
 
         DestroyOnServer(serverObj, true);
     }
+}
+
+public class ObjectSpawnRequestReceivedEvent : GameEvent
+{
+    public ulong ClientPrefabKey { get; set; }
+    public Vector3 Position { get; set; }
+    public Quaternion Rotation { get; set; }
+}
+
+public class ObjectDestroyRequestReceivedEvent : GameEvent
+{
+    public ushort ObjectId { get; set; }
 }

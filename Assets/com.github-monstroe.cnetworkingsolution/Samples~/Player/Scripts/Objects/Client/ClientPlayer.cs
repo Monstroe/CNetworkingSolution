@@ -131,7 +131,7 @@ public class ClientPlayer : ClientTransform
     private SkinnedMeshRenderer[] meshRenderers;
     private bool locked = false;
     private bool justGrounded = true;
-    private float footstepTimer = 0;
+    //private float footstepTimer = 0;
 
     public override void Init(ushort id, ClientLobby lobby)
     {
@@ -286,7 +286,7 @@ public class ClientPlayer : ClientTransform
         }
 
         // Footstep SFX
-        if (moveDir.sqrMagnitude > 0.01f && IsGrounded)
+        /*if (moveDir.sqrMagnitude > 0.01f && IsGrounded)
         {
             if (footstepTimer > (IsSprinting ? (.55f / sprintMultiplier) : .55f))
             {
@@ -294,7 +294,7 @@ public class ClientPlayer : ClientTransform
                 ClientManager.Instance.CurrentLobby.GetService<FXClientService>().PlaySFX("Footstep.wav", 0.5f, transform.position);
             }
         }
-        footstepTimer += Time.deltaTime;
+        footstepTimer += Time.deltaTime;*/
     }
 
     void Rotate()
