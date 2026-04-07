@@ -9,6 +9,7 @@ public class FadeUI : MonoBehaviour, IDisplay
 {
     public bool FadeChildren { get => fadeChildren; set => fadeChildren = value; }
     public float FadeTime { get => fadeTime; set => fadeTime = value; }
+    public bool IsVisible { get; private set; }
 
     [SerializeField] private bool startVisible = false;
     [SerializeField] private bool fadeChildren = true;
@@ -26,6 +27,7 @@ public class FadeUI : MonoBehaviour, IDisplay
 
     public void Initialize()
     {
+        IsVisible = startVisible;
         graphics.Clear();
         if (fadeChildren)
         {
@@ -82,12 +84,14 @@ public class FadeUI : MonoBehaviour, IDisplay
     private IEnumerator Activate(UnityAction callback = null)
     {
         yield return Fade(true);
+        IsVisible = true;
         callback?.Invoke();
     }
 
     private IEnumerator Deactivate(UnityAction callback = null)
     {
         yield return Fade(false);
+        IsVisible = false;
         callback?.Invoke();
     }
 

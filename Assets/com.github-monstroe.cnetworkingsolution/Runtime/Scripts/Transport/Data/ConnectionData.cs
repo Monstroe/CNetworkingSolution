@@ -12,7 +12,7 @@ public class ConnectionData : INetSerializable<ConnectionData>
             LobbyConnectionType = (LobbyConnectionType)packet.ReadByte()
         };
 
-        if (packet.UnreadLength > 0)
+        if (packet.UnreadLength > sizeof(int))
         {
             connectionData.RequestPacket = new NetPacket(packet.ReadBytes());
         }

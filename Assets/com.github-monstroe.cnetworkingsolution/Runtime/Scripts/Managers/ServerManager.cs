@@ -50,8 +50,6 @@ public class ServerManager : MonoBehaviour
             return;
         }
 
-        Debug.Log("<color=green><b>CNS</b></color>: Initializing Server...");
-
         transportUtility = GetComponent<MultiTransportUtility>();
         AddTransportUtilityEvents();
         ServerData.ServerId = GenerateUniqueId();
@@ -64,11 +62,6 @@ public class ServerManager : MonoBehaviour
                 _ = await RegisterLobby(null, i);
             }
         }
-    }
-
-    void Start()
-    {
-        Debug.Log("<color=green><b>CNS</b></color>: Server initialized.");
     }
 
     void Update()
@@ -94,8 +87,11 @@ public class ServerManager : MonoBehaviour
 
     void OnDestroy()
     {
-        transportUtility.RemoveTransports();
-        ClearTransportUtilityEvents();
+        if (transportUtility)
+        {
+            transportUtility.RemoveTransports();
+            ClearTransportUtilityEvents();
+        }
     }
 
     private async void HandleNetworkConnected(ulong remoteId)

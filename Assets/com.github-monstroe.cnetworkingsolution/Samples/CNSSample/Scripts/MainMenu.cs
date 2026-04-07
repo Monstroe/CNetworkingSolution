@@ -4,32 +4,25 @@ using UnityEngine;
 
 public class MainMenu : MonoBehaviour
 {
-    public static MainMenu Instance { get; private set; }
-
     [SerializeField] private GameObject mainMenu;
     [SerializeField] private GameObject multiplayerMenu;
     [SerializeField] private GameObject loadGameMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
-
-    void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Debug.LogWarning("Multiple instances of MainMenu detected. Destroying duplicate instance.");
-            Destroy(gameObject);
-            return;
-        }
-    }
 
     void Start()
     {
         ClientManager.Instance.OnConnectionAccepted += ConnectionAccepted;
         ClientManager.Instance.OnConnectionRejected += ConnectionRejected;
         ResetMenu();
+    }
+
+    void OnDestroy()
+    {
+        if (ClientManager.Instance != null)
+        {
+            ClientManager.Instance.OnConnectionAccepted -= ConnectionAccepted;
+            ClientManager.Instance.OnConnectionRejected -= ConnectionRejected;
+        }
     }
 
     private void ConnectionAccepted(ConnectionAcceptedArgs args)

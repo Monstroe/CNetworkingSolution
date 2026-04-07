@@ -4,8 +4,6 @@ using UnityEngine.SceneManagement;
 
 public class ClientInitializer : MonoBehaviour
 {
-    public static ClientInitializer Instance { get; private set; }
-
     [Header("Game Initialization")]
     [SerializeField] private float pregameLoadDuration = 1f;
     [SerializeField] private float gameLoadDuration = 1f;
@@ -17,25 +15,20 @@ public class ClientInitializer : MonoBehaviour
     private bool initLoopCanEnd = false;
     private bool initialized = false;
 
-    void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Debug.LogWarning("Multiple instances of ClientInitializer detected. Destroying duplicate instance.");
-            Destroy(gameObject);
-            return;
-        }
-    }
-
     void Start()
     {
         ClientManager.Instance.OnConnectionAccepted += ConnectionAccepted;
         ClientManager.Instance.OnConnectionLost += ConnectionLost;
         LoadPreGame();
+    }
+
+    void OnDestroy()
+    {
+        if (ClientManager.Instance != null)
+        {
+            ClientManager.Instance.OnConnectionAccepted -= ConnectionAccepted;
+            ClientManager.Instance.OnConnectionLost -= ConnectionLost;
+        }
     }
 
     private void ConnectionAccepted(ConnectionAcceptedArgs args)
@@ -57,7 +50,12 @@ public class ClientInitializer : MonoBehaviour
             ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
         }
 
-        SceneManager.LoadSceneAsync(mainSceneName);
+        Debug.Log("Connection lost. Returning to main menu.");
+
+        FadeScreen.Instance.Display(true, fadeDuration, () =>
+        {
+            SceneManager.LoadSceneAsync(mainSceneName);
+        });
     }
 
     private void GameInitialized()

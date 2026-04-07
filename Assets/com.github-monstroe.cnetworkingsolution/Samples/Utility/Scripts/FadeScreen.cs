@@ -7,6 +7,8 @@ public class FadeScreen : MonoBehaviour
 {
     public static FadeScreen Instance { get; private set; }
 
+    [SerializeField] private bool activateOnStart = false;
+
     private FadeUI fadeUI;
 
     void Awake()
@@ -29,6 +31,19 @@ public class FadeScreen : MonoBehaviour
         }
 
         fadeUI = GetComponent<FadeUI>();
+    }
+
+    void Start()
+    {
+        if (activateOnStart)
+        {
+            Display(!fadeUI.IsVisible, 0.5f);
+        }
+    }
+
+    public void Display(bool value, UnityAction callback = null)
+    {
+        fadeUI.Display(value, callback);
     }
 
     public void Display(bool value, float time, UnityAction callback = null)

@@ -6,27 +6,11 @@ public class ChatMenu : MonoBehaviour
     public delegate void ChatSelectedHandler(bool isSelected);
     public event ChatSelectedHandler OnChatSelected;
 
-    public static ChatMenu Instance { get; private set; }
-
     public bool IsSelected { get; private set; } = false;
 
     [SerializeField] private GameObject chatContainer;
     [SerializeField] private TMP_InputField inputField;
     [SerializeField] private GameObject chatMessagePrefab;
-
-    void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Debug.LogWarning("Multiple instances of ChatMenu detected. Destroying duplicate instance.");
-            Destroy(gameObject);
-            return;
-        }
-    }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -34,6 +18,16 @@ public class ChatMenu : MonoBehaviour
         ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined += AddUserJoinedMessage;
         ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft += AddUserLeftMessage;
         ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived += ReceivedMessage;
+    }
+
+    void OnDestroy()
+    {
+        if (ClientManager.Instance != null)
+        {
+            ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined -= AddUserJoinedMessage;
+            ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft -= AddUserLeftMessage;
+            ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived -= ReceivedMessage;
+        }
     }
 
     // Update is called once per frame

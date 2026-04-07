@@ -42,8 +42,6 @@ public class ClientManager : MonoBehaviour
             return;
         }
 
-        Debug.Log("<color=green><b>CNS</b></color>: Initializing Client...");
-
         transportUtility = GetComponent<SingleTransportUtility>();
         AddTransportUtilityEvents();
 
@@ -51,11 +49,6 @@ public class ClientManager : MonoBehaviour
         {
             CurrentLobby.Init(transportUtility);
         }
-    }
-
-    void Start()
-    {
-        Debug.Log("<color=green><b>CNS</b></color>: Client initialized.");
     }
 
     void FixedUpdate()
@@ -68,8 +61,11 @@ public class ClientManager : MonoBehaviour
 
     void OnDestroy()
     {
-        transportUtility.RemoveTransports();
-        ClearTransportUtilityEvents();
+        if (transportUtility)
+        {
+            transportUtility.RemoveTransports();
+            ClearTransportUtilityEvents();
+        }
     }
 
     private void HandleNetworkConnected(ulong remoteId)
@@ -115,7 +111,7 @@ public class ClientManager : MonoBehaviour
             if (accepted)
             {
                 int lobbyId = packet.ReadInt();
-                NetPacket responsePacket = new NetPacket(packet.ReadBytes());
+                NetPacket responsePacket = packet.UnreadLength > sizeof(int) ? new NetPacket(packet.ReadBytes()) : null;
 
                 CurrentLobby.LobbyData.LobbyId = lobbyId;
                 IsConnected = true;
@@ -129,7 +125,8 @@ public class ClientManager : MonoBehaviour
             }
             else
             {
-                NetPacket responsePacket = new NetPacket(packet.ReadBytes());
+                Debug.Log("Packet Unread Length: " + packet.UnreadLength);
+                NetPacket responsePacket = packet.UnreadLength > sizeof(int) ? new NetPacket(packet.ReadBytes()) : null;
 
                 OnConnectionRejected?.Invoke(new ConnectionRejectedArgs()
                 {

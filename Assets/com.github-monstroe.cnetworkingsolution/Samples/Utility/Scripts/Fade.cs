@@ -16,6 +16,7 @@ public class Fade : MonoBehaviour, IDisplay
 
     public bool FadeChildren { get => fadeChildren; set => fadeChildren = value; }
     public float FadeTime { get => fadeTime; set => fadeTime = value; }
+    public bool IsVisible { get; private set; }
 
     [SerializeField] private bool startVisible = false;
     [SerializeField] private bool fadeChildren = true;
@@ -35,6 +36,7 @@ public class Fade : MonoBehaviour, IDisplay
 
     public void Initialize()
     {
+        IsVisible = startVisible;
         renderers.Clear();
         if (fadeChildren)
         {
@@ -94,6 +96,7 @@ public class Fade : MonoBehaviour, IDisplay
 
         if (timer >= fadeTime)
         {
+            IsVisible = !IsVisible;
             currentCallback?.Invoke();
             currentCallback = null;
 
