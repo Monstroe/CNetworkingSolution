@@ -179,7 +179,7 @@ public class ClientPlayer : ClientTransform
         base.StartOnOwner();
         ControlsEnabled = true;
         playerInput.actions.Enable();
-        cameraTransform.GetComponent<Camera>().enabled = true;
+        cameraTransform.gameObject.SetActive(true);
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly;
@@ -191,8 +191,8 @@ public class ClientPlayer : ClientTransform
     {
         base.StartOnNonOwner();
         ControlsEnabled = false;
-        Destroy(playerInput);
-        Destroy(cameraTransform.GetComponent<Camera>());
+        playerInput.actions.Disable();
+        cameraTransform.gameObject.SetActive(false);
         foreach (var mr in meshRenderers)
         {
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
