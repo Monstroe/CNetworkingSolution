@@ -39,7 +39,7 @@ namespace CNetworkingSolution
     }
 #endif
 
-        async void Awake()
+        void Awake()
         {
             if (Instance == null)
             {
@@ -56,7 +56,10 @@ namespace CNetworkingSolution
             AddTransportUtilityEvents();
             ServerData.ServerId = GenerateUniqueId();
             ServerData.SecretKey = GenerateSecretKey();
+        }
 
+        async void Start()
+        {
             if (spawnLobbiesOnStart)
             {
                 for (int i = minLobbyId; i < maxLobbyId; i++)
