@@ -37,7 +37,7 @@ public class ServerManager : MonoBehaviour
     }
 #endif
 
-    async void Awake()
+    void Awake()
     {
         if (Instance == null)
         {
@@ -54,7 +54,10 @@ public class ServerManager : MonoBehaviour
         AddTransportUtilityEvents();
         ServerData.ServerId = GenerateUniqueId();
         ServerData.SecretKey = GenerateSecretKey();
+    }
 
+    async void Start()
+    {
         if (spawnLobbiesOnStart)
         {
             for (int i = minLobbyId; i < maxLobbyId; i++)
