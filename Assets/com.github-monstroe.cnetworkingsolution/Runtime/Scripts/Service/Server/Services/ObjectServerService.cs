@@ -17,6 +17,7 @@ namespace CNetworkingSolution
         [Header("Map Settings")]
         [Tooltip("The map prefab to be instantiated on the server.")]
         [SerializeField] private NetMap mapPrefab;
+        [SerializeField] private bool hideMapMesh = true;
 
         private bool startingObjectsInitialized = false;
         private List<ushort> spawnedStartingObjectIds = new List<ushort>();
@@ -28,17 +29,27 @@ namespace CNetworkingSolution
             // Init Map
             Map = Instantiate(mapPrefab, Vector3.zero, Quaternion.identity).GetComponent<NetMap>();
             Map.transform.SetParent(this.transform);
-            foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+
+            if (hideMapMesh)
             {
-                r.enabled = false;
+                foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+                {
+                    r.enabled = false;
+                }
             }
+
             foreach (ClientObject obj in Map.GetComponentsInChildren<ClientObject>(true))
             {
-                obj.gameObject.TryGetComponent(out Collider objCollider);
-                if (objCollider != null)
+                if (obj.gameObject.TryGetComponent(out Collider objCollider))
                 {
                     objCollider.enabled = false;
                 }
+
+                foreach (Renderer r in obj.GetComponentsInChildren<Renderer>(true))
+                {
+                    r.enabled = false;
+                }
+
                 obj.enabled = false;
             }
         }
