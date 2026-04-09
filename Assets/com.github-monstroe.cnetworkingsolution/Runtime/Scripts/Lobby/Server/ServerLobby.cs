@@ -13,8 +13,7 @@ namespace CNetworkingSolution
         public LobbyData LobbyData { get; private set; } = new LobbyData();
         public ulong ServerTick { get; private set; } = 0;
         public Scene? LobbyScene { get; private set; }
-
-        private PhysicsScene? physicsScene;
+        public PhysicsScene? PhysicsScene { get; private set; }
 
         private ITransportUtility transportUtility;
         private readonly ServerServiceUtility services = new ServerServiceUtility();
@@ -28,7 +27,7 @@ namespace CNetworkingSolution
             this.transportUtility = transportUtility;
 
             LobbyScene = scene;
-            physicsScene = scene?.GetPhysicsScene();
+            PhysicsScene = scene?.GetPhysicsScene();
 
             foreach (var service in this.GetComponentsInChildren<ServerService>())
             {
@@ -111,9 +110,9 @@ namespace CNetworkingSolution
 
         internal void Tick()
         {
-            if (physicsScene.HasValue)
+            if (PhysicsScene.HasValue)
             {
-                physicsScene.Value.Simulate(Time.fixedDeltaTime);
+                PhysicsScene.Value.Simulate(Time.fixedDeltaTime);
             }
             services.Tick();
             ServerTick++;
