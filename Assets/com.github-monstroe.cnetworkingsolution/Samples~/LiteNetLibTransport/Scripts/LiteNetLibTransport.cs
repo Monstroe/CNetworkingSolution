@@ -1,4 +1,4 @@
-#if LITENETLIB_TRANSPORT
+#if CNS_TRANSPORT_LITENETLIB
 using System;
 using System.Collections.Generic;
 using System.Net;

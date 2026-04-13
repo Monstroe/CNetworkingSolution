@@ -1,4 +1,4 @@
-#if CNET_TRANSPORT
+#if CNS_TRANSPORT_CNET
 using System;
 using System.Collections.Generic;
 using System.Net;
