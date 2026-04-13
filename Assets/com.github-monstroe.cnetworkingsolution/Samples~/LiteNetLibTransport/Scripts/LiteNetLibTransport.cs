@@ -1,4 +1,4 @@
-#if CNS_TRANSPORT_LITENETLIB
+#if LITENETLIB_TRANSPORT
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -9,6 +9,19 @@ using CNetworkingSolution;
 
 public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEventListener
 {
+    public ushort Port { get => port; set => port = value; }
+    public string Address { get => address; set => address = value; }
+    public string ConnectionKey { get => connectionKey; set => connectionKey = value; }
+    public float PingInterval { get => pingInterval; set => pingInterval = value; }
+    public float DisconnectTimeout { get => disconnectTimeout; set => disconnectTimeout = value; }
+    public float ReconnectDelay { get => reconnectDelay; set => reconnectDelay = value; }
+    public int MaxConnectAttempts { get => maxConnectAttempts; set => maxConnectAttempts = value; }
+    public int SimulatePacketLossChance { get => simulatePacketLossChance; set => simulatePacketLossChance = value; }
+    public int SimulateMinLatency { get => simulateMinLatency; set => simulateMinLatency = value; }
+    public int SimulateMaxLatency { get => simulateMaxLatency; set => simulateMaxLatency = value; }
+    public bool UnconnectedMessagesEnabled { get => unconnectedMessagesEnabled; set => unconnectedMessagesEnabled = value; }
+    public bool BroadcastReceiveEnabled { get => broadcastReceiveEnabled; set => broadcastReceiveEnabled = value; }
+
     [Tooltip("The port to listen on (if server) or connect to (if client)")]
     [SerializeField] private ushort port = 8888;
     [Tooltip("The address to connect to as client; ignored if server")]

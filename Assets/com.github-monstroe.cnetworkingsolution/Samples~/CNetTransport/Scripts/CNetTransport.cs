@@ -1,4 +1,4 @@
-#if CNS_TRANSPORT_CNET
+#if CNET_TRANSPORT
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -9,6 +9,23 @@ using CNetworkingSolution;
 
 public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 {
+    public ushort Port { get => port; set => port = value; }
+    public string Address { get => address; set => address = value; }
+    public string ConnectionKey { get => connectionKey; set => connectionKey = value; }
+    public int MaxPendingConnections { get => maxPendingConnections; set => maxPendingConnections = value; }
+
+    public int TCPHeartbeatInterval { get => tcpHeartbeatInterval; set => tcpHeartbeatInterval = value; }
+    public int TCPConnectionTimeout { get => tcpConnectionTimeout; set => tcpConnectionTimeout = value; }
+    public int TCPSocketReceiveBufferSize { get => tcpSocketReceiveBufferSize; set => tcpSocketReceiveBufferSize = value; }
+    public int TCPSocketSendBufferSize { get => tcpSocketSendBufferSize; set => tcpSocketSendBufferSize = value; }
+    public int TCPMaxPacketSize { get => tcpMaxPacketSize; set => tcpMaxPacketSize = value; }
+
+    public int UDPHeartbeatInterval { get => udpHeartbeatInterval; set => udpHeartbeatInterval = value; }
+    public int UDPConnectionTimeout { get => udpConnectionTimeout; set => udpConnectionTimeout = value; }
+    public int UDPSocketReceiveBufferSize { get => udpSocketReceiveBufferSize; set => udpSocketReceiveBufferSize = value; }
+    public int UDPSocketSendBufferSize { get => udpSocketSendBufferSize; set => udpSocketSendBufferSize = value; }
+    public int UDPMaxPacketSize { get => udpMaxPacketSize; set => udpMaxPacketSize = value; }
+
     [Header("Connection Settings")]
     [Tooltip("The port to listen on (if server) or connect to (if client)")]
     [SerializeField] private ushort port = 7777;
