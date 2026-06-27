@@ -46,7 +46,7 @@ To install the package, you can choose one of the following ways:
 3. Enter the following URL and click the `Add` button
 
 ```
-https://github.com/Monstroe/CNetworkingSolution.git?path=/Assets/com.github-monstroe.cnetworkingsolution
+https://github.com/Monstroe/CNetworkingSolution.git?path=/Assets/com.monstroe.cnetworkingsolution
 ```
 
 ### Extra Notes
