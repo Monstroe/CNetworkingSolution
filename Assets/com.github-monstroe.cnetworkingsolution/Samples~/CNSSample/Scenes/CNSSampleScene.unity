@@ -1114,6 +1114,22 @@ PrefabInstance:
       propertyPath: mapInstance
       value: 
       objectReference: {fileID: 1995254932}
+    - target: {fileID: 1870488584812787244, guid: 13aef1f1bacf0724bb18e425ce745c0a, type: 3}
+      propertyPath: transportPrefabs.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1870488584812787244, guid: 13aef1f1bacf0724bb18e425ce745c0a, type: 3}
+      propertyPath: 'transportPrefabs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 3318069885960136653, guid: e7e8c103d88263b46b7d361da9c5d1ff, type: 3}
+    - target: {fileID: 1870488584812787244, guid: 13aef1f1bacf0724bb18e425ce745c0a, type: 3}
+      propertyPath: 'transportPrefabs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2590385289209281391, guid: 48f6884572ad8a74f9a20e7ed684b70f, type: 3}
+    - target: {fileID: 1870488584812787244, guid: 13aef1f1bacf0724bb18e425ce745c0a, type: 3}
+      propertyPath: 'transportPrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2338549765303654360, guid: 29b6718ac5aee164f9c91d1ad391d4ef, type: 3}
     - target: {fileID: 6916834888554858122, guid: 13aef1f1bacf0724bb18e425ce745c0a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.SceneManagement;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public abstract class ServerBehaviour : MonoBehaviour, INetEvent, INetRpc
     {
@@ -59,14 +59,23 @@ namespace CNetworkingSolution
         }
 
         public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { }
+
+        public virtual void EarlyUserJoined(UserData joinedUser) { }
         public virtual void UserJoined(UserData joinedUser) { }
         public virtual void LateUserJoined(UserData joinedUser) { }
+
+        public virtual void EarlyUserJoinedGame(UserData joinedUser) { }
         public virtual void UserJoinedGame(UserData joinedUser) { }
         public virtual void LateUserJoinedGame(UserData joinedUser) { }
+
+        public virtual void EarlyUserLeftGame(UserData leftUser) { }
         public virtual void UserLeftGame(UserData leftUser) { }
         public virtual void LateUserLeftGame(UserData leftUser) { }
+
+        public virtual void EarlyUserLeft(UserData leftUser) { }
         public virtual void UserLeft(UserData leftUser) { }
         public virtual void LateUserLeft(UserData leftUser) { }
+
         public virtual void Tick() { }
 
         protected ServerObject InstantiateOnServer(string originalPath, byte? ownerId = null, bool initAndSendToUsers = true)

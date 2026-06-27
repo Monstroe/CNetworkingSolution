@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class ConnectionErrorEventBus : EventBus<ConnectionErrorEvent, ConnectionErrorEventResult, ConnectionErrorEventAttribute, ConnectionErrorEventHandler>
     {

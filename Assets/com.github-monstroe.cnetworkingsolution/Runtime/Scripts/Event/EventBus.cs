@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public abstract class EventBus<T1, T2, T3, T4> where T1 : NetEvent where T2 : NetEventResult where T3 : EventAttribute where T4 : NetEventHandler<T1, T2>
     {

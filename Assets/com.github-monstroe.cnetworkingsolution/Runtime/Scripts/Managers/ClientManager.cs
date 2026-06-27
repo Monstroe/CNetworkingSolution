@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [RequireComponent(typeof(SingleTransportUtility))]
     public class ClientManager : MonoBehaviour
@@ -20,7 +20,6 @@ namespace CNetworkingSolution
         public delegate void ConnectionErrorEventHandler(ConnectionErrorArgs args);
         public event ConnectionErrorEventHandler OnConnectionError;
 
-        public static ClientManager Instance { get; private set; }
         public ClientLobby CurrentLobby { get => lobbyInstance; set => lobbyInstance = value; }
         public bool IsConnected { get; private set; } = false;
 
@@ -33,17 +32,6 @@ namespace CNetworkingSolution
 
         void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple instances of ClientManager detected. Destroying duplicate instance.");
-                Destroy(gameObject);
-                return;
-            }
-
             transportUtility = GetComponent<SingleTransportUtility>();
             AddTransportUtilityEvents();
 
@@ -202,7 +190,7 @@ namespace CNetworkingSolution
             transportUtility.RemoveTransports();
         }
 
-        public void BridgeTransport()
+        public void BridgeTransport(ServerManager bridgedServer)
         {
             if (transportUtility.Transport == null)
             {
@@ -210,14 +198,8 @@ namespace CNetworkingSolution
                 return;
             }
 
-            if (ServerManager.Instance == null)
-            {
-                Debug.LogError("<color=red><b>CNS</b></color>: Attempted to bridge Transport but ServerManager instance is null.");
-                return;
-            }
-
             transportUtility.ClearTransportEvents();
-            ServerManager.Instance.AddTransport(transportUtility.Transport);
+            bridgedServer.AddTransport(transportUtility.Transport);
             transportUtility.Transport = null;
         }
 

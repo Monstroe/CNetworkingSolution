@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [RequireComponent(typeof(MultiTransportUtility))]
     public class ServerManager : MonoBehaviour
     {
-        public static ServerManager Instance { get; private set; }
         public ServerData ServerData { get; private set; } = new ServerData();
 
         [Header("General Settings")]
@@ -31,27 +30,16 @@ namespace CNetworkingSolution
         private MultiTransportUtility transportUtility;
 
 #if UNITY_EDITOR
-    void OnValidate()
-    {
-        minLobbyId = Mathf.Max(0, minLobbyId);
-        maxLobbyId = Mathf.Max(minLobbyId + 1, maxLobbyId);
-        maxSecondsBeforeUnverifiedUserRemoval = Mathf.Max(1, maxSecondsBeforeUnverifiedUserRemoval);
-    }
+        void OnValidate()
+        {
+            minLobbyId = Mathf.Max(0, minLobbyId);
+            maxLobbyId = Mathf.Max(minLobbyId + 1, maxLobbyId);
+            maxSecondsBeforeUnverifiedUserRemoval = Mathf.Max(1, maxSecondsBeforeUnverifiedUserRemoval);
+        }
 #endif
 
         void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Debug.LogWarning("<color=yellow><b>CNS</b></color>: Multiple instances of ServerManager detected. Destroying duplicate instance.");
-                Destroy(gameObject);
-                return;
-            }
-
             transportUtility = GetComponent<MultiTransportUtility>();
             AddTransportUtilityEvents();
             ServerData.ServerId = GenerateUniqueId();
@@ -190,7 +178,9 @@ namespace CNetworkingSolution
                     ServerData.AddConnectedUser(connectionEvtResult.ConnectingUser);
                     ServerData.RemoveConnectingUser(remoteId);
                     transportUtility.SendToRemote(remoteUser.UserId, ConnectionPacketBuilder.ConnectionResponse(true, ConnectionPacketBuilder.ConnectionData(newLobby.LobbyData.LobbyId, connectionEvtResult.ResponsePacket)), TransportMethod.Reliable);
-                    newLobby.UserJoined(remoteUser);
+
+                newLobby.EarlyUserJoined(remoteUser);
+                newLobby.UserJoined(remoteUser);
                     newLobby.LateUserJoined(remoteUser);
                 }
                 else
@@ -335,9 +325,11 @@ namespace CNetworkingSolution
                 {
                     if (user.InGame)
                     {
+                        lobby.EarlyUserLeftGame(user);
                         lobby.UserLeftGame(user);
                         lobby.LateUserLeftGame(user);
                     }
+                    lobby.EarlyUserLeft(user);
                     lobby.UserLeft(user);
                     lobby.LateUserLeft(user);
                 }

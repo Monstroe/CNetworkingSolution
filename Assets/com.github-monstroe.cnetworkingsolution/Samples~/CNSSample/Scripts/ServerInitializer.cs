@@ -1,12 +1,29 @@
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class ServerInitializer : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [SerializeField] private TransportType transportType = TransportType.CNet;
+    private ServerManager serverManager;
+
     void Start()
     {
-        ServerManager.Instance.RegisterTransport<CNetTransport>();
-        ServerManager.Instance.StartTransports();
+        serverManager = FindFirstObjectByType<ServerManager>();
+        switch (transportType)
+        {
+            case TransportType.CNet:
+                serverManager.RegisterTransport<CNetTransport>();
+                break;
+            case TransportType.LiteNetLib:
+                serverManager.RegisterTransport<LiteNetLibTransport>();
+                break;
+        }
+        serverManager.StartTransports();
     }
+}
+
+public enum TransportType
+{
+    CNet,
+    LiteNetLib
 }

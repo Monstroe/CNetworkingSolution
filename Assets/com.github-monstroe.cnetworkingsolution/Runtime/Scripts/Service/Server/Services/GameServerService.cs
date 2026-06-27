@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [ServiceId("GameService")]
     public class GameServerService : ServerService
@@ -39,6 +39,7 @@ namespace CNetworkingSolution
             var result = await lobby.TriggerGameEvent(evt);
             if (!result.Canceled)
             {
+                lobby.EarlyUserJoinedGame(joinedUser);
                 lobby.UserJoinedGame(joinedUser);
                 lobby.LateUserJoinedGame(joinedUser);
             }
@@ -66,6 +67,7 @@ namespace CNetworkingSolution
             var result = await lobby.TriggerGameEvent(evt);
             if (!result.Canceled)
             {
+                lobby.EarlyUserLeftGame(leftUser);
                 lobby.UserLeftGame(leftUser);
                 lobby.LateUserLeftGame(leftUser);
             }

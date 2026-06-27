@@ -1,6 +1,6 @@
 using System;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class UserData : INetSerializable<UserData>
     {

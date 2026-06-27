@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.VFX;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 [ServiceId("FXService")]
 public class FXClientService : ClientService

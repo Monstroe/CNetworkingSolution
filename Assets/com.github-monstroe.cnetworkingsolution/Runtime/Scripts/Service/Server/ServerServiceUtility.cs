@@ -1,13 +1,24 @@
 using System;
 using System.Collections.Generic;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class ServerServiceUtility
     {
         private readonly Dictionary<ulong, ServerService> services = new Dictionary<ulong, ServerService>();
         private readonly SortedDictionary<int, List<ServerService>> serviceOrderCache = new SortedDictionary<int, List<ServerService>>();
         private readonly ServiceBus serviceBus = new ServiceBus();
+
+        public void EarlyUserJoined(UserData user)
+        {
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+            {
+                foreach (ServerService service in serviceList)
+                {
+                    service.EarlyUserJoined(user);
+                }
+            }
+        }
 
         public void UserJoined(UserData user)
         {
@@ -27,6 +38,17 @@ namespace CNetworkingSolution
                 foreach (ServerService service in serviceList)
                 {
                     service.LateUserJoined(user);
+                }
+            }
+        }
+
+        public void EarlyUserJoinedGame(UserData user)
+        {
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+            {
+                foreach (ServerService service in serviceList)
+                {
+                    service.EarlyUserJoinedGame(user);
                 }
             }
         }
@@ -53,6 +75,17 @@ namespace CNetworkingSolution
             }
         }
 
+        public void EarlyUserLeftGame(UserData user)
+        {
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+            {
+                foreach (ServerService service in serviceList)
+                {
+                    service.EarlyUserLeftGame(user);
+                }
+            }
+        }
+
         public void UserLeftGame(UserData user)
         {
             foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
@@ -71,6 +104,17 @@ namespace CNetworkingSolution
                 foreach (ServerService service in serviceList)
                 {
                     service.LateUserLeftGame(user);
+                }
+            }
+        }
+
+        public void EarlyUserLeft(UserData user)
+        {
+            foreach ((int order, List<ServerService> serviceList) in serviceOrderCache)
+            {
+                foreach (ServerService service in serviceList)
+                {
+                    service.EarlyUserLeft(user);
                 }
             }
         }

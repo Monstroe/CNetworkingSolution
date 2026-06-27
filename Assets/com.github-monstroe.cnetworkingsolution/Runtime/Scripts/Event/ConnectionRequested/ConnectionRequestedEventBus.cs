@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class ConnectionRequestedEventBus : EventBus<ConnectionRequestedEvent, ConnectionRequestedEventResult, ConnectionRequestedEventAttribute, ConnectionRequestedEventHandler>
     {

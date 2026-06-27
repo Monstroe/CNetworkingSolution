@@ -1,6 +1,6 @@
 using System;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public abstract class RpcAttribute : Attribute

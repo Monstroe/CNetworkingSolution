@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using CNet;
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 {
@@ -118,7 +118,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         return true;
     }
 
-    public override void Send(uint remoteId, CNetworkingSolution.NetPacket packet, TransportMethod protocol)
+    public override void Send(uint remoteId, Monstroe.CNetworkingSolution.NetPacket packet, TransportMethod protocol)
     {
         var transportProtocol = ConvertProtocol(protocol);
         if (connectedEPs.TryGetValue(remoteId, out NetEndPoint remoteEP))
@@ -131,7 +131,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    public override void SendToList(List<uint> remoteIds, CNetworkingSolution.NetPacket packet, TransportMethod protocol)
+    public override void SendToList(List<uint> remoteIds, Monstroe.CNetworkingSolution.NetPacket packet, TransportMethod protocol)
     {
         var transportProtocol = ConvertProtocol(protocol);
         foreach (var remoteId in remoteIds)
@@ -147,7 +147,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    public override void SendToAll(CNetworkingSolution.NetPacket packet, TransportMethod protocol)
+    public override void SendToAll(Monstroe.CNetworkingSolution.NetPacket packet, TransportMethod protocol)
     {
         var transportProtocol = ConvertProtocol(protocol);
         foreach (var remoteEP in connectedEPs.Values)
@@ -164,17 +164,17 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
         }
     }
 
-    public override void SendUnconnected(IPEndPoint ipEndPoint, CNetworkingSolution.NetPacket packet)
+    public override void SendUnconnected(IPEndPoint ipEndPoint, Monstroe.CNetworkingSolution.NetPacket packet)
     {
         Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendUnconnected is not supported by CNetTransport.");
     }
 
-    public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, CNetworkingSolution.NetPacket packet)
+    public override void SendToListUnconnected(List<IPEndPoint> ipEndPoints, Monstroe.CNetworkingSolution.NetPacket packet)
     {
         Debug.LogWarning("<color=yellow><b>CNS</b></color>: SendToListUnconnected is not supported by CNetTransport.");
     }
 
-    public override void BroadcastUnconnected(CNetworkingSolution.NetPacket packet)
+    public override void BroadcastUnconnected(Monstroe.CNetworkingSolution.NetPacket packet)
     {
         Debug.LogWarning("<color=yellow><b>CNS</b></color>: BroadcastUnconnected is not supported by CNetTransport.");
     }
@@ -320,7 +320,7 @@ public class CNetTransport : NetTransport, IEventNetListener, IEventNetClient
 
     protected virtual void ReceivePacket(NetEndPoint remoteEP, CNet.NetPacket packet, TransportProtocol protocol)
     {
-        CNetworkingSolution.NetPacket receivedPacket = new CNetworkingSolution.NetPacket(packet.ByteSegment);
+        Monstroe.CNetworkingSolution.NetPacket receivedPacket = new Monstroe.CNetworkingSolution.NetPacket(packet.ByteSegment);
         RaiseNetworkReceived(remoteEP.ID, receivedPacket, ConvertProtocolBack(protocol));
     }
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class LocalTransport : NetTransport
 {

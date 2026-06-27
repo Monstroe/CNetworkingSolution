@@ -1,5 +1,5 @@
 using System.Linq;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 [ServiceId("ChatService")]
 public class ChatClientService : ClientService
@@ -21,21 +21,21 @@ public class ChatClientService : ClientService
     [ClientRpc]
     private void SendChatRpc(byte playerId, string message)
     {
-        UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
+        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
         OnChatMessageReceived?.Invoke(user, message);
     }
 
     [ClientRpc]
     private void ChatUserJoinedRpc(byte playerId, string welcomeMessage)
     {
-        UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
+        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
         OnChatUserJoined?.Invoke(user, welcomeMessage);
     }
 
     [ClientRpc]
     private void ChatUserLeftRpc(byte playerId, string farewellMessage)
     {
-        UserData user = ClientManager.Instance.CurrentLobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
+        UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
         OnChatUserLeft?.Invoke(user, farewellMessage);
     }
 }

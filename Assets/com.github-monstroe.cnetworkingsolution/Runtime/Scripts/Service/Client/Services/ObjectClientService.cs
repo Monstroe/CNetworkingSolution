@@ -4,7 +4,7 @@ using System.Net;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [ServiceId("ObjectService")]
     public class ObjectClientService : ClientService

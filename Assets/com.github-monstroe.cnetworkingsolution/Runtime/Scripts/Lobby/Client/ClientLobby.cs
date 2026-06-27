@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class ClientLobby : MonoBehaviour
     {

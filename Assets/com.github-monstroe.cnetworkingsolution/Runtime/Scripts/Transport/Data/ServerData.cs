@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class ServerData
     {

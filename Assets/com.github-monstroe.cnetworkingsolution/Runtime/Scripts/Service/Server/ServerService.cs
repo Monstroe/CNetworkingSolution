@@ -1,9 +1,10 @@
 using System;
+using System.Net;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public abstract class ServerService : ServerBehaviour
     {
@@ -116,6 +117,11 @@ namespace CNetworkingSolution
             {
                 Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
             }
+        }
+
+        public void SendToUnconnectedClientService(IPEndPoint endPoint, NetPacket packet)
+        {
+            lobby.SendToUnconnected(endPoint, serviceId, packet);
         }
     }
 }

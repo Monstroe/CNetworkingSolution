@@ -1,4 +1,4 @@
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public interface INetSerializable
     {

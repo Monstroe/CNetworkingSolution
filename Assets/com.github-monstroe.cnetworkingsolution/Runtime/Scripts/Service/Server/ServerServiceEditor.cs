@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [CustomEditor(typeof(ServerService), true)]
     public class ServerServiceEditor : Editor

@@ -1,7 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class MainMenu : MonoBehaviour
 {
@@ -10,10 +10,13 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private GameObject loadGameMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
 
+    private ClientManager clientManager;
+
     void Start()
     {
-        ClientManager.Instance.OnConnectionAccepted += ConnectionAccepted;
-        ClientManager.Instance.OnConnectionRejected += ConnectionRejected;
+        clientManager = FindFirstObjectByType<ClientManager>();
+        clientManager.OnConnectionAccepted += ConnectionAccepted;
+        clientManager.OnConnectionRejected += ConnectionRejected;
         ResetMenu();
 
         Cursor.lockState = CursorLockMode.None;
@@ -22,10 +25,10 @@ public class MainMenu : MonoBehaviour
 
     void OnDestroy()
     {
-        if (ClientManager.Instance != null)
+        if (clientManager != null)
         {
-            ClientManager.Instance.OnConnectionAccepted -= ConnectionAccepted;
-            ClientManager.Instance.OnConnectionRejected -= ConnectionRejected;
+            clientManager.OnConnectionAccepted -= ConnectionAccepted;
+            clientManager.OnConnectionRejected -= ConnectionRejected;
         }
     }
 
@@ -43,15 +46,15 @@ public class MainMenu : MonoBehaviour
 
     public void StartSinglePlayer()
     {
-        Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
-        ServerManager.Instance.RegisterTransport<LocalTransport>();
-        ServerManager.Instance.StartTransports();
-        ClientManager.Instance.SetConnectionData(new ConnectionData()
+        ServerManager serverManager = Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
+        serverManager.RegisterTransport<LocalTransport>();
+        serverManager.StartTransports();
+        clientManager.SetConnectionData(new ConnectionData()
         {
             LobbyConnectionType = LobbyConnectionType.JoinOrCreate
         });
-        ClientManager.Instance.RegisterTransport<LocalTransport>();
-        ClientManager.Instance.StartTransport();
+        clientManager.RegisterTransport<LocalTransport>();
+        clientManager.StartTransport();
     }
 
     public void StartMultiPlayer()
@@ -68,16 +71,16 @@ public class MainMenu : MonoBehaviour
 
     public void CreateLobby()
     {
-        Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
-        ServerManager.Instance.RegisterTransport<LocalTransport>();
-        ServerManager.Instance.RegisterTransport<CNetTransport>();
-        ServerManager.Instance.StartTransports();
-        ClientManager.Instance.SetConnectionData(new ConnectionData()
+        ServerManager serverManager = Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
+        serverManager.RegisterTransport<LocalTransport>();
+        serverManager.RegisterTransport<CNetTransport>();
+        serverManager.StartTransports();
+        clientManager.SetConnectionData(new ConnectionData()
         {
             LobbyConnectionType = LobbyConnectionType.Create
         });
-        ClientManager.Instance.RegisterTransport<LocalTransport>();
-        ClientManager.Instance.StartTransport();
+        clientManager.RegisterTransport<LocalTransport>();
+        clientManager.StartTransport();
     }
 
     public void JoinLobby()
@@ -87,13 +90,13 @@ public class MainMenu : MonoBehaviour
             return;
         }
 
-        ClientManager.Instance.SetConnectionData(new ConnectionData()
+        clientManager.SetConnectionData(new ConnectionData()
         {
             LobbyId = parsedId,
             LobbyConnectionType = LobbyConnectionType.JoinIfExists
         });
-        ClientManager.Instance.RegisterTransport<CNetTransport>();
-        ClientManager.Instance.StartTransport();
+        clientManager.RegisterTransport<CNetTransport>();
+        clientManager.StartTransport();
     }
 
     public void ResetMenu()

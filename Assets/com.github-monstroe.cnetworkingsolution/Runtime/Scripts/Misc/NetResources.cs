@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.ResourceLocations;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class NetResources : MonoBehaviour
     {

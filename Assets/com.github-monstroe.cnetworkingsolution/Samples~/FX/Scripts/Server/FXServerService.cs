@@ -1,5 +1,5 @@
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 [ServiceId("FXService")]
 public class FXServerService : ServerService

@@ -1,5 +1,5 @@
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 [ServiceId("ChatService")]
 public class ChatServerService : ServerService

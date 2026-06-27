@@ -71,4 +71,4 @@ Each transport supported out of the box comes with it's own Scripting Define Sym
 
 Assembly: Monstroe.CNetworkingSolution.Runtime
 
-Namespace: CNetworkingSolution
+Namespace: Monstroe.CNetworkingSolution

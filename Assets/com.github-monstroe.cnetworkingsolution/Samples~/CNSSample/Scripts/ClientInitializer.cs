@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class ClientInitializer : MonoBehaviour
 {
@@ -9,6 +9,7 @@ public class ClientInitializer : MonoBehaviour
     [SerializeField] private float pregameLoadDuration = 1f;
     [SerializeField] private float gameLoadDuration = 1f;
     [SerializeField] private float fadeDuration = 1f;
+
     [Header("Scene Management")]
     [SerializeField] private string mainSceneName = "CNSSampleScene";
 
@@ -16,39 +17,43 @@ public class ClientInitializer : MonoBehaviour
     private bool initLoopCanEnd = false;
     private bool initialized = false;
 
+    private ClientManager clientManager;
+
     void Start()
     {
-        ClientManager.Instance.OnConnectionAccepted += ConnectionAccepted;
-        ClientManager.Instance.OnConnectionLost += ConnectionLost;
+        clientManager = FindFirstObjectByType<ClientManager>();
+        clientManager.OnConnectionAccepted += ConnectionAccepted;
+        clientManager.OnConnectionLost += ConnectionLost;
         LoadPreGame();
     }
 
     void OnDestroy()
     {
-        if (ClientManager.Instance != null)
+        if (clientManager != null)
         {
-            ClientManager.Instance.OnConnectionAccepted -= ConnectionAccepted;
-            ClientManager.Instance.OnConnectionLost -= ConnectionLost;
+            clientManager.OnConnectionAccepted -= ConnectionAccepted;
+            clientManager.OnConnectionLost -= ConnectionLost;
         }
     }
 
     private void ConnectionAccepted(ConnectionAcceptedArgs args)
     {
         initialized = false;
-        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized += GameInitialized;
+        clientManager.CurrentLobby.GetService<GameClientService>().OnGameInitialized += GameInitialized;
         initLoopCanStart = true;
     }
 
     private void ConnectionLost(ConnectionLostArgs args)
     {
-        if (ServerManager.Instance != null)
+        ServerManager serverManager = FindFirstObjectByType<ServerManager>();
+        if (serverManager != null)
         {
-            Destroy(ServerManager.Instance.gameObject);
+            Destroy(serverManager.gameObject);
         }
 
         if (!initialized)
         {
-            ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
+            clientManager.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
         }
 
         FadeScreen.Instance.Display(true, fadeDuration, () =>
@@ -60,7 +65,7 @@ public class ClientInitializer : MonoBehaviour
     private void GameInitialized()
     {
         initialized = true;
-        ClientManager.Instance.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
+        clientManager.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
         StartCoroutine(StartGame());
     }
 
@@ -78,7 +83,7 @@ public class ClientInitializer : MonoBehaviour
         if (initLoopCanEnd)
         {
             initLoopCanEnd = false;
-            ClientManager.Instance.CurrentLobby.GetService<GameClientService>().JoinGame();
+            clientManager.CurrentLobby.GetService<GameClientService>().JoinGame();
         }
     }
 

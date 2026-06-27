@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class GameEventBus : EventBus<GameEvent, GameEventResult, GameEventAttribute, GameEventHandler>
     {

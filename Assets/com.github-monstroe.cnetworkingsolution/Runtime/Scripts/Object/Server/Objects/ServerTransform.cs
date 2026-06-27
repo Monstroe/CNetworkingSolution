@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [RequireComponent(typeof(Rigidbody))]
     public class ServerTransform : ServerObject

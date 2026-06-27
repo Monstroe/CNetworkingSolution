@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
 using LiteNetLib;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class LiteNetLibTransport : NetTransport, INetEventListener, IDeliveryEventListener
 {

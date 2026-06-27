@@ -3,7 +3,7 @@ using System.Net;
 using System.Reflection;
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public abstract class ClientBehaviour : MonoBehaviour, INetRpc
     {

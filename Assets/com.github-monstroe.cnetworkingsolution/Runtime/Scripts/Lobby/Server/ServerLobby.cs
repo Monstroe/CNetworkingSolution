@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class ServerLobby : MonoBehaviour
     {
@@ -63,10 +63,15 @@ namespace CNetworkingSolution
             }
         }
 
-        internal void UserJoined(UserData user)
+        internal void EarlyUserJoined(UserData user)
         {
             user.PlayerId = GeneratePlayerId();
             user.InLobby = true;
+            services.EarlyUserJoined(user);
+        }
+
+        internal void UserJoined(UserData user)
+        {
             services.UserJoined(user);
         }
 
@@ -75,9 +80,14 @@ namespace CNetworkingSolution
             services.LateUserJoined(user);
         }
 
-        internal void UserJoinedGame(UserData user)
+        internal void EarlyUserJoinedGame(UserData user)
         {
             user.InGame = true;
+            services.EarlyUserJoinedGame(user);
+        }
+
+        internal void UserJoinedGame(UserData user)
+        {
             services.UserJoinedGame(user);
         }
 
@@ -86,9 +96,14 @@ namespace CNetworkingSolution
             services.LateUserJoinedGame(user);
         }
 
-        internal void UserLeftGame(UserData user)
+        internal void EarlyUserLeftGame(UserData user)
         {
             user.InGame = false;
+            services.EarlyUserLeftGame(user);
+        }
+
+        internal void UserLeftGame(UserData user)
+        {
             services.UserLeftGame(user);
         }
 
@@ -97,9 +112,14 @@ namespace CNetworkingSolution
             services.LateUserLeftGame(user);
         }
 
-        internal void UserLeft(UserData user)
+        internal void EarlyUserLeft(UserData user)
         {
             user.InLobby = false;
+            services.EarlyUserLeft(user);
+        }
+
+        internal void UserLeft(UserData user)
+        {
             services.UserLeft(user);
         }
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Net;
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [ServiceId("ObjectService")]
     public class ObjectServerService : ServerService
@@ -127,6 +127,15 @@ namespace CNetworkingSolution
             }
         }
 
+        public override void EarlyUserJoined(UserData joinedUser)
+        {
+            base.EarlyUserJoined(joinedUser);
+            foreach (var serverObject in ServerObjects.Values)
+            {
+                serverObject.EarlyUserJoined(joinedUser);
+            }
+        }
+
         public override void UserJoined(UserData joinedUser)
         {
             base.UserJoined(joinedUser);
@@ -145,9 +154,9 @@ namespace CNetworkingSolution
             }
         }
 
-        public override void UserJoinedGame(UserData joinedUser)
+        public override void EarlyUserJoinedGame(UserData joinedUser)
         {
-            base.UserJoinedGame(joinedUser);
+            base.EarlyUserJoinedGame(joinedUser);
             if (!startingObjectsInitialized)
             {
                 foreach (ClientObject clientObj in Map.GetStartingClientObjects())
@@ -176,7 +185,16 @@ namespace CNetworkingSolution
                 }
             }
 
-            // Handle UserJoinedGame for all existing objects
+            // Handle EarlyUserJoinedGame for all existing objects
+            foreach (var serverObject in ServerObjects.Values)
+            {
+                serverObject.EarlyUserJoinedGame(joinedUser);
+            }
+        }
+
+        public override void UserJoinedGame(UserData joinedUser)
+        {
+            base.UserJoinedGame(joinedUser);
             foreach (var serverObject in ServerObjects.Values)
             {
                 serverObject.UserJoinedGame(joinedUser);

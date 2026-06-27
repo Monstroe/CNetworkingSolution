@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class ServerPlayer : ServerTransform
 {

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class LobbyData : INetSerializable<LobbyData>
     {

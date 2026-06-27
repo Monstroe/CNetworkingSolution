@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class RpcBus
     {

@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [ServiceId("LobbyService")]
     public class LobbyServerService : ServerService

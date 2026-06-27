@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [ServiceId("LobbyService")]
     public class LobbyClientService : ClientService

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 [ServiceId("PlayerService")]
 public class PlayerClientService : ClientService

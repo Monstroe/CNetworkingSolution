@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 [RequireComponent(typeof(CharacterController))]
 public class ClientPlayer : ClientTransform
@@ -285,17 +285,6 @@ public class ClientPlayer : ClientTransform
             cc.Move(xVelocity * Time.deltaTime);
             cc.Move(Vector3.up * yVelocity * Time.deltaTime);
         }
-
-        // Footstep SFX
-        /*if (moveDir.sqrMagnitude > 0.01f && IsGrounded)
-        {
-            if (footstepTimer > (IsSprinting ? (.55f / sprintMultiplier) : .55f))
-            {
-                footstepTimer = 0;
-                ClientManager.Instance.CurrentLobby.GetService<FXClientService>().PlaySFX("Footstep.wav", 0.5f, transform.position);
-            }
-        }
-        footstepTimer += Time.deltaTime;*/
     }
 
     void Rotate()

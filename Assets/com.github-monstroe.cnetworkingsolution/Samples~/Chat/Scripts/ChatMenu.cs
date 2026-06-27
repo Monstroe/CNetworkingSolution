@@ -1,6 +1,6 @@
 using TMPro;
 using UnityEngine;
-using CNetworkingSolution;
+using Monstroe.CNetworkingSolution;
 
 public class ChatMenu : MonoBehaviour
 {
@@ -13,21 +13,24 @@ public class ChatMenu : MonoBehaviour
     [SerializeField] private TMP_InputField inputField;
     [SerializeField] private GameObject chatMessagePrefab;
 
+    private ClientManager clientManager;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined += AddUserJoinedMessage;
-        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft += AddUserLeftMessage;
-        ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived += ReceivedMessage;
+        clientManager = FindFirstObjectByType<ClientManager>();
+        clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined += AddUserJoinedMessage;
+        clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft += AddUserLeftMessage;
+        clientManager.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived += ReceivedMessage;
     }
 
     void OnDestroy()
     {
-        if (ClientManager.Instance != null)
+        if (clientManager != null)
         {
-            ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined -= AddUserJoinedMessage;
-            ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft -= AddUserLeftMessage;
-            ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived -= ReceivedMessage;
+            clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined -= AddUserJoinedMessage;
+            clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft -= AddUserLeftMessage;
+            clientManager.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived -= ReceivedMessage;
         }
     }
 
@@ -44,7 +47,7 @@ public class ChatMenu : MonoBehaviour
             {
                 if (inputField.text.Length > 0)
                 {
-                    ClientManager.Instance.CurrentLobby.GetService<ChatClientService>().SendChat(inputField.text);
+                    clientManager.CurrentLobby.GetService<ChatClientService>().SendChat(inputField.text);
                 }
                 DeactivateChat();
             }

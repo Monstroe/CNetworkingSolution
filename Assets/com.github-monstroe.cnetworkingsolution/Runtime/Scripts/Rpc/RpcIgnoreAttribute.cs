@@ -1,6 +1,6 @@
 using System;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
     public sealed class RpcIgnoreAttribute : Attribute

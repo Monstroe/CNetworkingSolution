@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     public class Managers : MonoBehaviour
     {

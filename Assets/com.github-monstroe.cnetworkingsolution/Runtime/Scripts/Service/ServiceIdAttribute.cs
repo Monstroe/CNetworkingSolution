@@ -1,6 +1,6 @@
 using System;
 
-namespace CNetworkingSolution
+namespace Monstroe.CNetworkingSolution
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class ServiceIdAttribute : Attribute
