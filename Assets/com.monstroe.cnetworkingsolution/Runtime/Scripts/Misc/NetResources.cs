@@ -11,11 +11,9 @@ namespace Monstroe.CNetworkingSolution
     {
         public static NetResources Instance { get; private set; }
 
-        public ServerManager ServerPrefab => serverPrefab;
         public IReadOnlyDictionary<Type, NetTransport> TransportPrefabs => transportPrefabsDict;
 
-        [Header("Connection Settings")]
-        [SerializeField] private ServerManager serverPrefab;
+        [Header("Transport Settings")]
         [SerializeField] private List<NetTransport> transportPrefabs;
 
         [Header("Asset Registries")]
@@ -49,7 +47,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogWarning("Multiple instances of NetResources detected. Destroying duplicate.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Multiple instances of NetResources detected. Destroying duplicate.");
                 Destroy(gameObject);
                 return;
             }

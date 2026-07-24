@@ -23,8 +23,9 @@ namespace Monstroe.CNetworkingSolution
         public ClientLobby CurrentLobby { get => lobbyInstance; set => lobbyInstance = value; }
         public bool IsConnected { get; private set; } = false;
 
-        [Header("Lobby Settings")]
+        [Header("Lobby Prefab")]
         [SerializeField] private ClientLobby lobbyPrefab;
+        [Header("Lobby Instance (if needed)")]
         [SerializeField] private ClientLobby lobbyInstance;
 
         private SingleTransportUtility transportUtility;

@@ -13,24 +13,21 @@ public class ChatMenu : MonoBehaviour
     [SerializeField] private TMP_InputField inputField;
     [SerializeField] private GameObject chatMessagePrefab;
 
-    private ClientManager clientManager;
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        clientManager = FindFirstObjectByType<ClientManager>();
-        clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined += AddUserJoinedMessage;
-        clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft += AddUserLeftMessage;
-        clientManager.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived += ReceivedMessage;
+        NetworkManager.Instance.Client.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined += AddUserJoinedMessage;
+        NetworkManager.Instance.Client.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft += AddUserLeftMessage;
+        NetworkManager.Instance.Client.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived += ReceivedMessage;
     }
 
     void OnDestroy()
     {
-        if (clientManager != null)
+        if (NetworkManager.Instance.Client != null)
         {
-            clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined -= AddUserJoinedMessage;
-            clientManager.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft -= AddUserLeftMessage;
-            clientManager.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived -= ReceivedMessage;
+            NetworkManager.Instance.Client.CurrentLobby.GetService<ChatClientService>().OnChatUserJoined -= AddUserJoinedMessage;
+            NetworkManager.Instance.Client.CurrentLobby.GetService<ChatClientService>().OnChatUserLeft -= AddUserLeftMessage;
+            NetworkManager.Instance.Client.CurrentLobby.GetService<ChatClientService>().OnChatMessageReceived -= ReceivedMessage;
         }
     }
 
@@ -47,7 +44,7 @@ public class ChatMenu : MonoBehaviour
             {
                 if (inputField.text.Length > 0)
                 {
-                    clientManager.CurrentLobby.GetService<ChatClientService>().SendChat(inputField.text);
+                    NetworkManager.Instance.Client.CurrentLobby.GetService<ChatClientService>().SendChat(inputField.text);
                 }
                 DeactivateChat();
             }

@@ -1,14 +1,14 @@
 #if CNS_TRANSPORT_LITENETLIB && CNS_TRANSPORT_LITENETLIBBROADCAST
 using System.Collections.Generic;
-using System.Net;
 using UnityEngine;
 using LiteNetLib;
+using Monstroe.CNetworkingSolution;
 
 public class LiteNetLibBroadcastTransport : LiteNetLibTransport
 {
     protected override bool StartClient()
     {
-        return StartServer();
+        return base.StartServer();
     }
 
     protected override bool StartServer()
@@ -48,16 +48,7 @@ public class LiteNetLibBroadcastTransport : LiteNetLibTransport
 
     protected override void ReceiveData(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
     {
-        Debug.LogWarning($"<color=yellow><b>CNS</b></color>: LiteNetLibBroadcastTransport does not support receiving data from connected peers.");
-    }
-
-    protected override void ReceiveDataUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
-    {
-        byte[] receivedBytes = new byte[reader.AvailableBytes];
-        reader.GetBytes(receivedBytes, 0, receivedBytes.Length);
-        NetPacket receivedPacket = new NetPacket(receivedBytes);
-        RaiseNetworkReceivedUnconnected(remoteEndPoint, receivedPacket);
-        reader.Recycle();
+        // In broadcast mode, we don't receive connected data from peers.
     }
 }
 #endif

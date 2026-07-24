@@ -21,7 +21,7 @@ namespace Monstroe.CNetworkingSolution
         [Header("Connection Settings")]
         [SerializeField] private int maxSecondsBeforeUnverifiedUserRemoval = 30;
 
-        [Header("Lobby Settings")]
+        [Header("Lobby Prefab")]
         [SerializeField] private ServerLobby lobbyPrefab;
 
         private readonly ConnectionRequestedEventBus connectionRequestedEventBus = new ConnectionRequestedEventBus();

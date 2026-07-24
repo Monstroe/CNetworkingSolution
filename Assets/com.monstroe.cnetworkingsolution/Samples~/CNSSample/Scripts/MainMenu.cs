@@ -1,4 +1,3 @@
-using System;
 using TMPro;
 using UnityEngine;
 using Monstroe.CNetworkingSolution;
@@ -10,13 +9,10 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private GameObject loadGameMenu;
     [SerializeField] private TMP_InputField lobbyIdInputField;
 
-    private ClientManager clientManager;
-
     void Start()
     {
-        clientManager = FindFirstObjectByType<ClientManager>();
-        clientManager.OnConnectionAccepted += ConnectionAccepted;
-        clientManager.OnConnectionRejected += ConnectionRejected;
+        NetworkManager.Instance.Client.OnConnectionAccepted += ConnectionAccepted;
+        NetworkManager.Instance.Client.OnConnectionRejected += ConnectionRejected;
         ResetMenu();
 
         Cursor.lockState = CursorLockMode.None;
@@ -25,10 +21,10 @@ public class MainMenu : MonoBehaviour
 
     void OnDestroy()
     {
-        if (clientManager != null)
+        if (NetworkManager.Instance.Client != null)
         {
-            clientManager.OnConnectionAccepted -= ConnectionAccepted;
-            clientManager.OnConnectionRejected -= ConnectionRejected;
+            NetworkManager.Instance.Client.OnConnectionAccepted -= ConnectionAccepted;
+            NetworkManager.Instance.Client.OnConnectionRejected -= ConnectionRejected;
         }
     }
 
@@ -46,15 +42,15 @@ public class MainMenu : MonoBehaviour
 
     public void StartSinglePlayer()
     {
-        ServerManager serverManager = Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
-        serverManager.RegisterTransport<LocalTransport>();
-        serverManager.StartTransports();
-        clientManager.SetConnectionData(new ConnectionData()
+        NetworkManager.Instance.SpawnServer();
+        NetworkManager.Instance.Server.RegisterTransport<LocalTransport>();
+        NetworkManager.Instance.Server.StartTransports();
+        NetworkManager.Instance.Client.SetConnectionData(new ConnectionData()
         {
             LobbyConnectionType = LobbyConnectionType.JoinOrCreate
         });
-        clientManager.RegisterTransport<LocalTransport>();
-        clientManager.StartTransport();
+        NetworkManager.Instance.Client.RegisterTransport<LocalTransport>();
+        NetworkManager.Instance.Client.StartTransport();
     }
 
     public void StartMultiPlayer()
@@ -71,16 +67,16 @@ public class MainMenu : MonoBehaviour
 
     public void CreateLobby()
     {
-        ServerManager serverManager = Instantiate(NetResources.Instance.ServerPrefab.gameObject).GetComponent<ServerManager>();
-        serverManager.RegisterTransport<LocalTransport>();
-        serverManager.RegisterTransport<CNetTransport>();
-        serverManager.StartTransports();
-        clientManager.SetConnectionData(new ConnectionData()
+        NetworkManager.Instance.SpawnServer();
+        NetworkManager.Instance.Server.RegisterTransport<LocalTransport>();
+        NetworkManager.Instance.Server.RegisterTransport<CNetTransport>();
+        NetworkManager.Instance.Server.StartTransports();
+        NetworkManager.Instance.Client.SetConnectionData(new ConnectionData()
         {
             LobbyConnectionType = LobbyConnectionType.Create
         });
-        clientManager.RegisterTransport<LocalTransport>();
-        clientManager.StartTransport();
+        NetworkManager.Instance.Client.RegisterTransport<LocalTransport>();
+        NetworkManager.Instance.Client.StartTransport();
     }
 
     public void JoinLobby()
@@ -90,13 +86,13 @@ public class MainMenu : MonoBehaviour
             return;
         }
 
-        clientManager.SetConnectionData(new ConnectionData()
+        NetworkManager.Instance.Client.SetConnectionData(new ConnectionData()
         {
             LobbyId = parsedId,
             LobbyConnectionType = LobbyConnectionType.JoinIfExists
         });
-        clientManager.RegisterTransport<CNetTransport>();
-        clientManager.StartTransport();
+        NetworkManager.Instance.Client.RegisterTransport<CNetTransport>();
+        NetworkManager.Instance.Client.StartTransport();
     }
 
     public void ResetMenu()

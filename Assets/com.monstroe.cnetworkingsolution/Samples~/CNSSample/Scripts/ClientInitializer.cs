@@ -17,29 +17,26 @@ public class ClientInitializer : MonoBehaviour
     private bool initLoopCanEnd = false;
     private bool initialized = false;
 
-    private ClientManager clientManager;
-
     void Start()
     {
-        clientManager = FindFirstObjectByType<ClientManager>();
-        clientManager.OnConnectionAccepted += ConnectionAccepted;
-        clientManager.OnConnectionLost += ConnectionLost;
+        NetworkManager.Instance.Client.OnConnectionAccepted += ConnectionAccepted;
+        NetworkManager.Instance.Client.OnConnectionLost += ConnectionLost;
         LoadPreGame();
     }
 
     void OnDestroy()
     {
-        if (clientManager != null)
+        if (NetworkManager.Instance.Client != null)
         {
-            clientManager.OnConnectionAccepted -= ConnectionAccepted;
-            clientManager.OnConnectionLost -= ConnectionLost;
+            NetworkManager.Instance.Client.OnConnectionAccepted -= ConnectionAccepted;
+            NetworkManager.Instance.Client.OnConnectionLost -= ConnectionLost;
         }
     }
 
     private void ConnectionAccepted(ConnectionAcceptedArgs args)
     {
         initialized = false;
-        clientManager.CurrentLobby.GetService<GameClientService>().OnGameInitialized += GameInitialized;
+        NetworkManager.Instance.Client.CurrentLobby.GetService<GameClientService>().OnGameInitialized += GameInitialized;
         initLoopCanStart = true;
     }
 
@@ -53,7 +50,7 @@ public class ClientInitializer : MonoBehaviour
 
         if (!initialized)
         {
-            clientManager.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
+            NetworkManager.Instance.Client.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
         }
 
         FadeScreen.Instance.Display(true, fadeDuration, () =>
@@ -65,7 +62,7 @@ public class ClientInitializer : MonoBehaviour
     private void GameInitialized()
     {
         initialized = true;
-        clientManager.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
+        NetworkManager.Instance.Client.CurrentLobby.GetService<GameClientService>().OnGameInitialized -= GameInitialized;
         StartCoroutine(StartGame());
     }
 
@@ -83,7 +80,7 @@ public class ClientInitializer : MonoBehaviour
         if (initLoopCanEnd)
         {
             initLoopCanEnd = false;
-            clientManager.CurrentLobby.GetService<GameClientService>().JoinGame();
+            NetworkManager.Instance.Client.CurrentLobby.GetService<GameClientService>().JoinGame();
         }
     }
 
