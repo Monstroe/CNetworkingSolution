@@ -14,6 +14,9 @@ namespace Monstroe.CNetworkingSolution
         private readonly Dictionary<int, ServerLobby> activeLobbies = new Dictionary<int, ServerLobby>();
         public IReadOnlyDictionary<int, ServerLobby> ActiveLobbies => activeLobbies;
 
+        // CurrentLobby returns the first active lobby if any exist, otherwise null. This is useful for servers that only have one lobby.
+        public ServerLobby CurrentLobby { get => activeLobbies.Count > 0 ? activeLobbies.Values.GetEnumerator().Current : null; }
+
         internal ServerData() { }
 
         internal void AddConnectingUser(ConnectionRequestedEventResult result)
