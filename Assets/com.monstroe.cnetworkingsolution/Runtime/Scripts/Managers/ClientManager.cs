@@ -28,6 +28,9 @@ namespace Monstroe.CNetworkingSolution
         [Header("Lobby Instance (if needed)")]
         [SerializeField] private ClientLobby lobbyInstance;
 
+        [Space]
+        [SerializeField] private bool autoSpawnLobby = true;
+
         private SingleTransportUtility transportUtility;
         private ConnectionData connectionData;
 
@@ -35,6 +38,12 @@ namespace Monstroe.CNetworkingSolution
         {
             transportUtility = GetComponent<SingleTransportUtility>();
             AddTransportUtilityEvents();
+
+            // Auto-spawn lobby if enabled and no existing lobby instance
+            if (autoSpawnLobby && !CurrentLobby)
+            {
+                CurrentLobby = Instantiate(lobbyPrefab, transform);
+            }
 
             if (CurrentLobby)
             {
