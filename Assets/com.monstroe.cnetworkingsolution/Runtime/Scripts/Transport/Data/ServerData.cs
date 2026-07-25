@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Monstroe.CNetworkingSolution
 {
@@ -15,7 +16,7 @@ namespace Monstroe.CNetworkingSolution
         public IReadOnlyDictionary<int, ServerLobby> ActiveLobbies => activeLobbies;
 
         // CurrentLobby returns the first active lobby if any exist, otherwise null. This is useful for servers that only have one lobby.
-        public ServerLobby CurrentLobby { get => activeLobbies.Count > 0 ? activeLobbies.Values.GetEnumerator().Current : null; }
+        public ServerLobby CurrentLobby { get => activeLobbies.Count == 1 ? activeLobbies.Values.FirstOrDefault() : null; }
 
         internal ServerData() { }
 
