@@ -219,9 +219,6 @@ namespace Monstroe.CNetworkingSolution
                 Debug.LogError($"<color=red><b>CNS</b></color>: Unknown error when processing unconnected received data from {iPEndPoint}: {ex.Message}");
             }
 #endif
-
-
-            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received unconnected packet from {iPEndPoint}. This is not supported on the server and the packet will be ignored.");
         }
 
         private async void HandleNetworkError(TransportCode code, SocketError? socketError)
