@@ -204,10 +204,9 @@ namespace Monstroe.CNetworkingSolution
             try
             {
 #endif
-
-                if (maxLobbyId - minLobbyId == 1 && ServerData.ActiveLobbies.TryGetValue(minLobbyId, out ServerLobby lobby))
+                if (maxLobbyId - minLobbyId == 1 && ServerData.CurrentLobby != null && ServerData.CurrentLobby.LobbyData.LobbyId == minLobbyId)
                 {
-                    lobby.ReceiveDataUnconnected(iPEndPoint, packet);
+                    ServerData.CurrentLobby.ReceiveDataUnconnected(iPEndPoint, packet);
                 }
                 else
                 {
