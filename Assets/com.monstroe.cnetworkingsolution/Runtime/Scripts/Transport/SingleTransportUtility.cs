@@ -78,7 +78,7 @@ namespace Monstroe.CNetworkingSolution
                 RemoveTransports();
             }
 
-            Transport = Instantiate(NetResources.Instance.TransportPrefabs[typeof(T)], this.transform).GetComponent<NetTransport>();
+            Transport = Instantiate(NetResources.Instance.GetTransportPrefab<T>(), this.transform);
             AddTransportEvents();
             Transport.Initialize(deviceType);
         }

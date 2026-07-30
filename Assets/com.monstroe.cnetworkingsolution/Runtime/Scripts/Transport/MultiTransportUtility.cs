@@ -101,7 +101,7 @@ namespace Monstroe.CNetworkingSolution
 
         public void RegisterTransport<T>(NetDeviceType deviceType) where T : NetTransport
         {
-            NetTransport transport = Instantiate(NetResources.Instance.TransportPrefabs[typeof(T)], this.transform).GetComponent<NetTransport>();
+            NetTransport transport = Instantiate(NetResources.Instance.GetTransportPrefab<T>(), this.transform);
             Transports.Add(transport);
             AddTransportEvents(transport);
             transport.Initialize(deviceType);

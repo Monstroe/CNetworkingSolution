@@ -1,4 +1,3 @@
-using System;
 using System.Net;
 using System.Net.Sockets;
 using UnityEngine;
@@ -97,11 +96,11 @@ namespace Monstroe.CNetworkingSolution
 
         private void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
         {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
 #endif
-                if (CurrentLobby.LobbyData.LobbyId > -1)
+            if (CurrentLobby.LobbyData.LobbyId > -1)
                 {
                     CurrentLobby.ReceiveData(packet, method);
                 }
@@ -139,7 +138,7 @@ namespace Monstroe.CNetworkingSolution
                 {
                     Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received unknown packet while not in a lobby.");
                 }
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception ex)
             {
@@ -150,12 +149,12 @@ namespace Monstroe.CNetworkingSolution
 
         private void HandleNetworkReceivedUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
         {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
 #endif
-                CurrentLobby.ReceiveDataUnconnected(iPEndPoint, packet);
-#if !UNITY_EDITOR
+            CurrentLobby.ReceiveDataUnconnected(iPEndPoint, packet);
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception ex)
             {

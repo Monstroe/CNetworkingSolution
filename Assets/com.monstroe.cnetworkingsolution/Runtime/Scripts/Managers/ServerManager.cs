@@ -89,11 +89,11 @@ namespace Monstroe.CNetworkingSolution
 
         private async void HandleNetworkConnected(ulong remoteId)
         {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
 #endif
-                if (!ServerData.ConnectedUsers.ContainsKey(remoteId) && !ServerData.ConnectingUsers.ContainsKey(remoteId))
+            if (!ServerData.ConnectedUsers.ContainsKey(remoteId) && !ServerData.ConnectingUsers.ContainsKey(remoteId))
                 {
                     await RegisterUser(remoteId);
                 }
@@ -101,7 +101,7 @@ namespace Monstroe.CNetworkingSolution
                 {
                     Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} attempted to connect again.");
                 }
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception ex)
             {
@@ -112,11 +112,11 @@ namespace Monstroe.CNetworkingSolution
 
         private async void HandleNetworkDisconnected(ulong remoteId, TransportCode code)
         {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
 #endif
-                if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
+            if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData userData))
                 {
                     ServerData.RemoveConnectedUser(userData.UserId);
                     await RemoveUser(userData);
@@ -130,7 +130,7 @@ namespace Monstroe.CNetworkingSolution
                 {
                     Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User with ID {remoteId} already disconnected.");
                 }
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception ex)
             {
@@ -141,11 +141,11 @@ namespace Monstroe.CNetworkingSolution
 
         private async void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)
         {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
 #endif
-                if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData remoteUser) && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
+            if (ServerData.ConnectedUsers.TryGetValue(remoteId, out UserData remoteUser) && ServerData.ActiveLobbies.TryGetValue(remoteUser.LobbyId, out ServerLobby existingLobby))
                 {
                     existingLobby.ReceiveData(remoteUser, packet, method);
                 }
@@ -188,7 +188,7 @@ namespace Monstroe.CNetworkingSolution
                     Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received data from unknown user {remoteId}. Data will be ignored.");
                     transportUtility.KickRemote(remoteId);
                 }
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception ex)
             {
@@ -200,11 +200,11 @@ namespace Monstroe.CNetworkingSolution
 
         private void HandleNetworkReceivedUnconnected(IPEndPoint iPEndPoint, NetPacket packet)
         {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             try
             {
 #endif
-                if (maxLobbyId - minLobbyId == 1 && ServerData.CurrentLobby != null && ServerData.CurrentLobby.LobbyData.LobbyId == minLobbyId)
+            if (maxLobbyId - minLobbyId == 1 && ServerData.CurrentLobby != null && ServerData.CurrentLobby.LobbyData.LobbyId == minLobbyId)
                 {
                     ServerData.CurrentLobby.ReceiveDataUnconnected(iPEndPoint, packet);
                 }
@@ -212,7 +212,7 @@ namespace Monstroe.CNetworkingSolution
                 {
                     Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received unconnected packet from {iPEndPoint}. This is not supported on this server configuration and the packet will be ignored.");
                 }
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
             }
             catch (Exception ex)
             {

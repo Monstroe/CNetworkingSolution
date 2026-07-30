@@ -58,6 +58,20 @@ namespace Monstroe.CNetworkingSolution
             return clientInstance;
         }
 
+        public bool DestroyClient()
+        {
+            if (clientInstance != null)
+            {
+                Destroy(clientInstance.gameObject);
+                clientInstance = null;
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No ClientManager instance to destroy.");
+            }
+            return clientInstance == null;
+        }
+
         public ServerManager SpawnServer()
         {
             if (serverInstance == null)
@@ -69,6 +83,20 @@ namespace Monstroe.CNetworkingSolution
                 Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ServerManager instance already exists.");
             }
             return serverInstance;
+        }
+
+        public bool DestroyServer()
+        {
+            if (serverInstance != null)
+            {
+                Destroy(serverInstance.gameObject);
+                serverInstance = null;
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No ServerManager instance to destroy.");
+            }
+            return serverInstance == null;
         }
     }
 }

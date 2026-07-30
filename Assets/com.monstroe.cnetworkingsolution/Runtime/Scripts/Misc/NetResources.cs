@@ -11,8 +11,6 @@ namespace Monstroe.CNetworkingSolution
     {
         public static NetResources Instance { get; private set; }
 
-        public IReadOnlyDictionary<Type, NetTransport> TransportPrefabs => transportPrefabsDict;
-
         [Header("Transport Settings")]
         [SerializeField] private List<NetTransport> transportPrefabs;
 
@@ -70,6 +68,19 @@ namespace Monstroe.CNetworkingSolution
                 }
                 clientToServerPrefabKeyMap.Add(key, clientObject.ServerPrefab.PrefabKey);
                 serverToClientPrefabKeyMap.Add(clientObject.ServerPrefab.PrefabKey, key);
+            }
+        }
+
+        public T GetTransportPrefab<T>() where T : NetTransport
+        {
+            if (transportPrefabsDict.TryGetValue(typeof(T), out NetTransport transport))
+            {
+                return (T)transport;
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Transport prefab of type {typeof(T).Name} not found.");
+                return null;
             }
         }
 
