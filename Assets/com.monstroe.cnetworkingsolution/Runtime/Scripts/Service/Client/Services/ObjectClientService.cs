@@ -23,6 +23,7 @@ namespace Monstroe.CNetworkingSolution
         [Header("Map Settings")]
         [Tooltip("The current instance of the map on the client.")]
         [SerializeField] private NetMap mapPrefab;
+        [SerializeField] private bool hideMapMesh = false;
         [SerializeField] private NetMap mapInstance;
 
         public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
@@ -46,6 +47,13 @@ namespace Monstroe.CNetworkingSolution
                         if (!Map)
                         {
                             Map = Instantiate(mapPrefab);
+                            if (hideMapMesh)
+                            {
+                                foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+                                {
+                                    r.enabled = false;
+                                }
+                            }
                         }
                         List<ClientObject> startingClientObjects = Map.GetStartingClientObjects();
                         for (int i = 0; i < startingClientObjects.Count; i++)
