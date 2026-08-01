@@ -42,10 +42,9 @@ public class ClientInitializer : MonoBehaviour
 
     private void ConnectionLost(ConnectionLostArgs args)
     {
-        ServerManager serverManager = FindFirstObjectByType<ServerManager>();
-        if (serverManager != null)
+        if (NetworkManager.Instance.Server != null)
         {
-            Destroy(serverManager.gameObject);
+            Destroy(NetworkManager.Instance.Server.gameObject);
         }
 
         if (!initialized)

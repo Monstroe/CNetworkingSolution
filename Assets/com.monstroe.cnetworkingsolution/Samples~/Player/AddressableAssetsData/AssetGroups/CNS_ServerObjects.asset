@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
-  m_Name: CNS_ServerObjectsGroup
-  m_EditorClassIdentifier: 
-  m_GroupName: CNS_ServerObjectsGroup
-  m_GUID: 0bd7cdf125f961246bf8786a85d06fc0
+  m_Name: CNS_ServerObjects
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: CNS_ServerObjects
+  m_GUID: 32a8412736d884946ae941ac94028d2d
   m_SerializeEntries:
   - m_GUID: b3924dfb319284b42a34a1548e9ff65f
     m_Address: Assets/com.github-monstroe.cnetworkingsolution/Samples/Player/Prefabs/Server/ServerPlayer.prefab
@@ -25,5 +25,5 @@ MonoBehaviour:
   m_Settings: {fileID: 11400000, guid: 5bae0df7c2591ef4891617a16b261582, type: 2}
   m_SchemaSet:
     m_Schemas:
-    - {fileID: 11400000, guid: aeedf01e7fd679f4bb91bc7d74c6c3f5, type: 2}
-    - {fileID: 11400000, guid: a94a06bfde6c6004c85a66406aaabf00, type: 2}
+    - {fileID: 11400000, guid: f68c25b8cc94f8f4b85ce8f53fce8bb6, type: 2}
+    - {fileID: 11400000, guid: 9f080a21104c82444931a47ad5afa545, type: 2}
