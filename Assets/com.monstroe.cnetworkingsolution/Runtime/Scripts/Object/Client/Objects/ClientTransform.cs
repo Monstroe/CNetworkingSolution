@@ -5,7 +5,7 @@ namespace Monstroe.CNetworkingSolution
     public abstract class ClientTransform : ClientObject
     {
         [Header("CientTransform Settings")]
-        [SerializeField] protected float lerpSpeed = 15;
+        [SerializeField] protected float lerpSpeed = 15f;
         [Range(0f, 1f)]
         [Tooltip("Speed at which this object syncs it's position and rotation (relative to FixedUpdate)")]
         [SerializeField] private float transformSyncSpeed = 1f;
