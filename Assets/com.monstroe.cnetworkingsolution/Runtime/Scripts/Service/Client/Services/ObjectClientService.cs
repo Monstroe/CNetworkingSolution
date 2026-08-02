@@ -91,7 +91,9 @@ namespace Monstroe.CNetworkingSolution
                             }
                             Debug.Log($"<color=green><b>CNS</b></color>: Spawned object '{obj.name}' with Id {objectId} and prefab key {prefabKey} and prefab name '{prefabName}'");
                             obj.Init(objectId, lobby);
+                            Debug.Log("Init complete");
                             OnObjectSpawned?.Invoke(obj);
+                            Debug.Log("Invoke complete");
                         }
                         else
                         {
