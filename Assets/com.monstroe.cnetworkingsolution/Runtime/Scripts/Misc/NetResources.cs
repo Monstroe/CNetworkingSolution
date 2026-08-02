@@ -176,8 +176,6 @@ namespace Monstroe.CNetworkingSolution
                 ulong id = GenerateHashKey(name);
                 nameToIdDict.Add(name, id);
                 idToNameDict.Add(id, name);
-
-                Debug.Log($"<color=green><b>CNS</b></color>: Registered asset '{name}' with key '{id}'");
             }
         }
 

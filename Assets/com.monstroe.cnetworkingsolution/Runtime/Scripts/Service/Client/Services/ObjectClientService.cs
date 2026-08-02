@@ -89,6 +89,7 @@ namespace Monstroe.CNetworkingSolution
                                 obj.Owner = ownerId != null ? lobby.LobbyData.GameUsers.FirstOrDefault(u => u.PlayerId == ownerId) : null;
                                 obj.IsPlayer = isPlayer;
                             }
+                            Debug.Log($"<color=green><b>CNS</b></color>: Spawned object '{obj.name}' with Id {objectId} and prefab key {prefabKey} and prefab name '{prefabName}'");
                             obj.Init(objectId, lobby);
                             OnObjectSpawned?.Invoke(obj);
                         }
