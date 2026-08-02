@@ -38,6 +38,7 @@ namespace Monstroe.CNetworkingSolution
 
             Debug.Log($"<color=green><b>CNS</b></color>: Adding ClientObject '{name}' with Id {id} to ClientObjects dictionary.");
             lobby.GetService<ObjectClientService>().ClientObjects.Add(id, this);
+            Debug.Log($"<color=green><b>CNS</b></color>: ClientObject '{name}' added to ClientObjects dictionary.");
         }
 
         public override void Remove()
