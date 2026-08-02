@@ -33,8 +33,10 @@ namespace Monstroe.CNetworkingSolution
         public virtual void Init(ushort id, ClientLobby lobby)
         {
             Id = id;
+            Debug.Log($"<color=green><b>CNS</b></color>: ClientObject '{name}' initialized with Id {id}.");
             base.Init(lobby);
 
+            Debug.Log($"<color=green><b>CNS</b></color>: Adding ClientObject '{name}' with Id {id} to ClientObjects dictionary.");
             lobby.GetService<ObjectClientService>().ClientObjects.Add(id, this);
         }
 
