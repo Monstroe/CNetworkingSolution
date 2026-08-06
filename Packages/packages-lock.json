@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.monstroe.cutility": {
+      "version": "https://github.com/Monstroe/CUtility.git?path=/Assets/com.monstroe.cutility",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "daa735c4391d7cf2443a641fff8ce07039e3d436"
+    },
     "com.unity.addressables": {
       "version": "2.8.1",
       "depth": 0,

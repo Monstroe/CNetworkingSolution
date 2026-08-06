@@ -22,7 +22,7 @@ namespace Monstroe.CNetworkingSolution
             lobby.UnregisterRpcContainer(this);
         }
 
-        public virtual void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+        internal void ReceiveData(NetPacket packet, ulong serviceId, ushort commandType, TransportMethod? transportMethod)
         {
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
@@ -40,13 +40,31 @@ namespace Monstroe.CNetworkingSolution
                 }
                 else
                 {
-                    Debug.LogError($"RPC Method with ID {methodId} not found on ClientBehaviour {GetType().Name}.");
+                    Debug.LogError($"<color=red><b>CNS</b></color>: RPC Method with ID {methodId} not found on ClientBehaviour {type.Name}.");
                 }
-                return;
+            }
+            else
+            {
+                bool packedHandled = ReceiveData(packet, commandType, transportMethod);
+                if (!packedHandled)
+                {
+                    Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
+                }
             }
         }
 
-        public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { }
+        internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
+        {
+            bool packedHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            if (!packedHandled)
+            {
+                Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled unconnected packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
+            }
+        }
+
+        public virtual bool ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod) { return false; }
+
+        public virtual bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { return false; }
 
         protected void InstantiateOnNetwork(string originalPath, Vector3 position, Quaternion rotation)
         {

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Monstroe.CUtility;
 using Monstroe.CNetworkingSolution;
 
 public class ClientInitializer : MonoBehaviour

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Monstroe.CNetworkingSolution
 {
@@ -31,9 +30,7 @@ namespace Monstroe.CNetworkingSolution
 
         public T GetService<T>(out ulong serviceId) where T : ClientService
         {
-            bool gotServiceId = serviceBus.TryGetServiceId<T>(out serviceId);
-            Debug.Log($"<color=green><b>CNS</b></color>: GetService<{typeof(T).Name}> called. GotServiceId: {gotServiceId}, ServiceId: {serviceId}");
-            if (/*serviceBus.TryGetServiceId<T>(out serviceId) && */ gotServiceId && services.TryGetValue(serviceId, out ClientService service))
+            if (serviceBus.TryGetServiceId<T>(out serviceId) && services.TryGetValue(serviceId, out ClientService service))
             {
                 return (T)service;
             }

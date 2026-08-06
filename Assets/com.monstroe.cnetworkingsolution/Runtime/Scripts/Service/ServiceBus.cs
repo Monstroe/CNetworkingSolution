@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine;
 
 namespace Monstroe.CNetworkingSolution
 {
@@ -30,7 +29,6 @@ namespace Monstroe.CNetworkingSolution
 
         public bool TryGetServiceId(Type type, out ulong serviceId)
         {
-            Debug.Log($"<color=green><b>CNS</b></color>: TryGetServiceId called for type {type.Name}. ServiceId found: {serviceTypeCache.ContainsKey(type)}");
             return serviceTypeCache.TryGetValue(type, out serviceId);
         }
 

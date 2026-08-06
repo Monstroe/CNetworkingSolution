@@ -4,7 +4,7 @@ using Monstroe.CNetworkingSolution;
 [ServiceId("FXService")]
 public class FXServerService : ServerService
 {
-    [Header("FX Directories")]
+    [Header("FXServerService Settings")]
     [SerializeField] private string sfxDirectory = "Assets/FX/SFX/";
     [SerializeField] private string vfxDirectory = "Assets/FX/VFX/";
 

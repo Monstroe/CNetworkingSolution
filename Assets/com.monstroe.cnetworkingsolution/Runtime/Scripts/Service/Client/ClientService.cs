@@ -13,6 +13,9 @@ namespace Monstroe.CNetworkingSolution
         [SerializeField, HideInInspector]
         private ulong serviceId;
 
+        [Header("ClientService Settings")]
+        [SerializeField] protected bool registerUnconnectedService = false;
+
         public override void Init(ClientLobby lobby)
         {
             base.Init(lobby);
@@ -23,6 +26,18 @@ namespace Monstroe.CNetworkingSolution
             else
             {
                 Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {type.Name} is already registered.");
+            }
+
+            if (registerUnconnectedService)
+            {
+                if (lobby.RegisterUnconnectedService(this, out _))
+                {
+                    Debug.Log("<color=green><b>CNS</b></color>: Unconnected ServerService " + type.Name + " registered.");
+                }
+                else
+                {
+                    Debug.LogWarning("<color=yellow><b>CNS</b></color>: Unconnected ServerService " + type.Name + " is already registered.");
+                }
             }
         }
 

@@ -40,7 +40,7 @@ namespace Monstroe.CNetworkingSolution
             ushort commandType = packet.ReadUShort();
             if (services.GetService(serviceId, out ServerService service))
             {
-                service.ReceiveData(user, packet, commandType, transportMethod);
+                service.ReceiveData(user, serviceId, packet, commandType, transportMethod);
             }
             else
             {
@@ -54,7 +54,7 @@ namespace Monstroe.CNetworkingSolution
             ushort commandType = packet.ReadUShort();
             if (unconnectedServices.GetService(serviceId, out ServerService unconnectedService))
             {
-                unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+                unconnectedService.ReceiveDataUnconnected(ipEndPoint, packet, serviceId, commandType);
             }
             else
             {

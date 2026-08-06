@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.monstroe.cutility": "https://github.com/Monstroe/CUtility.git?path=/Assets/com.monstroe.cutility",
     "com.unity.addressables": "2.8.1",
     "com.unity.ai.navigation": "2.0.10",
     "com.unity.collab-proxy": "2.11.3",

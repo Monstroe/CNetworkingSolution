@@ -10,6 +10,13 @@ namespace Monstroe.CNetworkingSolution
 {
     public abstract class ServerBehaviour : MonoBehaviour, INetEvent, INetRpc
     {
+        public bool ForwardUnknownPacketToClient => forwardUnknownPacketToClient;
+        public bool ForwardUnknownRPCToClient => forwardUnknownRPCToClient;
+
+        [Header("ServerBehaviour Settings")]
+        [SerializeField] private bool forwardUnknownPacketToClient = false;
+        [SerializeField] private bool forwardUnknownRPCToClient = false;
+
         protected ServerLobby lobby;
         protected Type type;
 
@@ -27,7 +34,7 @@ namespace Monstroe.CNetworkingSolution
             lobby.UnregisterGameEventListener(this);
         }
 
-        public virtual void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+        internal void ReceiveData(UserData user, ulong serviceId, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
@@ -52,13 +59,37 @@ namespace Monstroe.CNetworkingSolution
                 }
                 else
                 {
-                    Debug.LogError($"RPC Method with ID {methodId} not found on ServerBehavior {GetType().Name}.");
+                    if (ForwardUnknownRPCToClient)
+                    {
+                        lobby.SendToGame(serviceId, packet, transportMethod ?? TransportMethod.Reliable);
+                    }
+                    else
+                    {
+                        Debug.LogError($"<color=red><b>CNS</b></color>: RPC Method with ID {methodId} not found on ServerBehavior {type.Name}.");
+                    }
                 }
-                return;
+            }
+            else
+            {
+                bool packedHandled = ReceiveData(user, packet, commandType, transportMethod);
+                if (!packedHandled && ForwardUnknownPacketToClient)
+                {
+                    lobby.SendToGame(serviceId, packet, transportMethod ?? TransportMethod.Reliable);
+                }
             }
         }
 
-        public virtual void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { }
+        internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
+        {
+            bool packedHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            if (!packedHandled && ForwardUnknownPacketToClient)
+            {
+                lobby.SendToUnconnected(ipEndPoint, serviceId, packet);
+            }
+        }
+
+        public virtual bool ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod) { return false; }
+        public virtual bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { return false; }
 
         public virtual void EarlyUserJoined(UserData joinedUser) { }
         public virtual void UserJoined(UserData joinedUser) { }

@@ -19,9 +19,11 @@
   "changelogUrl": "https://github.com/Monstroe/CNetworkingSolution/releases",
   "documentationUrl": "https://github.com/Monstroe/CNetworkingSolution",
   "dependencies": {
+    "com.monstroe.cutility": "1.0.0",
     "com.unity.addressables": "2.8.0",
     "com.unity.textmeshpro": "4.0.0",
     "com.unity.inputsystem": "1.18.0",
+    "com.unity.shadergraph": "17.3.0",
     "com.unity.visualeffectgraph": "17.3.0"
   },
   "samples": [
@@ -41,11 +43,6 @@
       "path": "Samples~/LiteNetLibTransport"
     },
     {
-      "displayName": "FX Sample",
-      "description": "Networked SFX and VFX.",
-      "path": "Samples~/FX"
-    },
-    {
       "displayName": "Player Sample",
       "description": "Player movement and input handling.",
       "path": "Samples~/Player"
@@ -62,7 +59,7 @@
     },
     {
       "displayName": "Full Sample (CNSSample)",
-      "description": "Complete example scene combining FX, Player, Chat, and transports.",
+      "description": "Complete example scene combining Player, Chat, and transports.",
       "path": "Samples~/CNSSample"
     }
   ]

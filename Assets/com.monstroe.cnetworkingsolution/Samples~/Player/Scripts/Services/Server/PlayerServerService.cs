@@ -8,13 +8,13 @@ public class PlayerServerService : ServerService
 {
     public Dictionary<UserData, ServerPlayer> ServerPlayers { get; private set; } = new Dictionary<UserData, ServerPlayer>();
 
-    [Header("Player Settings")]
+    [Header("PlayerServerService Settings")]
     [SerializeField] private ServerPlayer serverPlayerPrefab;
     [Space]
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private float minDistanceFromPlayers = 5f;
 
-    public override void LateUserJoinedGame(UserData joinedUser)
+    public override void UserJoinedGame(UserData joinedUser)
     {
         base.LateUserJoinedGame(joinedUser);
         // Spawn new player
@@ -22,15 +22,6 @@ public class PlayerServerService : ServerService
         Vector3 position = GetGroundPosition(spawnPoint.position);
         Quaternion rotation = spawnPoint.rotation;
         InstantiateOnServerAsPlayer(serverPlayerPrefab.gameObject, position, rotation, joinedUser.PlayerId);
-    }
-
-    public override void UserLeftGame(UserData leftUser)
-    {
-        base.UserLeftGame(leftUser);
-        if (ServerPlayers.TryGetValue(leftUser, out ServerPlayer player))
-        {
-            DestroyOnServer(player);
-        }
     }
 
     private Transform GetRandomSpawnPoint()

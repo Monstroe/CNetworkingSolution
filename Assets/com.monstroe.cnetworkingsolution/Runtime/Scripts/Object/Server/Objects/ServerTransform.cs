@@ -32,9 +32,8 @@ namespace Monstroe.CNetworkingSolution
             lobby.GetService<ObjectServerService>().ServerTransforms.Remove(Id);
         }
 
-        public override void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+        public override bool ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
-            base.ReceiveData(user, packet, commandType, transportMethod);
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_TRANSFORM:
@@ -44,9 +43,11 @@ namespace Monstroe.CNetworkingSolution
                             receivedPosition = packet.ReadVector3();
                             receivedRotation = packet.ReadQuaternion();
                         }
-                        break;
+                        return true;
                     }
             }
+
+            return base.ReceiveData(user, packet, commandType, transportMethod);
         }
 
         public override void Tick()

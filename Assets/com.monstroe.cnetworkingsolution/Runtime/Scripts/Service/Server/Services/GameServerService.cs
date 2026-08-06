@@ -5,7 +5,7 @@ namespace Monstroe.CNetworkingSolution
     [ServiceId("GameService")]
     public class GameServerService : ServerService
     {
-        public override void UserJoinedGame(UserData joinedUser)
+        public override void EarlyUserJoinedGame(UserData joinedUser)
         {
             base.UserJoinedGame(joinedUser);
             InvokeOnGameClientServices(nameof(GameUserJoinedRpc), joinedUser.PlayerId);

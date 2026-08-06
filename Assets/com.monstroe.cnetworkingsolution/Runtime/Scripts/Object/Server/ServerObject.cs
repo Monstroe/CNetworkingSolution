@@ -12,14 +12,19 @@ namespace Monstroe.CNetworkingSolution
         public byte? OwnerId { get; internal set; } = null;
         public UserData Owner { get; internal set; } = null;
         public bool IsPlayer { get; internal set; } = false;
+        public bool DestroyOnOwnerLeftGame => destroyOnOwnerLeftGame;
 
         public ulong PrefabKey => prefabKey;
         public string PrefabPath => prefabPath;
 
+
+        [Header("ServerObject Settings")]
         [SerializeField, HideInInspector]
         private ulong prefabKey;
         [SerializeField, HideInInspector]
         private string prefabPath;
+
+        [SerializeField] private bool destroyOnOwnerLeftGame = true;
 
         public virtual void Init(ushort id, ServerLobby lobby)
         {

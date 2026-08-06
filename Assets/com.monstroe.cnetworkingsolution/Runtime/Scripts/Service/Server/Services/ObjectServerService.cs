@@ -2,19 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using UnityEngine;
+using Monstroe.CUtility;
 
 namespace Monstroe.CNetworkingSolution
 {
     [ServiceId("ObjectService")]
     public class ObjectServerService : ServerService
     {
-        public Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
-        public Dictionary<ushort, ServerTransform> ServerTransforms { get; private set; } = new Dictionary<ushort, ServerTransform>();
+        internal Dictionary<ushort, ServerObject> ServerObjects { get; private set; } = new Dictionary<ushort, ServerObject>();
+        internal Dictionary<ushort, ServerTransform> ServerTransforms { get; private set; } = new Dictionary<ushort, ServerTransform>();
 
         public NetMap Map { get; private set; }
 
-        [Header("Map Settings")]
+        [Header("ObjectServerService Settings")]
         [Tooltip("The map prefab to be instantiated on the server.")]
         [SerializeField] private NetMap mapPrefab;
         [SerializeField] private bool hideMapMesh = true;
@@ -54,9 +56,9 @@ namespace Monstroe.CNetworkingSolution
             }
         }
 
-        public override async void ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+        public override bool ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
-            base.ReceiveData(user, packet, commandType, transportMethod);
+            bool packedHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -65,7 +67,7 @@ namespace Monstroe.CNetworkingSolution
                         ushort objectCommand = packet.ReadUShort();
                         if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject))
                         {
-                            serverObject.ReceiveData(user, packet, objectCommand, transportMethod);
+                            packedHandled = serverObject.ReceiveData(user, packet, objectCommand, transportMethod);
                         }
                         break;
                     }
@@ -81,11 +83,15 @@ namespace Monstroe.CNetworkingSolution
                             Position = position,
                             Rotation = rotation
                         };
-                        var result = await lobby.TriggerGameEvent(spawnRequestEvent);
-                        if (!result.Canceled)
+
+                        ThreadManager.ExecuteOnMainThread(async () =>
                         {
-                            SpawnObject(user, clientPrefabKey, position, rotation, transportMethod, false, false);
-                        }
+                            var result = await lobby.TriggerGameEvent(spawnRequestEvent);
+                            if (!result.Canceled)
+                            {
+                                SpawnObject(user, clientPrefabKey, position, rotation, transportMethod, false, false);
+                            }
+                        });
                         break;
                     }
                 case ObjectCommandType.OBJECT_DESTROY_REQUEST:
@@ -97,7 +103,7 @@ namespace Monstroe.CNetworkingSolution
                             {
                                 ObjectId = objectId
                             };
-                            var result = await lobby.TriggerGameEvent(destroyRequestEvent);
+                            var result = Task.Run(() => lobby.TriggerGameEvent(destroyRequestEvent)).GetAwaiter().GetResult();
                             if (!result.Canceled)
                             {
                                 DestroyObject(serverObject);
@@ -105,12 +111,17 @@ namespace Monstroe.CNetworkingSolution
                         }
                         break;
                     }
+                default:
+                    packedHandled = false;
+                    break;
             }
+
+            return packedHandled || base.ReceiveData(user, packet, commandType, transportMethod);
         }
 
-        public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
+        public override bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
         {
-            base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            bool packedHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -120,11 +131,16 @@ namespace Monstroe.CNetworkingSolution
                         ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
                         if (serverObject != null)
                         {
-                            serverObject.ReceiveDataUnconnected(ipEndPoint, packet, objectCommand);
+                            packedHandled = serverObject.ReceiveDataUnconnected(ipEndPoint, packet, objectCommand);
                         }
                         break;
                     }
+                default:
+                    packedHandled = false;
+                    break;
             }
+
+            return packedHandled || base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
         }
 
         public override void EarlyUserJoined(UserData joinedUser)
@@ -225,6 +241,11 @@ namespace Monstroe.CNetworkingSolution
             foreach (var serverObject in ServerObjects.Values)
             {
                 serverObject.LateUserLeftGame(leftUser);
+
+                if (serverObject.DestroyOnOwnerLeftGame && serverObject.OwnerId == leftUser.PlayerId)
+                {
+                    DestroyObject(serverObject);
+                }
             }
         }
 

@@ -21,15 +21,6 @@ Here is a list of some of the features it contains:
   - SFX and VFX
   - Chat system
   - Fully functioning example project for testing
-- Various utility scripts for ease of use in projects, such as:
-   - `Expand`
-   - `Fade`
-   - `FadeUI`
-   - `FadeScreen`
-   - `Hover`
-   - `Rotate`
-   - `LookAtCamera`
-   - `SmoothLookAtCamera`
 
 ## Instructions
 

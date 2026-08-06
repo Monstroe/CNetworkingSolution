@@ -20,14 +20,15 @@ namespace Monstroe.CNetworkingSolution
 
         public NetMap Map { get => mapInstance; private set => mapInstance = value; }
 
-        [Header("Map Settings")]
+        [Header("ObjectClientService Settings")]
         [Tooltip("The current instance of the map on the client.")]
         [SerializeField] private NetMap mapPrefab;
         [SerializeField] private bool hideMapMesh = false;
         [SerializeField] private NetMap mapInstance;
 
-        public override void ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+        public override bool ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
+            bool packedHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -78,7 +79,7 @@ namespace Monstroe.CNetworkingSolution
                             if (string.IsNullOrEmpty(prefabName))
                             {
                                 Debug.LogError("ObjectClientService ReceiveData could not find client prefab path for key: " + prefabKey);
-                                return;
+                                return packedHandled;
                             }
 
                             var handle = Addressables.LoadAssetAsync<GameObject>(prefabName).WaitForCompletion();
@@ -89,11 +90,9 @@ namespace Monstroe.CNetworkingSolution
                                 obj.Owner = ownerId != null ? lobby.LobbyData.GameUsers.FirstOrDefault(u => u.PlayerId == ownerId) : null;
                                 obj.IsPlayer = isPlayer;
                             }
-                            Debug.Log($"<color=green><b>CNS</b></color>: Spawned object '{obj.name}' with Id {objectId} and prefab key {prefabKey} and prefab name '{prefabName}'");
+
                             obj.Init(objectId, lobby);
-                            Debug.Log("Init complete");
                             OnObjectSpawned?.Invoke(obj);
-                            Debug.Log("Invoke complete");
                         }
                         else
                         {
@@ -116,11 +115,17 @@ namespace Monstroe.CNetworkingSolution
                         }
                         break;
                     }
+                default:
+                    packedHandled = false;
+                    break;
             }
+
+            return packedHandled || base.ReceiveData(packet, commandType, transportMethod);
         }
 
-        public override void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
+        public override bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
         {
+            bool packedHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -134,7 +139,12 @@ namespace Monstroe.CNetworkingSolution
                         }
                         break;
                     }
+                default:
+                    packedHandled = false;
+                    break;
             }
+
+            return packedHandled || base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
         }
     }
 }
