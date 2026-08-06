@@ -45,8 +45,8 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                bool packedHandled = ReceiveData(packet, commandType, transportMethod);
-                if (!packedHandled)
+                bool packetHandled = ReceiveData(packet, commandType, transportMethod);
+                if (!packetHandled)
                 {
                     Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
                 }
@@ -55,8 +55,8 @@ namespace Monstroe.CNetworkingSolution
 
         internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
         {
-            bool packedHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
-            if (!packedHandled)
+            bool packetHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            if (!packetHandled)
             {
                 Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled unconnected packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
             }

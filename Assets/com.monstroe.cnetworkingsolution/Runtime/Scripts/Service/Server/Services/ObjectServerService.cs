@@ -58,7 +58,7 @@ namespace Monstroe.CNetworkingSolution
 
         public override bool ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
-            bool packedHandled = true;
+            bool packetHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -67,7 +67,7 @@ namespace Monstroe.CNetworkingSolution
                         ushort objectCommand = packet.ReadUShort();
                         if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject))
                         {
-                            packedHandled = serverObject.ReceiveData(user, packet, objectCommand, transportMethod);
+                            packetHandled = serverObject.ReceiveData(user, packet, objectCommand, transportMethod);
                         }
                         break;
                     }
@@ -112,16 +112,16 @@ namespace Monstroe.CNetworkingSolution
                         break;
                     }
                 default:
-                    packedHandled = false;
+                    packetHandled = false;
                     break;
             }
 
-            return packedHandled || base.ReceiveData(user, packet, commandType, transportMethod);
+            return packetHandled || base.ReceiveData(user, packet, commandType, transportMethod);
         }
 
         public override bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
         {
-            bool packedHandled = true;
+            bool packetHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -131,16 +131,16 @@ namespace Monstroe.CNetworkingSolution
                         ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
                         if (serverObject != null)
                         {
-                            packedHandled = serverObject.ReceiveDataUnconnected(ipEndPoint, packet, objectCommand);
+                            packetHandled = serverObject.ReceiveDataUnconnected(ipEndPoint, packet, objectCommand);
                         }
                         break;
                     }
                 default:
-                    packedHandled = false;
+                    packetHandled = false;
                     break;
             }
 
-            return packedHandled || base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            return packetHandled || base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
         }
 
         public override void EarlyUserJoined(UserData joinedUser)

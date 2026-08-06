@@ -60,7 +60,7 @@ namespace Monstroe.CNetworkingSolution
 
         public override bool ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
-            bool packedHandled = true;
+            bool packetHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_TRANSFORM:
@@ -76,11 +76,11 @@ namespace Monstroe.CNetworkingSolution
                         break;
                     }
                 default:
-                    packedHandled = false;
+                    packetHandled = false;
                     break;
             }
 
-            return packedHandled || base.ReceiveData(packet, commandType, transportMethod);
+            return packetHandled || base.ReceiveData(packet, commandType, transportMethod);
         }
 
         protected virtual void InitTransform(Vector3 pos, Quaternion rot)

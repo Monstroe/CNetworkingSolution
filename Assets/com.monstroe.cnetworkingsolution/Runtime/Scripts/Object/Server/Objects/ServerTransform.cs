@@ -34,6 +34,7 @@ namespace Monstroe.CNetworkingSolution
 
         public override bool ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
+            bool packetHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_TRANSFORM:
@@ -43,11 +44,14 @@ namespace Monstroe.CNetworkingSolution
                             receivedPosition = packet.ReadVector3();
                             receivedRotation = packet.ReadQuaternion();
                         }
-                        return true;
+                        break;
                     }
+                default:
+                    packetHandled = false;
+                    break;
             }
 
-            return base.ReceiveData(user, packet, commandType, transportMethod);
+            return packetHandled || base.ReceiveData(user, packet, commandType, transportMethod);
         }
 
         public override void Tick()

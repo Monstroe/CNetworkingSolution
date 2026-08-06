@@ -71,8 +71,8 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                bool packedHandled = ReceiveData(user, packet, commandType, transportMethod);
-                if (!packedHandled && ForwardUnknownPacketToClient)
+                bool packetHandled = ReceiveData(user, packet, commandType, transportMethod);
+                if (!packetHandled && ForwardUnknownPacketToClient)
                 {
                     lobby.SendToGame(serviceId, packet, transportMethod ?? TransportMethod.Reliable);
                 }
@@ -81,8 +81,8 @@ namespace Monstroe.CNetworkingSolution
 
         internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
         {
-            bool packedHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
-            if (!packedHandled && ForwardUnknownPacketToClient)
+            bool packetHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            if (!packetHandled && ForwardUnknownPacketToClient)
             {
                 lobby.SendToUnconnected(ipEndPoint, serviceId, packet);
             }

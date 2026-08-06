@@ -28,7 +28,7 @@ namespace Monstroe.CNetworkingSolution
 
         public override bool ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod)
         {
-            bool packedHandled = true;
+            bool packetHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -79,7 +79,7 @@ namespace Monstroe.CNetworkingSolution
                             if (string.IsNullOrEmpty(prefabName))
                             {
                                 Debug.LogError("ObjectClientService ReceiveData could not find client prefab path for key: " + prefabKey);
-                                return packedHandled;
+                                return packetHandled;
                             }
 
                             var handle = Addressables.LoadAssetAsync<GameObject>(prefabName).WaitForCompletion();
@@ -116,16 +116,16 @@ namespace Monstroe.CNetworkingSolution
                         break;
                     }
                 default:
-                    packedHandled = false;
+                    packetHandled = false;
                     break;
             }
 
-            return packedHandled || base.ReceiveData(packet, commandType, transportMethod);
+            return packetHandled || base.ReceiveData(packet, commandType, transportMethod);
         }
 
         public override bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType)
         {
-            bool packedHandled = true;
+            bool packetHandled = true;
             switch ((ObjectCommandType)commandType)
             {
                 case ObjectCommandType.OBJECT_COMMUNICATION:
@@ -140,11 +140,11 @@ namespace Monstroe.CNetworkingSolution
                         break;
                     }
                 default:
-                    packedHandled = false;
+                    packetHandled = false;
                     break;
             }
 
-            return packedHandled || base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
+            return packetHandled || base.ReceiveDataUnconnected(ipEndPoint, packet, commandType);
         }
     }
 }
