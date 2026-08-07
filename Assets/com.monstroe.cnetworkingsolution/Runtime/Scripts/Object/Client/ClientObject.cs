@@ -134,6 +134,7 @@ namespace Monstroe.CNetworkingSolution
         {
             if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
             {
+                Debug.Log($"<color=green><b>CNS</b></color>: Invoking RPC method {type.Name}.{methodName} on server with ID {methodId}.");
                 SendToServerObject(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
             }
             else
