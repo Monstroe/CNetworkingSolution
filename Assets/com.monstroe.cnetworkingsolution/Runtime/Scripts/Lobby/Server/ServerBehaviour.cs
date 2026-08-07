@@ -38,6 +38,7 @@ namespace Monstroe.CNetworkingSolution
         {
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
+                Debug.Log($"<color=green><b>CNS</b></color>: Received RPC packet from user {user.PlayerId} on ServerBehavior {type.Name}.");
                 ulong methodId = packet.ReadULong();
                 if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method) && method.GetCustomAttribute<ClientRpcAttribute>() == null)
                 {
