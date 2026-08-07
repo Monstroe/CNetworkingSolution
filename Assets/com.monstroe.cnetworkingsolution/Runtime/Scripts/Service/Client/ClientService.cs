@@ -32,11 +32,11 @@ namespace Monstroe.CNetworkingSolution
             {
                 if (lobby.RegisterUnconnectedService(this, out _))
                 {
-                    Debug.Log("<color=green><b>CNS</b></color>: Unconnected ServerService " + type.Name + " registered.");
+                    Debug.Log($"<color=green><b>CNS</b></color>: Unconnected ClientService {type.Name} registered.");
                 }
                 else
                 {
-                    Debug.LogWarning("<color=yellow><b>CNS</b></color>: Unconnected ServerService " + type.Name + " is already registered.");
+                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {type.Name} is already registered.");
                 }
             }
         }
@@ -50,6 +50,18 @@ namespace Monstroe.CNetworkingSolution
             else
             {
                 Debug.LogWarning($"<color=yellow><b>CNS</b></color>: ClientService {type.Name} was not registered.");
+            }
+
+            if (registerUnconnectedService)
+            {
+                if (lobby.UnregisterUnconnectedService(this))
+                {
+                    Debug.Log($"<color=green><b>CNS</b></color>: Unconnected ClientService {type.Name} unregistered.");
+                }
+                else
+                {
+                    Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService {type.Name} was not registered.");
+                }
             }
             base.Remove();
         }
