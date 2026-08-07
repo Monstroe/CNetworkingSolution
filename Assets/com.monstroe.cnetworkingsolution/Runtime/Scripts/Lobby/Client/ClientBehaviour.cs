@@ -22,8 +22,9 @@ namespace Monstroe.CNetworkingSolution
             lobby.UnregisterRpcContainer(this);
         }
 
-        internal void ReceiveData(NetPacket packet, ulong serviceId, ushort commandType, TransportMethod? transportMethod)
+        internal bool ReceiveData(NetPacket packet, ulong serviceId, ushort commandType, TransportMethod? transportMethod)
         {
+            bool packetHandled = true;
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
                 ulong methodId = packet.ReadULong();
@@ -45,21 +46,25 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                bool packetHandled = ReceiveData(packet, commandType, transportMethod);
+                packetHandled = ReceiveData(packet, commandType, transportMethod);
                 if (!packetHandled)
                 {
                     Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
                 }
             }
+
+            return packetHandled;
         }
 
-        internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
+        internal bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
         {
             bool packetHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
             if (!packetHandled)
             {
                 Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled unconnected packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
             }
+
+            return packetHandled;
         }
 
         public virtual bool ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod) { return false; }

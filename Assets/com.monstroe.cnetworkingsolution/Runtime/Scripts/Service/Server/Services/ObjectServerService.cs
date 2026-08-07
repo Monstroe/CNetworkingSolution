@@ -67,7 +67,7 @@ namespace Monstroe.CNetworkingSolution
                         ushort objectCommand = packet.ReadUShort();
                         if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject))
                         {
-                            packetHandled = serverObject.ReceiveData(user, packet, objectCommand, transportMethod);
+                            packetHandled = serverObject.ReceiveData(user, packet, ServiceId, objectCommand, transportMethod);
                         }
                         break;
                     }
@@ -131,7 +131,7 @@ namespace Monstroe.CNetworkingSolution
                         ServerObjects.TryGetValue(objectId, out ServerObject serverObject);
                         if (serverObject != null)
                         {
-                            packetHandled = serverObject.ReceiveDataUnconnected(ipEndPoint, packet, objectCommand);
+                            packetHandled = serverObject.ReceiveDataUnconnected(ipEndPoint, packet, ServiceId, objectCommand);
                         }
                         break;
                     }

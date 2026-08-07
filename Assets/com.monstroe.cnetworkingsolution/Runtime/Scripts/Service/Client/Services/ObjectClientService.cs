@@ -38,7 +38,7 @@ namespace Monstroe.CNetworkingSolution
                         ClientObjects.TryGetValue(objectId, out ClientObject clientObject);
                         if (clientObject != null)
                         {
-                            clientObject.ReceiveData(packet, objectCommand, transportMethod);
+                            packetHandled = clientObject.ReceiveData(packet, ServiceId, objectCommand, transportMethod);
                         }
                         break;
                     }
@@ -135,7 +135,7 @@ namespace Monstroe.CNetworkingSolution
                         ClientObjects.TryGetValue(objectId, out ClientObject clientObject);
                         if (clientObject != null)
                         {
-                            clientObject.ReceiveDataUnconnected(ipEndPoint, packet, objectCommand);
+                            packetHandled = clientObject.ReceiveDataUnconnected(ipEndPoint, packet, ServiceId, objectCommand);
                         }
                         break;
                     }

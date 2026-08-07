@@ -34,11 +34,11 @@ namespace Monstroe.CNetworkingSolution
             lobby.UnregisterGameEventListener(this);
         }
 
-        internal void ReceiveData(UserData user, ulong serviceId, NetPacket packet, ushort commandType, TransportMethod? transportMethod)
+        internal bool ReceiveData(UserData user, NetPacket packet, ulong serviceId, ushort commandType, TransportMethod? transportMethod)
         {
+            bool packetHandled = true;
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
-                Debug.Log($"<color=green><b>CNS</b></color>: Received RPC packet from user {user.PlayerId} on ServerBehavior {type.Name}.");
                 ulong methodId = packet.ReadULong();
                 if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method) && method.GetCustomAttribute<ClientRpcAttribute>() == null)
                 {
@@ -72,21 +72,25 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                bool packetHandled = ReceiveData(user, packet, commandType, transportMethod);
+                packetHandled = ReceiveData(user, packet, commandType, transportMethod);
                 if (!packetHandled && ForwardUnknownPacketToClient)
                 {
                     lobby.SendToGame(serviceId, packet, transportMethod ?? TransportMethod.Reliable);
                 }
             }
+
+            return packetHandled;
         }
 
-        internal void ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
+        internal bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ulong serviceId, ushort commandType)
         {
             bool packetHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
             if (!packetHandled && ForwardUnknownPacketToClient)
             {
                 lobby.SendToUnconnected(ipEndPoint, serviceId, packet);
             }
+
+            return packetHandled;
         }
 
         public virtual bool ReceiveData(UserData user, NetPacket packet, ushort commandType, TransportMethod? transportMethod) { return false; }
