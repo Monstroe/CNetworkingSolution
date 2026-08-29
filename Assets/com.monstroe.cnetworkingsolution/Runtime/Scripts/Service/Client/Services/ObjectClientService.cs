@@ -45,22 +45,30 @@ namespace Monstroe.CNetworkingSolution
                 case ObjectCommandType.OBJECTS_INIT:
                     {
                         ushort[] startingObjectIds = packet.ReadUShorts();
-                        if (!Map)
+
+                        if (mapPrefab != null)
                         {
-                            Map = Instantiate(mapPrefab);
-                            if (hideMapMesh)
+                            if (!Map)
                             {
-                                foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+                                Map = Instantiate(mapPrefab);
+                                if (hideMapMesh)
                                 {
-                                    r.enabled = false;
+                                    foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+                                    {
+                                        r.enabled = false;
+                                    }
                                 }
                             }
+                            List<ClientObject> startingClientObjects = Map.GetStartingClientObjects();
+                            for (int i = 0; i < startingClientObjects.Count; i++)
+                            {
+                                ClientObject obj = startingClientObjects[i];
+                                obj.Init(startingObjectIds[i], lobby);
+                            }
                         }
-                        List<ClientObject> startingClientObjects = Map.GetStartingClientObjects();
-                        for (int i = 0; i < startingClientObjects.Count; i++)
+                        else
                         {
-                            ClientObject obj = startingClientObjects[i];
-                            obj.Init(startingObjectIds[i], lobby);
+                            Debug.LogWarning("ObjectClientService no map prefab assigned. Starting objects will not be initialized.");
                         }
                         break;
                     }

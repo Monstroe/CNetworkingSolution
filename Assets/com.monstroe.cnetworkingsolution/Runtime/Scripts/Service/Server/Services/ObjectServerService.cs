@@ -28,31 +28,39 @@ namespace Monstroe.CNetworkingSolution
         public override void Init(ServerLobby lobby)
         {
             base.Init(lobby);
-            // Init Map
-            Map = Instantiate(mapPrefab, Vector3.zero, Quaternion.identity).GetComponent<NetMap>();
-            Map.transform.SetParent(this.transform);
 
-            if (hideMapMesh)
+            if (mapPrefab != null)
             {
-                foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+                // Init Map
+                Map = Instantiate(mapPrefab, Vector3.zero, Quaternion.identity).GetComponent<NetMap>();
+                Map.transform.SetParent(this.transform);
+
+                if (hideMapMesh)
                 {
-                    r.enabled = false;
+                    foreach (Renderer r in Map.GetComponentsInChildren<Renderer>(true))
+                    {
+                        r.enabled = false;
+                    }
+                }
+
+                foreach (ClientObject obj in Map.GetComponentsInChildren<ClientObject>(true))
+                {
+                    if (obj.gameObject.TryGetComponent(out Collider objCollider))
+                    {
+                        objCollider.enabled = false;
+                    }
+
+                    foreach (Renderer r in obj.GetComponentsInChildren<Renderer>(true))
+                    {
+                        r.enabled = false;
+                    }
+
+                    obj.enabled = false;
                 }
             }
-
-            foreach (ClientObject obj in Map.GetComponentsInChildren<ClientObject>(true))
+            else
             {
-                if (obj.gameObject.TryGetComponent(out Collider objCollider))
-                {
-                    objCollider.enabled = false;
-                }
-
-                foreach (Renderer r in obj.GetComponentsInChildren<Renderer>(true))
-                {
-                    r.enabled = false;
-                }
-
-                obj.enabled = false;
+                Debug.LogWarning("ObjectServerService no map prefab assigned. Starting objects will not be initialized.");
             }
         }
 
@@ -173,7 +181,7 @@ namespace Monstroe.CNetworkingSolution
         public override void EarlyUserJoinedGame(UserData joinedUser)
         {
             base.EarlyUserJoinedGame(joinedUser);
-            if (!startingObjectsInitialized)
+            if (Map != null && !startingObjectsInitialized)
             {
                 foreach (ClientObject clientObj in Map.GetStartingClientObjects())
                 {
