@@ -14,12 +14,6 @@ namespace Monstroe.CNetworkingSolution
         [Header("Transport Settings")]
         [SerializeField] private List<NetTransport> transportPrefabs;
 
-        [Header("Asset Registries")]
-        [SerializeField] private string clientPrefabsLabel = "CNS_ClientPrefabs";
-        [SerializeField] private string serverPrefabsLabel = "CNS_ServerPrefabs";
-        [SerializeField] private string sfxLabel = "CNS_SFX";
-        [SerializeField] private string vfxLabel = "CNS_VFX";
-
         private readonly Dictionary<Type, NetTransport> transportPrefabsDict = new Dictionary<Type, NetTransport>();
 
         private readonly Dictionary<string, ulong> clientPrefabsPathToKeyMap = new Dictionary<string, ulong>();
@@ -52,10 +46,10 @@ namespace Monstroe.CNetworkingSolution
 
             InitTransports();
 
-            await InitAssetRegistry(clientPrefabsLabel, clientPrefabsPathToKeyMap, clientPrefabsKeyToPathMap);
-            await InitAssetRegistry(serverPrefabsLabel, serverPrefabsPathToKeyMap, serverPrefabsKeyToPathMap);
-            await InitAssetRegistry(sfxLabel, sfxPathToKeyMap, sfxKeyToPathMap);
-            await InitAssetRegistry(vfxLabel, vfxPathToKeyMap, vfxKeyToPathMap);
+            await InitAssetRegistry("CNS_ClientPrefabs", clientPrefabsPathToKeyMap, clientPrefabsKeyToPathMap);
+            await InitAssetRegistry("CNS_ServerPrefabs", serverPrefabsPathToKeyMap, serverPrefabsKeyToPathMap);
+            await InitAssetRegistry("CNS_SFX", sfxPathToKeyMap, sfxKeyToPathMap);
+            await InitAssetRegistry("CNS_VFX", vfxPathToKeyMap, vfxKeyToPathMap);
 
             foreach ((string path, ulong key) in clientPrefabsPathToKeyMap)
             {
