@@ -17,8 +17,6 @@ namespace Monstroe.CNetworkingSolution
         [SerializeField] private int minLobbyId = 1000;
         [SerializeField] private int maxLobbyId = 10000;
         [SerializeField] private bool spawnLobbiesOnStart = false;
-        [Tooltip("Physics simulation mode for the server. Set to 'Script' to manually control physics updates (MOST COMMON).")]
-        [SerializeField] private SimulationMode physicsSimulationMode = SimulationMode.Script;
 
         [Header("Connection Settings")]
         [SerializeField] private int maxSecondsBeforeUnverifiedUserRemoval = 30;
@@ -73,7 +71,7 @@ namespace Monstroe.CNetworkingSolution
 
         void FixedUpdate()
         {
-            Physics.simulationMode = physicsSimulationMode;
+            Physics.simulationMode = SimulationMode.Script;
             foreach (ServerLobby serverLobby in ServerData.ActiveLobbies.Values)
             {
                 serverLobby.Tick();
