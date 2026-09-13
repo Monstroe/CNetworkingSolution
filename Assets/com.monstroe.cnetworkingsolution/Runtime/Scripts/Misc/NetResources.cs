@@ -57,7 +57,7 @@ namespace Monstroe.CNetworkingSolution
                 handle.TryGetComponent(out ClientObject clientObject);
                 if (clientObject == null || clientObject.ServerPrefab == null)
                 {
-                    Debug.LogError("NetResources could not find ClientObject or its ServerPrefab component on loaded client prefab with path '" + path + "'");
+                    Debug.LogError("<color=red><b>CNS</b></color>: NetResources could not find ClientObject or its ServerPrefab component on loaded client prefab with path '" + path + "'");
                     continue;
                 }
                 clientToServerPrefabKeyMap.Add(key, clientObject.ServerPrefab.PrefabKey);
@@ -84,7 +84,7 @@ namespace Monstroe.CNetworkingSolution
             {
                 return new Tuple<ulong, string>(serverKey, serverPrefabsKeyToPathMap[serverKey]);
             }
-            Debug.LogError("NetResources could not find server prefab key for client prefab key '" + clientKey + "'");
+            Debug.LogError("<color=red><b>CNS</b></color>: NetResources could not find server prefab key for client prefab key '" + clientKey + "'");
             return null;
         }
 
@@ -94,7 +94,7 @@ namespace Monstroe.CNetworkingSolution
             {
                 return new Tuple<ulong, string>(clientKey, clientPrefabsKeyToPathMap[clientKey]);
             }
-            Debug.LogError("NetResources could not find client prefab key for server prefab key '" + serverKey + "'");
+            Debug.LogError("<color=red><b>CNS</b></color>: NetResources could not find client prefab key for server prefab key '" + serverKey + "'");
             return null;
         }
 
@@ -144,7 +144,7 @@ namespace Monstroe.CNetworkingSolution
             {
                 return key;
             }
-            Debug.LogError("NetResources could not find key for object with path '" + path + "'");
+            Debug.LogError("<color=red><b>CNS</b></color>: NetResources could not find key for object with path '" + path + "'");
             return 0;
         }
 
@@ -154,7 +154,7 @@ namespace Monstroe.CNetworkingSolution
             {
                 return path;
             }
-            Debug.LogError("NetResources could not find path for object with key '" + key + "'");
+            Debug.LogError("<color=red><b>CNS</b></color>: NetResources could not find path for object with key '" + key + "'");
             return null;
         }
 

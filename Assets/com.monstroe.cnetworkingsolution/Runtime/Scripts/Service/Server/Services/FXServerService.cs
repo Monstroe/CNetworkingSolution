@@ -13,7 +13,7 @@ public class FXServerService : ServerService
         ulong key = NetResources.Instance.GetSFXKeyFromPath(sfxDirectory + name);
         if (key == 0)
         {
-            Debug.LogError("PacketBuilder PlaySFXRequest could not find SFX key for path: " + sfxDirectory + name);
+            Debug.LogError("<color=red><b>CNS</b></color>: PacketBuilder PlaySFXRequest could not find SFX key for path: " + sfxDirectory + name);
         }
         InvokeOnGameClientServices(nameof(PlaySFXRpc), key, volume, pos);
     }
@@ -39,7 +39,7 @@ public class FXServerService : ServerService
         ulong key = NetResources.Instance.GetVFXKeyFromPath(vfxDirectory + name);
         if (key == 0)
         {
-            Debug.LogError("PacketBuilder PlayVFXRequest could not find VFX key for path: " + vfxDirectory + name);
+            Debug.LogError("<color=red><b>CNS</b></color>: PacketBuilder PlayVFXRequest could not find VFX key for path: " + vfxDirectory + name);
         }
         InvokeOnGameClientServices(nameof(PlayVFXRpc), key, pos, scale);
     }

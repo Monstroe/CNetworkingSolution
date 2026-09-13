@@ -27,7 +27,7 @@ namespace Monstroe.CNetworkingSolution
             lobby.CurrentUser = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.UserId == userId); // Set the local user data
             if (lobby.CurrentUser == null)
             {
-                Debug.LogWarning($"Received LobbyInitRpc for user ID {userId}, but no such user was found in the lobby.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received LobbyInitRpc for user ID {userId}, but no such user was found in the lobby.");
                 return;
             }
 
@@ -47,7 +47,7 @@ namespace Monstroe.CNetworkingSolution
             UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.UserId == userId);
             if (user == null)
             {
-                Debug.LogWarning($"Received LobbyUserLeftRpc for user ID {userId}, but no such user was found in the lobby.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received LobbyUserLeftRpc for user ID {userId}, but no such user was found in the lobby.");
                 return;
             }
 

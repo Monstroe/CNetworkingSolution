@@ -85,7 +85,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError("ClientBehavior InstantiateOnNetwork could not find ClientObject component on given GameObject.");
+                Debug.LogError("<color=red><b>CNS</b></color>: ClientBehavior InstantiateOnNetwork could not find ClientObject component on given GameObject.");
             }
         }
 
@@ -93,7 +93,7 @@ namespace Monstroe.CNetworkingSolution
         {
             if (NetResources.Instance.GetClientPrefabKeyFromPath(originalPath) == 0)
             {
-                Debug.LogError("ClientBehaviour SendObjectSpawnRequest could not find client prefab key for path: " + originalPath);
+                Debug.LogError("<color=red><b>CNS</b></color>: ClientBehaviour SendObjectSpawnRequest could not find client prefab key for path: " + originalPath);
                 return;
             }
 
@@ -108,7 +108,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError("ClientBehaviour DestroyOnNetwork attempted to destroy an object not owned by the current user.");
+                Debug.LogError("<color=red><b>CNS</b></color>: ClientBehaviour DestroyOnNetwork attempted to destroy an object not owned by the current user.");
             }
         }
     }

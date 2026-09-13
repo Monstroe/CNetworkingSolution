@@ -19,7 +19,7 @@ namespace Monstroe.CNetworkingSolution
         {
             if (lobby.CurrentUser.InGame)
             {
-                Debug.LogWarning("Current user is already marked as in-game.");
+                Debug.LogWarning("<color=yellow><b>CNS</b></color>: Current user is already marked as in-game.");
                 return;
             }
 
@@ -30,7 +30,7 @@ namespace Monstroe.CNetworkingSolution
         {
             if (!lobby.CurrentUser.InGame)
             {
-                Debug.LogWarning("Current user is not marked as in-game.");
+                Debug.LogWarning("<color=yellow><b>CNS</b></color>: Current user is not marked as in-game.");
                 return;
             }
 
@@ -43,7 +43,7 @@ namespace Monstroe.CNetworkingSolution
             UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
             if (user == null)
             {
-                Debug.LogWarning($"Received GameUserJoinedRpc for player ID {playerId}, but no such user was found in the lobby.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received GameUserJoinedRpc for player ID {playerId}, but no such user was found in the lobby.");
                 return;
             }
 
@@ -64,7 +64,7 @@ namespace Monstroe.CNetworkingSolution
             UserData user = lobby.LobbyData.LobbyUsers.FirstOrDefault(u => u.PlayerId == playerId);
             if (user == null)
             {
-                Debug.LogWarning($"Received GameUserLeftRpc for player ID {playerId}, but no such user was found in the lobby.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received GameUserLeftRpc for player ID {playerId}, but no such user was found in the lobby.");
                 return;
             }
 

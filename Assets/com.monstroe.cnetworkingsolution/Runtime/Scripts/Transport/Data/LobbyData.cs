@@ -4,6 +4,11 @@ namespace Monstroe.CNetworkingSolution
 {
     public class LobbyData : INetSerializable<LobbyData>
     {
+        public delegate void UserAddedEventHandler(UserData user);
+        public event UserAddedEventHandler OnUserAdded;
+        public delegate void UserRemovedEventHandler(UserData user);
+        public event UserRemovedEventHandler OnUserRemoved;
+
         public int LobbyId { get; internal set; } = -1;
         private readonly List<UserData> lobbyUsers = new List<UserData>();
         public IReadOnlyList<UserData> LobbyUsers => lobbyUsers;
@@ -16,11 +21,13 @@ namespace Monstroe.CNetworkingSolution
         internal void AddUser(UserData user)
         {
             lobbyUsers.Add(user);
+            OnUserAdded?.Invoke(user);
         }
 
         internal void RemoveUser(UserData user)
         {
             lobbyUsers.Remove(user);
+            OnUserRemoved?.Invoke(user);
         }
 
         public LobbyData Deserialize(NetPacket packet)

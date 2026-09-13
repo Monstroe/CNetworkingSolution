@@ -68,7 +68,7 @@ namespace Monstroe.CNetworkingSolution
                         }
                         else
                         {
-                            Debug.LogWarning("ObjectClientService no map prefab assigned. Starting objects will not be initialized.");
+                            Debug.LogWarning("<color=yellow><b>CNS</b></color>: ObjectClientService no map prefab assigned. Starting objects will not be initialized.");
                         }
                         break;
                     }
@@ -86,7 +86,7 @@ namespace Monstroe.CNetworkingSolution
                             string prefabName = NetResources.Instance.GetClientPrefabPathFromKey(prefabKey);
                             if (string.IsNullOrEmpty(prefabName))
                             {
-                                Debug.LogError("ObjectClientService ReceiveData could not find client prefab path for key: " + prefabKey);
+                                Debug.LogError("<color=red><b>CNS</b></color>: ObjectClientService ReceiveData could not find client prefab path for key: " + prefabKey);
                                 return packetHandled;
                             }
 
@@ -104,7 +104,7 @@ namespace Monstroe.CNetworkingSolution
                         }
                         else
                         {
-                            Debug.LogWarning($"Object with Id {objectId} already exists. Spawn request ignored.");
+                            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Object with Id {objectId} already exists. Spawn request ignored.");
                         }
                         break;
                     }
@@ -119,7 +119,7 @@ namespace Monstroe.CNetworkingSolution
                         }
                         else
                         {
-                            Debug.LogWarning($"No object with Id {objectId} found. Destroy request ignored.");
+                            Debug.LogWarning($"<color=yellow><b>CNS</b></color>: No object with Id {objectId} found. Destroy request ignored.");
                         }
                         break;
                     }

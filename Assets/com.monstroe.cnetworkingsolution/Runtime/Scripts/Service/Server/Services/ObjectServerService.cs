@@ -20,6 +20,8 @@ namespace Monstroe.CNetworkingSolution
         [Tooltip("The map prefab to be instantiated on the server.")]
         [SerializeField] private NetMap mapPrefab;
         [SerializeField] private bool hideMapMesh = true;
+        [Space]
+        [SerializeField] private bool allowClientsToSpawnAndDestroyObjects = false;
 
         private bool startingObjectsInitialized = false;
         private List<ushort> spawnedStartingObjectIds = new List<ushort>();
@@ -60,7 +62,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogWarning("ObjectServerService no map prefab assigned. Starting objects will not be initialized.");
+                Debug.LogWarning("<color=yellow><b>CNS</b></color>: ObjectServerService no map prefab assigned. Starting objects will not be initialized.");
             }
         }
 
@@ -81,6 +83,12 @@ namespace Monstroe.CNetworkingSolution
                     }
                 case ObjectCommandType.OBJECT_SPAWN_REQUEST:
                     {
+                        if (!allowClientsToSpawnAndDestroyObjects)
+                        {
+                            Debug.LogWarning("<color=yellow><b>CNS</b></color>: ObjectServerService is not allowing clients to spawn objects.");
+                            break;
+                        }
+
                         ulong clientPrefabKey = packet.ReadULong();
                         Vector3 position = packet.ReadVector3();
                         Quaternion rotation = packet.ReadQuaternion();
@@ -104,6 +112,12 @@ namespace Monstroe.CNetworkingSolution
                     }
                 case ObjectCommandType.OBJECT_DESTROY_REQUEST:
                     {
+                        if (!allowClientsToSpawnAndDestroyObjects)
+                        {
+                            Debug.LogWarning("<color=yellow><b>CNS</b></color>: ObjectServerService is not allowing clients to destroy objects.");
+                            break;
+                        }
+
                         ushort objectId = packet.ReadUShort();
                         if (ServerObjects.TryGetValue(objectId, out ServerObject serverObject) && user.PlayerId == serverObject.OwnerId)
                         {
@@ -111,11 +125,15 @@ namespace Monstroe.CNetworkingSolution
                             {
                                 ObjectId = objectId
                             };
-                            var result = Task.Run(() => lobby.TriggerGameEvent(destroyRequestEvent)).GetAwaiter().GetResult();
-                            if (!result.Canceled)
+
+                            ThreadManager.ExecuteOnMainThread(async () =>
                             {
-                                DestroyObject(serverObject);
-                            }
+                                var result = await lobby.TriggerGameEvent(destroyRequestEvent);
+                                if (!result.Canceled)
+                                {
+                                    DestroyObject(serverObject);
+                                }
+                            });
                         }
                         break;
                     }

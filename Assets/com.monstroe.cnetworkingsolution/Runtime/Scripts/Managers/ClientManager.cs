@@ -92,7 +92,7 @@ namespace Monstroe.CNetworkingSolution
                 Code = code
             });
 
-            Debug.Log($"<color=yellow><b>CNS</b></color>: Client disconnected from lobby.");
+            Debug.Log($"<color=green><b>CNS</b></color>: Client disconnected from lobby.");
         }
 
         private void HandleNetworkReceived(ulong remoteId, NetPacket packet, TransportMethod? method)

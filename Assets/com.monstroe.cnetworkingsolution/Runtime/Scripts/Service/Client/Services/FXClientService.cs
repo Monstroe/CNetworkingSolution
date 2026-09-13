@@ -25,7 +25,7 @@ public class FXClientService : ClientService
         ulong key = NetResources.Instance.GetSFXKeyFromPath(sfxDirectory + name);
         if (key == 0)
         {
-            Debug.LogError("PacketBuilder PlaySFXRequest could not find SFX key for path: " + sfxDirectory + name);
+            Debug.LogError("<color=red><b>CNS</b></color>: PacketBuilder PlaySFXRequest could not find SFX key for path: " + sfxDirectory + name);
         }
         InvokeOnServerService(nameof(PlaySFXRpc), key, volume, pos);
     }
@@ -58,13 +58,13 @@ public class FXClientService : ClientService
                 }
                 else
                 {
-                    Debug.LogError("ClientFX PlaySFXRpc could not load AudioClip with name '" + sfxPath + "'");
+                    Debug.LogError("<color=red><b>CNS</b></color>: ClientFX PlaySFXRpc could not load AudioClip with name '" + sfxPath + "'");
                 }
             };
         }
         else
         {
-            Debug.LogError("ClientFX PlaySFXRpc could not find SFX path for key: " + key);
+            Debug.LogError("<color=red><b>CNS</b></color>: ClientFX PlaySFXRpc could not find SFX path for key: " + key);
         }
     }
 
@@ -73,7 +73,7 @@ public class FXClientService : ClientService
         ulong key = NetResources.Instance.GetVFXKeyFromPath(vfxDirectory + name);
         if (key == 0)
         {
-            Debug.LogError("PacketBuilder PlayVFXRequest could not find VFX key for path: " + vfxDirectory + name);
+            Debug.LogError("<color=red><b>CNS</b></color>: PacketBuilder PlayVFXRequest could not find VFX key for path: " + vfxDirectory + name);
         }
         InvokeOnServerService(nameof(PlayVFXRpc), key, pos, scale);
     }
@@ -100,20 +100,20 @@ public class FXClientService : ClientService
                     }
                     else
                     {
-                        Debug.LogWarning("ClientFX PlayVFXRpc could not find a _Duration property for VisualEffectAsset with name '" + asset.name + "', will not be destroyed!");
+                        Debug.LogWarning("<color=yellow><b>CNS</b></color>: ClientFX PlayVFXRpc could not find a _Duration property for VisualEffectAsset with name '" + asset.name + "', will not be destroyed!");
                     }
 
                     OnVFXReceived?.Invoke(key, pos, scale);
                 }
                 else
                 {
-                    Debug.LogError("ClientFX PlayVFXRpc could not load VisualEffectAsset with name '" + vfxPath + "'");
+                    Debug.LogError("<color=red><b>CNS</b></color>: ClientFX PlayVFXRpc could not load VisualEffectAsset with name '" + vfxPath + "'");
                 }
             };
         }
         else
         {
-            Debug.LogError("ClientFX PlayVFXRpc could not find VFX path for key: " + key);
+            Debug.LogError("<color=red><b>CNS</b></color>: ClientFX PlayVFXRpc could not find VFX path for key: " + key);
         }
     }
 }

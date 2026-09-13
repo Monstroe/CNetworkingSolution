@@ -22,13 +22,13 @@ namespace Monstroe.CNetworkingSolution
         {
             if (joinedUser.InGame)
             {
-                Debug.LogWarning($"User {joinedUser.UserId} tried to join the game, but they are already marked as in-game.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {joinedUser.UserId} tried to join the game, but they are already marked as in-game.");
                 return;
             }
 
             if (joinedUser.PlayerId != playerId)
             {
-                Debug.LogWarning($"Received GameUserJoinedRpc with player ID {playerId}, but the sender's player ID is {joinedUser.PlayerId}.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received GameUserJoinedRpc with player ID {playerId}, but the sender's player ID is {joinedUser.PlayerId}.");
                 return;
             }
 
@@ -50,13 +50,13 @@ namespace Monstroe.CNetworkingSolution
         {
             if (!leftUser.InGame)
             {
-                Debug.LogWarning($"User {leftUser.UserId} tried to leave the game, but they are not marked as in-game.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: User {leftUser.UserId} tried to leave the game, but they are not marked as in-game.");
                 return;
             }
 
             if (leftUser.PlayerId != playerId)
             {
-                Debug.LogWarning($"Received GameUserLeftRpc with player ID {playerId}, but the sender's player ID is {leftUser.PlayerId}.");
+                Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Received GameUserLeftRpc with player ID {playerId}, but the sender's player ID is {leftUser.PlayerId}.");
                 return;
             }
 

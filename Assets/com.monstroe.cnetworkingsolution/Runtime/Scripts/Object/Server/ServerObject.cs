@@ -109,7 +109,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
             }
         }
 
@@ -131,7 +131,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
             }
         }
 
@@ -148,7 +148,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
             }
         }
 

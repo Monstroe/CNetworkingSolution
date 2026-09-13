@@ -85,7 +85,7 @@ namespace Monstroe.CNetworkingSolution
 
         protected virtual void StartOnOwner() { }
         protected virtual void StartOnNonOwner() { }
-        protected virtual void Start()
+        void Start()
         {
             if (IsOwner)
             {
@@ -99,7 +99,7 @@ namespace Monstroe.CNetworkingSolution
 
         protected virtual void UpdateOnOwner() { }
         protected virtual void UpdateOnNonOwner() { }
-        protected virtual void Update()
+        void Update()
         {
             if (IsOwner)
             {
@@ -113,7 +113,7 @@ namespace Monstroe.CNetworkingSolution
 
         protected virtual void FixedUpdateOnOwner() { }
         protected virtual void FixedUpdateOnNonOwner() { }
-        protected virtual void FixedUpdate()
+        void FixedUpdate()
         {
             if (IsOwner)
             {
@@ -138,7 +138,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError($"RPC Attribute not found on Method {type.Name}.{methodName}.");
+                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
             }
         }
 

@@ -4,8 +4,6 @@ using Monstroe.CNetworkingSolution;
 
 public class ServerPlayer : ServerTransform
 {
-    public UserData User { get; set; }
-
     // Movement Data
     public bool IsGrounded { get; set; }
     public bool IsWalking { get; set; }

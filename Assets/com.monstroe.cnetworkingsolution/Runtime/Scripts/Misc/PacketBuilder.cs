@@ -39,7 +39,7 @@ namespace Monstroe.CNetworkingSolution
             ParameterInfo[] parameters = method.GetParameters().Where(p => p.GetCustomAttribute<RpcSenderAttribute>() == null && p.GetCustomAttribute<RpcIgnoreAttribute>() == null).ToArray();
             if (args.Length != parameters.Length)
             {
-                throw new ArgumentException("RPC argument count mismatch");
+                throw new ArgumentException("Rpc argument count mismatch");
             }
 
             NetPacket packet = new NetPacket();
@@ -63,8 +63,7 @@ namespace Monstroe.CNetworkingSolution
             ulong key = NetResources.Instance.GetClientPrefabKeyFromPath(clientPrefabPath);
             if (key == 0)
             {
-                Debug.LogError("ObjectSpawnRequest could not find client prefab key for path: " + clientPrefabPath);
-                return null;
+                throw new ArgumentException("ObjectSpawnRequest could not find client prefab key for path: " + clientPrefabPath);
             }
             packet.Write(key);
             packet.Write(pos);
