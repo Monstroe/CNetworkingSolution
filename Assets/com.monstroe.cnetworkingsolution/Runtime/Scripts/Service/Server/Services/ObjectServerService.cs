@@ -220,6 +220,7 @@ namespace Monstroe.CNetworkingSolution
             // Spawning happens first in the Server Service
             foreach (ServerObject obj in ServerObjects.Values.Where(o => !spawnedStartingObjectIds.Contains(o.Id)))
             {
+                Debug.Log($"<color=green><b>CNS</b></color>: ObjectServerService EarlyUserJoinedGame spawning objectId: {obj.Id}, prefabKey: {obj.PrefabKey}, position: {obj.transform.position}, rotation: {obj.transform.rotation}, ownerId: {obj.OwnerId} for userId: {joinedUser.UserId}");
                 Tuple<ulong, string> clientPrefabInfo = NetResources.Instance.GetClientPrefabFromServerKey(obj.PrefabKey);
                 if (clientPrefabInfo != null)
                 {
