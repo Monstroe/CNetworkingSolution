@@ -81,8 +81,6 @@ namespace Monstroe.CNetworkingSolution
                         bool isPlayer = packet.ReadBool();
                         byte? ownerId = packet.UnreadLength > 0 ? (byte?)packet.ReadByte() : null;
 
-                        Debug.Log($"<color=green><b>CNS</b></color>: ObjectClientService ReceiveData received spawn request for objectId: {objectId}, prefabKey: {prefabKey}, position: {pos}, rotation: {rot}, isPlayer: {isPlayer}, ownerId: {ownerId}");
-
                         if (!ClientObjects.ContainsKey(objectId))
                         {
                             string prefabName = NetResources.Instance.GetClientPrefabPathFromKey(prefabKey);

@@ -238,7 +238,6 @@ namespace Monstroe.CNetworkingSolution
         {
             if (instance != null)
             {
-                Debug.Log($"<color=green><b>CNS</b></color>: ServerBehaviour InitInstance called for instance: {instance.name}, ownerId: {ownerId}, isPlayer: {isPlayer}, initAndSendToUsers: {initAndSendToUsers}");
                 if (lobby.LobbyScene.HasValue)
                 {
                     SceneManager.MoveGameObjectToScene(instance.gameObject, lobby.LobbyScene.Value);
