@@ -132,13 +132,21 @@ namespace Monstroe.CNetworkingSolution
 
         public void InvokeOnServerObject(string methodName, params object[] args)
         {
-            if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+            (bool validMember, ulong methodId, MemberInfo member, RpcAttribute attr) = IsValidRpc(methodName, RpcMemberType.Method);
+
+            if (validMember)
             {
-                SendToServerObject(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+                SendToServerObject(ReservedPacketBuilder.Rpc(methodId, member, args), attr.TransportMethod);
             }
-            else
+        }
+
+        public void SetOnServerObject<T>(string variableName, T value)
+        {
+            (bool validMember, ulong variableId, MemberInfo member, RpcAttribute attr) = IsValidRpc(variableName, RpcMemberType.Variable);
+
+            if (validMember)
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
+                SendToServerObject(ReservedPacketBuilder.Rpc(variableId, member, value), attr.TransportMethod);
             }
         }
 

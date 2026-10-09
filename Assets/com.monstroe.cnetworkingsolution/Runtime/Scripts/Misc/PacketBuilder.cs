@@ -34,21 +34,48 @@ namespace Monstroe.CNetworkingSolution
 
     internal static class ReservedPacketBuilder
     {
-        public static NetPacket Rpc(ulong methodId, MethodInfo method, params object[] args)
+        public static NetPacket Rpc(ulong memberId, MemberInfo member, params object[] args)
         {
-            ParameterInfo[] parameters = method.GetParameters().Where(p => p.GetCustomAttribute<RpcSenderAttribute>() == null && p.GetCustomAttribute<RpcIgnoreAttribute>() == null).ToArray();
-            if (args.Length != parameters.Length)
+            bool validMemberType = false;
+            Type[] types = null;
+
+            if (member is MethodInfo method)
+            {
+                types = method.GetParameters().Where(p => p.GetCustomAttribute<RpcSenderAttribute>() == null && p.GetCustomAttribute<RpcIgnoreAttribute>() == null).Select(p => p.ParameterType).ToArray();
+                if (args.Length != types.Length)
+                {
+                    throw new ArgumentException("Rpc argument count mismatch");
+                }
+
+                validMemberType = true;
+            }
+            else if (args.Length != 1)
             {
                 throw new ArgumentException("Rpc argument count mismatch");
+            }
+            else if (member is FieldInfo field)
+            {
+                types = new Type[] { field.FieldType };
+                validMemberType = true;
+            }
+            else if (member is PropertyInfo property)
+            {
+                types = new Type[] { property.PropertyType };
+                validMemberType = true;
+            }
+
+            if (!validMemberType)
+            {
+                throw new ArgumentException($"Rpc Member with ID {memberId} is not a valid RPC member");
             }
 
             NetPacket packet = new NetPacket();
             packet.Write(ReservedCommandType.RPC);
-            packet.Write(methodId);
+            packet.Write(memberId);
 
             for (int i = 0; i < args.Length; i++)
             {
-                packet.Write(args[i], parameters[i].ParameterType);
+                packet.Write(args[i], types[i]);
             }
             return packet;
         }

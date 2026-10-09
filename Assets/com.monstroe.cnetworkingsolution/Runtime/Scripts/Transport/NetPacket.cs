@@ -1078,15 +1078,15 @@ namespace Monstroe.CNetworkingSolution
             }
         }
 
-        public void Write(object value, Type parameterType)
+        public void Write(object value, Type argType)
         {
-            if (parameterType == null)
+            if (argType == null)
             {
-                throw new ArgumentNullException(nameof(parameterType));
+                throw new ArgumentNullException(nameof(argType));
             }
 
             // Nullable<T>
-            Type nullableInner = Nullable.GetUnderlyingType(parameterType);
+            Type nullableInner = Nullable.GetUnderlyingType(argType);
             if (nullableInner != null)
             {
                 bool hasValue = value != null;
@@ -1099,7 +1099,7 @@ namespace Monstroe.CNetworkingSolution
             }
 
             // Arrays
-            if (parameterType.IsArray)
+            if (argType.IsArray)
             {
                 if (value == null)
                 {
@@ -1111,7 +1111,7 @@ namespace Monstroe.CNetworkingSolution
                 int length = array.Length;
                 Write(length);
 
-                Type elementType = parameterType.GetElementType();
+                Type elementType = argType.GetElementType();
                 Type elementNullableInner = Nullable.GetUnderlyingType(elementType);
                 Type effectiveElementType = elementNullableInner ?? elementType;
 
@@ -1143,7 +1143,7 @@ namespace Monstroe.CNetworkingSolution
             }
 
             // INetSerializable
-            if (typeof(INetSerializable).IsAssignableFrom(parameterType))
+            if (typeof(INetSerializable).IsAssignableFrom(argType))
             {
                 bool hasValue = value != null;
                 Write(hasValue);
@@ -1155,49 +1155,49 @@ namespace Monstroe.CNetworkingSolution
             }
 
             // Enums
-            if (parameterType.IsEnum)
+            if (argType.IsEnum)
             {
                 Write(Convert.ToUInt16(value));
                 return;
             }
 
             // Primitives
-            if (parameterType == typeof(byte)) { Write((byte)value); return; }
-            if (parameterType == typeof(byte[])) { Write((byte[])value); return; }
-            if (parameterType == typeof(sbyte)) { Write((sbyte)value); return; }
-            if (parameterType == typeof(sbyte[])) { Write((sbyte[])value); return; }
-            if (parameterType == typeof(bool)) { Write((bool)value); return; }
-            if (parameterType == typeof(bool[])) { Write((bool[])value); return; }
-            if (parameterType == typeof(char)) { Write((char)value); return; }
-            if (parameterType == typeof(char[])) { Write((char[])value); return; }
-            if (parameterType == typeof(double)) { Write((double)value); return; }
-            if (parameterType == typeof(double[])) { Write((double[])value); return; }
-            if (parameterType == typeof(float)) { Write((float)value); return; }
-            if (parameterType == typeof(float[])) { Write((float[])value); return; }
-            if (parameterType == typeof(int)) { Write((int)value); return; }
-            if (parameterType == typeof(int[])) { Write((int[])value); return; }
-            if (parameterType == typeof(long)) { Write((long)value); return; }
-            if (parameterType == typeof(long[])) { Write((long[])value); return; }
-            if (parameterType == typeof(short)) { Write((short)value); return; }
-            if (parameterType == typeof(short[])) { Write((short[])value); return; }
-            if (parameterType == typeof(uint)) { Write((uint)value); return; }
-            if (parameterType == typeof(uint[])) { Write((uint[])value); return; }
-            if (parameterType == typeof(ulong)) { Write((ulong)value); return; }
-            if (parameterType == typeof(ulong[])) { Write((ulong[])value); return; }
-            if (parameterType == typeof(ushort)) { Write((ushort)value); return; }
-            if (parameterType == typeof(ushort[])) { Write((ushort[])value); return; }
+            if (argType == typeof(byte)) { Write((byte)value); return; }
+            if (argType == typeof(byte[])) { Write((byte[])value); return; }
+            if (argType == typeof(sbyte)) { Write((sbyte)value); return; }
+            if (argType == typeof(sbyte[])) { Write((sbyte[])value); return; }
+            if (argType == typeof(bool)) { Write((bool)value); return; }
+            if (argType == typeof(bool[])) { Write((bool[])value); return; }
+            if (argType == typeof(char)) { Write((char)value); return; }
+            if (argType == typeof(char[])) { Write((char[])value); return; }
+            if (argType == typeof(double)) { Write((double)value); return; }
+            if (argType == typeof(double[])) { Write((double[])value); return; }
+            if (argType == typeof(float)) { Write((float)value); return; }
+            if (argType == typeof(float[])) { Write((float[])value); return; }
+            if (argType == typeof(int)) { Write((int)value); return; }
+            if (argType == typeof(int[])) { Write((int[])value); return; }
+            if (argType == typeof(long)) { Write((long)value); return; }
+            if (argType == typeof(long[])) { Write((long[])value); return; }
+            if (argType == typeof(short)) { Write((short)value); return; }
+            if (argType == typeof(short[])) { Write((short[])value); return; }
+            if (argType == typeof(uint)) { Write((uint)value); return; }
+            if (argType == typeof(uint[])) { Write((uint[])value); return; }
+            if (argType == typeof(ulong)) { Write((ulong)value); return; }
+            if (argType == typeof(ulong[])) { Write((ulong[])value); return; }
+            if (argType == typeof(ushort)) { Write((ushort)value); return; }
+            if (argType == typeof(ushort[])) { Write((ushort[])value); return; }
 
             // Strings and Unity structs
-            if (parameterType == typeof(string)) { Write((string)value); return; }
-            if (parameterType == typeof(string[])) { Write((string[])value); return; }
-            if (parameterType == typeof(Vector2)) { Write((Vector2)value); return; }
-            if (parameterType == typeof(Vector2[])) { Write((Vector2[])value); return; }
-            if (parameterType == typeof(Vector3)) { Write((Vector3)value); return; }
-            if (parameterType == typeof(Vector3[])) { Write((Vector3[])value); return; }
-            if (parameterType == typeof(Quaternion)) { Write((Quaternion)value); return; }
-            if (parameterType == typeof(Quaternion[])) { Write((Quaternion[])value); return; }
+            if (argType == typeof(string)) { Write((string)value); return; }
+            if (argType == typeof(string[])) { Write((string[])value); return; }
+            if (argType == typeof(Vector2)) { Write((Vector2)value); return; }
+            if (argType == typeof(Vector2[])) { Write((Vector2[])value); return; }
+            if (argType == typeof(Vector3)) { Write((Vector3)value); return; }
+            if (argType == typeof(Vector3[])) { Write((Vector3[])value); return; }
+            if (argType == typeof(Quaternion)) { Write((Quaternion)value); return; }
+            if (argType == typeof(Quaternion[])) { Write((Quaternion[])value); return; }
 
-            throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
+            throw new Exception($"Unsupported argument type: {argType.FullName}");
         }
 
         public byte ReadByte(bool moveIndexPosition = true)
@@ -1966,18 +1966,18 @@ namespace Monstroe.CNetworkingSolution
             return value;
         }
 
-        public object ReadObject(Type parameterType, bool moveIndexPosition = true)
+        public object ReadObject(Type argType, bool moveIndexPosition = true)
         {
-            if (parameterType == null)
+            if (argType == null)
             {
-                throw new ArgumentNullException(nameof(parameterType));
+                throw new ArgumentNullException(nameof(argType));
             }
 
             int startIndex = CurrentIndex;
 
             try
             {
-                Type nullableInner = Nullable.GetUnderlyingType(parameterType);
+                Type nullableInner = Nullable.GetUnderlyingType(argType);
                 // Nullable<T>
                 if (nullableInner != null)
                 {
@@ -1991,7 +1991,7 @@ namespace Monstroe.CNetworkingSolution
                 }
 
                 // Array
-                if (parameterType.IsArray)
+                if (argType.IsArray)
                 {
                     int length = ReadInt();
                     if (length < 0)
@@ -1999,7 +1999,7 @@ namespace Monstroe.CNetworkingSolution
                         return null;
                     }
 
-                    Type elementType = parameterType.GetElementType();
+                    Type elementType = argType.GetElementType();
                     Type elementNullableInner = Nullable.GetUnderlyingType(elementType);
                     Type effectiveElementType = elementNullableInner ?? elementType;
 
@@ -2008,12 +2008,7 @@ namespace Monstroe.CNetworkingSolution
                     // INetSerializable array
                     if (typeof(INetSerializable).IsAssignableFrom(effectiveElementType))
                     {
-                        MethodInfo deserializeMethod = effectiveElementType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public) ?? throw new Exception($"{effectiveElementType.Name} must implement Deserialize(NetPacket).");
-
-                        if (effectiveElementType.GetConstructor(Type.EmptyTypes) == null)
-                        {
-                            throw new Exception($"{effectiveElementType.Name} must have a parameterless constructor.");
-                        }
+                        MethodInfo deserializeMethod = effectiveElementType.GetMethod("Deserialize", BindingFlags.Static | BindingFlags.Public) ?? throw new Exception($"{effectiveElementType.Name} must implement Deserialize(NetPacket).");
 
                         for (int i = 0; i < length; i++)
                         {
@@ -2024,8 +2019,7 @@ namespace Monstroe.CNetworkingSolution
                                 continue;
                             }
 
-                            object instance = Activator.CreateInstance(effectiveElementType);
-                            object value = deserializeMethod.Invoke(instance, new object[] { this });
+                            object value = deserializeMethod.Invoke(null, new object[] { this });
                             array.SetValue(value, i);
                         }
 
@@ -2042,7 +2036,7 @@ namespace Monstroe.CNetworkingSolution
                 }
 
                 // INetSerializable
-                if (typeof(INetSerializable).IsAssignableFrom(parameterType))
+                if (typeof(INetSerializable).IsAssignableFrom(argType))
                 {
                     bool hasValue = ReadBool();
                     if (!hasValue)
@@ -2050,59 +2044,59 @@ namespace Monstroe.CNetworkingSolution
                         return null;
                     }
 
-                    MethodInfo deserializeMethod = parameterType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public) ?? throw new Exception($"{parameterType.Name} must implement Deserialize(NetPacket).");
+                    MethodInfo deserializeMethod = argType.GetMethod("Deserialize", BindingFlags.Instance | BindingFlags.Public) ?? throw new Exception($"{argType.Name} must implement Deserialize(NetPacket).");
 
-                    if (parameterType.GetConstructor(Type.EmptyTypes) == null)
+                    if (argType.GetConstructor(Type.EmptyTypes) == null)
                     {
-                        throw new Exception($"{parameterType.Name} must have a parameterless constructor.");
+                        throw new Exception($"{argType.Name} must have a parameterless constructor.");
                     }
 
-                    object instance = Activator.CreateInstance(parameterType);
+                    object instance = Activator.CreateInstance(argType);
                     return deserializeMethod.Invoke(instance, new object[] { this });
                 }
 
-                if (parameterType.IsEnum)
+                if (argType.IsEnum)
                 {
-                    return Enum.ToObject(parameterType, ReadUShort());
+                    return Enum.ToObject(argType, ReadUShort());
                 }
 
                 // Primitives
-                if (parameterType == typeof(byte)) return ReadByte();
-                if (parameterType == typeof(byte[])) return ReadBytes();
-                if (parameterType == typeof(sbyte)) return ReadSByte();
-                if (parameterType == typeof(sbyte[])) return ReadSBytes();
-                if (parameterType == typeof(bool)) return ReadBool();
-                if (parameterType == typeof(bool[])) return ReadBools();
-                if (parameterType == typeof(char)) return ReadChar();
-                if (parameterType == typeof(char[])) return ReadChars();
-                if (parameterType == typeof(double)) return ReadDouble();
-                if (parameterType == typeof(double[])) return ReadDoubles();
-                if (parameterType == typeof(float)) return ReadFloat();
-                if (parameterType == typeof(float[])) return ReadFloats();
-                if (parameterType == typeof(int)) return ReadInt();
-                if (parameterType == typeof(int[])) return ReadInts();
-                if (parameterType == typeof(long)) return ReadLong();
-                if (parameterType == typeof(long[])) return ReadLongs();
-                if (parameterType == typeof(short)) return ReadShort();
-                if (parameterType == typeof(short[])) return ReadShorts();
-                if (parameterType == typeof(uint)) return ReadUInt();
-                if (parameterType == typeof(uint[])) return ReadUInts();
-                if (parameterType == typeof(ulong)) return ReadULong();
-                if (parameterType == typeof(ulong[])) return ReadULongs();
-                if (parameterType == typeof(ushort)) return ReadUShort();
-                if (parameterType == typeof(ushort[])) return ReadUShorts();
+                if (argType == typeof(byte)) return ReadByte();
+                if (argType == typeof(byte[])) return ReadBytes();
+                if (argType == typeof(sbyte)) return ReadSByte();
+                if (argType == typeof(sbyte[])) return ReadSBytes();
+                if (argType == typeof(bool)) return ReadBool();
+                if (argType == typeof(bool[])) return ReadBools();
+                if (argType == typeof(char)) return ReadChar();
+                if (argType == typeof(char[])) return ReadChars();
+                if (argType == typeof(double)) return ReadDouble();
+                if (argType == typeof(double[])) return ReadDoubles();
+                if (argType == typeof(float)) return ReadFloat();
+                if (argType == typeof(float[])) return ReadFloats();
+                if (argType == typeof(int)) return ReadInt();
+                if (argType == typeof(int[])) return ReadInts();
+                if (argType == typeof(long)) return ReadLong();
+                if (argType == typeof(long[])) return ReadLongs();
+                if (argType == typeof(short)) return ReadShort();
+                if (argType == typeof(short[])) return ReadShorts();
+                if (argType == typeof(uint)) return ReadUInt();
+                if (argType == typeof(uint[])) return ReadUInts();
+                if (argType == typeof(ulong)) return ReadULong();
+                if (argType == typeof(ulong[])) return ReadULongs();
+                if (argType == typeof(ushort)) return ReadUShort();
+                if (argType == typeof(ushort[])) return ReadUShorts();
 
                 // Strings and Unity structs
-                if (parameterType == typeof(string)) return ReadString();
-                if (parameterType == typeof(string[])) return ReadStrings();
-                if (parameterType == typeof(Vector2)) return ReadVector2();
-                if (parameterType == typeof(Vector2[])) return ReadVector2s();
-                if (parameterType == typeof(Vector3)) return ReadVector3();
-                if (parameterType == typeof(Vector3[])) return ReadVector3s();
-                if (parameterType == typeof(Quaternion)) return ReadQuaternion();
-                if (parameterType == typeof(Quaternion[])) return ReadQuaternions();
+                if (argType == typeof(string)) return ReadString();
+                if (argType == typeof(string[])) return ReadStrings();
+                if (argType == typeof(Vector2)) return ReadVector2();
+                if (argType == typeof(Vector2[])) return ReadVector2s();
+                if (argType == typeof(Vector3)) return ReadVector3();
+                if (argType == typeof(Vector3[])) return ReadVector3s();
+                if (argType == typeof(Quaternion)) return ReadQuaternion();
+                if (argType == typeof(Quaternion[])) return ReadQuaternions();
 
-                throw new Exception($"Unsupported parameter type: {parameterType.FullName}");
+                throw new Exception($"Unsupported argument type: {argType.FullName}");
             }
             finally
             {

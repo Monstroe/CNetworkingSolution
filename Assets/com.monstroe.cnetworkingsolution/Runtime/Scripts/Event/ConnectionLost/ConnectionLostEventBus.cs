@@ -12,7 +12,18 @@ namespace Monstroe.CNetworkingSolution
             return new ConnectionLostEventHandler
             {
                 Listener = listener,
-                Invoke = (e) => (Task<ConnectionLostEventResult>)method.Invoke(listener, new object[] { e }),
+                Invoke = async e =>
+                {
+                    var result = method.Invoke(listener, new object[] { e });
+
+                    if (result is ConnectionLostEventResult eventResult)
+                        return eventResult;
+
+                    if (result is Task<ConnectionLostEventResult> task)
+                        return await task;
+
+                    throw new InvalidOperationException($"The method {method.Name} on {listener.GetType().Name} must return either a Task<ConnectionLostEventResult> or a ConnectionLostEventResult");
+                },
                 EventType = eventType,
                 ReturnType = returnType,
                 EventPriority = attr.Priority

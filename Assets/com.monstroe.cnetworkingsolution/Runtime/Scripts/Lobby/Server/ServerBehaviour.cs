@@ -39,24 +39,68 @@ namespace Monstroe.CNetworkingSolution
             bool packetHandled = true;
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
-                ulong methodId = packet.ReadULong();
-                if (lobby.RpcBus.TryGetRpcMethodByInstanceAndId(this, methodId, out MethodInfo method) && method.GetCustomAttribute<ClientRpcAttribute>() == null)
+                ulong memberId = packet.ReadULong();
+                if (lobby.RpcBus.TryGetRpcMemberByInstanceAndId(this, memberId, out MemberInfo member) && member.GetCustomAttribute<ServerRpcAttribute>() != null)
                 {
-                    ParameterInfo[] parameters = method.GetParameters();
-                    object[] args = new object[parameters.Length];
-                    for (int i = 0; i < args.Length; i++)
+                    if (member is MethodInfo method)
                     {
-                        if (parameters[i].ParameterType == typeof(UserData) && parameters[i].GetCustomAttribute<RpcSenderAttribute>() != null)
+                        ParameterInfo[] parameters = method.GetParameters();
+                        object[] args = new object[parameters.Length];
+                        for (int i = 0; i < args.Length; i++)
                         {
-                            args[i] = user;
+                            if (parameters[i].ParameterType == typeof(UserData) && parameters[i].GetCustomAttribute<RpcSenderAttribute>() != null)
+                            {
+                                args[i] = user;
+                            }
+                            else
+                            {
+                                args[i] = packet.ReadObject(parameters[i].ParameterType);
+                            }
+                        }
+
+                        method.Invoke(this, args);
+                    }
+                    else
+                    {
+                        Type memberType;
+                        object currentValue;
+
+                        switch (member)
+                        {
+                            case FieldInfo field:
+                                memberType = field.FieldType;
+                                currentValue = field.GetValue(this);
+                                break;
+
+                            case PropertyInfo property:
+                                memberType = property.PropertyType;
+                                currentValue = property.GetValue(this);
+                                break;
+
+                            default:
+                                throw new ArgumentException($"RPC Member with ID {memberId} is not a valid RPC member on ServerBehaviour {type.Name}.");
+                        }
+
+                        if (currentValue is INetSerializable serializableValue)
+                        {
+                            // Use the DeserializeInto method to populate the existing instance of the member, so that we don't create a new instance and lose the reference
+                            serializableValue.DeserializeInto(packet);
                         }
                         else
                         {
-                            args[i] = packet.ReadObject(parameters[i].ParameterType);
+                            object value = packet.ReadObject(memberType);
+                            switch (member)
+                            {
+                                case FieldInfo field:
+                                    field.SetValue(this, value);
+                                    break;
+
+                                case PropertyInfo property:
+                                    property.SetValue(this, value);
+                                    break;
+                            }
                         }
                     }
-
-                    method.Invoke(this, args);
                 }
                 else
                 {
@@ -66,7 +110,7 @@ namespace Monstroe.CNetworkingSolution
                     }
                     else
                     {
-                        Debug.LogError($"<color=red><b>CNS</b></color>: RPC Method with ID {methodId} not found on ServerBehavior {type.Name}.");
+                        Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member with ID {memberId} not found on ServerBehavior {type.Name}.");
                     }
                 }
             }
@@ -113,6 +157,25 @@ namespace Monstroe.CNetworkingSolution
         public virtual void LateUserLeft(UserData leftUser) { }
 
         public virtual void Tick() { }
+
+        protected (bool, ulong, MemberInfo, RpcAttribute) IsValidRpc(string memberName, RpcMemberType expectedType)
+        {
+            bool validMember = lobby.RpcBus.TryGetRpcMemberByTypeAndName(type, memberName, out ulong memberId, out MemberInfo member, out RpcMemberType memberType, out RpcAttribute attr);
+            if (!validMember)
+            {
+                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Member {type.Name}.{memberName}");
+                return (false, 0, null, null);
+            }
+
+            bool isMethod = memberType == expectedType;
+            if (!isMethod)
+            {
+                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member {type.Name}.{memberName} is not a valid {expectedType}");
+                return (false, 0, null, null);
+            }
+
+            return (true, memberId, member, attr);
+        }
 
         protected ServerObject InstantiateOnServer(string originalPath, byte? ownerId = null, bool initAndSendToUsers = true)
         {

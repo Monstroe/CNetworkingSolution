@@ -12,7 +12,18 @@ namespace Monstroe.CNetworkingSolution
             return new ConnectionRequestedEventHandler
             {
                 Listener = listener,
-                Invoke = (e) => (Task<ConnectionRequestedEventResult>)method.Invoke(listener, new object[] { e }),
+                Invoke = async e =>
+                {
+                    var result = method.Invoke(listener, new object[] { e });
+
+                    if (result is ConnectionRequestedEventResult eventResult)
+                        return eventResult;
+
+                    if (result is Task<ConnectionRequestedEventResult> task)
+                        return await task;
+
+                    throw new InvalidOperationException($"The method {method.Name} on {listener.GetType().Name} must return either a Task<ConnectionRequestedEventResult> or a ConnectionRequestedEventResult");
+                },
                 EventType = eventType,
                 ReturnType = returnType,
                 EventPriority = attr.Priority,

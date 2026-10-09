@@ -3,7 +3,7 @@ using System;
 namespace Monstroe.CNetworkingSolution
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public abstract class RpcAttribute : Attribute
+    public class RpcAttribute : Attribute
     {
         public TransportMethod TransportMethod { get; }
 

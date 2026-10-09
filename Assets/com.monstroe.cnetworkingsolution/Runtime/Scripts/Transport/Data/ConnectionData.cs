@@ -6,7 +6,7 @@ namespace Monstroe.CNetworkingSolution
         public LobbyConnectionType LobbyConnectionType { get; set; }
         public NetPacket RequestPacket { get; set; }
 
-        public ConnectionData Deserialize(NetPacket packet)
+        public static ConnectionData Deserialize(NetPacket packet)
         {
             ConnectionData connectionData = new ConnectionData()
             {
@@ -20,6 +20,17 @@ namespace Monstroe.CNetworkingSolution
             }
 
             return connectionData;
+        }
+
+        public void DeserializeInto(NetPacket packet)
+        {
+            LobbyId = packet.ReadInt();
+            LobbyConnectionType = (LobbyConnectionType)packet.ReadByte();
+
+            if (packet.UnreadLength > sizeof(int))
+            {
+                RequestPacket = new NetPacket(packet.ReadBytes());
+            }
         }
 
         public void Serialize(NetPacket packet)

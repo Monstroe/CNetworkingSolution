@@ -95,13 +95,26 @@ namespace Monstroe.CNetworkingSolution
 
         public void InvokeOnLobbyClientServices(string methodName, UserData exception = null, params object[] args)
         {
-            if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+            (bool validMember, ulong methodId, MemberInfo member, RpcAttribute attr) = IsValidRpc(methodName, RpcMemberType.Method);
+
+            if (validMember)
             {
-                SendToLobbyClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
+                SendToLobbyClientServices(ReservedPacketBuilder.Rpc(methodId, member, args), attr.TransportMethod, exception);
             }
-            else
+        }
+
+        public void SetOnLobbyClientServices<T>(string variableName, T value)
+        {
+            SetOnLobbyClientServices(variableName, value, null);
+        }
+
+        public void SetOnLobbyClientServices<T>(string variableName, T value, UserData exception = null)
+        {
+            (bool validMember, ulong variableId, MemberInfo member, RpcAttribute attr) = IsValidRpc(variableName, RpcMemberType.Variable);
+
+            if (validMember)
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
+                SendToLobbyClientServices(ReservedPacketBuilder.Rpc(variableId, member, value), attr.TransportMethod, exception);
             }
         }
 
@@ -117,13 +130,26 @@ namespace Monstroe.CNetworkingSolution
 
         public void InvokeOnGameClientServices(string methodName, UserData exception = null, params object[] args)
         {
-            if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+            (bool validMember, ulong methodId, MemberInfo member, RpcAttribute attr) = IsValidRpc(methodName, RpcMemberType.Method);
+
+            if (validMember)
             {
-                SendToGameClientServices(ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod, exception);
+                SendToGameClientServices(ReservedPacketBuilder.Rpc(methodId, member, args), attr.TransportMethod, exception);
             }
-            else
+        }
+
+        public void SetOnGameClientServices<T>(string variableName, T value)
+        {
+            SetOnGameClientServices(variableName, value, null);
+        }
+
+        public void SetOnGameClientServices<T>(string variableName, T value, UserData exception = null)
+        {
+            (bool validMember, ulong variableId, MemberInfo member, RpcAttribute attr) = IsValidRpc(variableName, RpcMemberType.Variable);
+
+            if (validMember)
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
+                SendToGameClientServices(ReservedPacketBuilder.Rpc(variableId, member, value), attr.TransportMethod, exception);
             }
         }
 
@@ -134,13 +160,21 @@ namespace Monstroe.CNetworkingSolution
 
         public void InvokeOnUserClientService(UserData user, string methodName, params object[] args)
         {
-            if (lobby.RpcBus.TryGetRpcMethodByTypeAndName(type, methodName, out ulong methodId, out MethodInfo method, out RpcAttribute attr))
+            (bool validMember, ulong methodId, MemberInfo member, RpcAttribute attr) = IsValidRpc(methodName, RpcMemberType.Method);
+
+            if (validMember)
             {
-                SendToUserClientService(user, ReservedPacketBuilder.Rpc(methodId, method, args), attr.TransportMethod);
+                SendToUserClientService(user, ReservedPacketBuilder.Rpc(methodId, member, args), attr.TransportMethod);
             }
-            else
+        }
+
+        public void SetOnUserClientService<T>(UserData user, string variableName, T value)
+        {
+            (bool validMember, ulong variableId, MemberInfo member, RpcAttribute attr) = IsValidRpc(variableName, RpcMemberType.Variable);
+
+            if (validMember)
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Method {type.Name}.{methodName}.");
+                SendToUserClientService(user, ReservedPacketBuilder.Rpc(variableId, member, value), attr.TransportMethod);
             }
         }
 

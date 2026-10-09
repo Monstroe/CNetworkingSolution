@@ -12,7 +12,18 @@ namespace Monstroe.CNetworkingSolution
             return new GameEventHandler
             {
                 Listener = listener,
-                Invoke = (e) => (Task<GameEventResult>)method.Invoke(listener, new object[] { e }),
+                Invoke = async e =>
+                {
+                    var result = method.Invoke(listener, new object[] { e });
+
+                    if (result is GameEventResult eventResult)
+                        return eventResult;
+
+                    if (result is Task<GameEventResult> task)
+                        return await task;
+
+                    throw new InvalidOperationException($"The method {method.Name} on {listener.GetType().Name} must return either a Task<GameEventResult> or a GameEventResult");
+                },
                 EventType = eventType,
                 ReturnType = returnType,
                 EventPriority = attr.Priority,

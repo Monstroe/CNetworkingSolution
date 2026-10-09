@@ -16,7 +16,7 @@ namespace Monstroe.CNetworkingSolution
             return lobby.HostUser != null && lobby.HostUser.UserId == UserId;
         }
 
-        public UserData Deserialize(NetPacket packet)
+        public static UserData Deserialize(NetPacket packet)
         {
             return new UserData()
             {
@@ -27,6 +27,16 @@ namespace Monstroe.CNetworkingSolution
                 InLobby = packet.ReadBool(),
                 InGame = packet.ReadBool()
             };
+        }
+
+        public void DeserializeInto(NetPacket packet)
+        {
+            GlobalGuid = Guid.Parse(packet.ReadString());
+            UserId = packet.ReadULong();
+            PlayerId = packet.ReadByte();
+            LobbyId = packet.ReadInt();
+            InLobby = packet.ReadBool();
+            InGame = packet.ReadBool();
         }
 
         public void Serialize(NetPacket packet)

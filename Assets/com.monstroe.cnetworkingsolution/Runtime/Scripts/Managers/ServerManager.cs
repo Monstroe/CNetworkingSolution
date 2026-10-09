@@ -234,7 +234,7 @@ namespace Monstroe.CNetworkingSolution
 
         private async Task<ConnectionData> GetConnectionData(ConnectionRequestedEventResult connectingEvtData, NetPacket packet)
         {
-            ConnectionData connectionData = new ConnectionData().Deserialize(packet);
+            ConnectionData connectionData = ConnectionData.Deserialize(packet);
             connectionData.LobbyId = connectionData.LobbyConnectionType == LobbyConnectionType.Create || (connectionData.LobbyConnectionType == LobbyConnectionType.JoinOrCreate && (connectionData.LobbyId > maxLobbyId || connectionData.LobbyId < minLobbyId)) ? GenerateLobbyId() : connectionData.LobbyId;
 
             connectingEvtData = await connectionRequestedEventBus.Fire(new ConnectionDataReceivedEvent()
