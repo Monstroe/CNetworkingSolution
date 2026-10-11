@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace Monstroe.CNetworkingSolution
 {
-    public abstract class ServerBehaviour : MonoBehaviour, INetEvent, INetRpc
+    public abstract class ServerBehaviour : NetBehavior, INetEvent, INetRpc
     {
         public bool ForwardUnknownPacketToClient => forwardUnknownPacketToClient;
         public bool ForwardUnknownRPCToClient => forwardUnknownRPCToClient;
@@ -18,12 +18,11 @@ namespace Monstroe.CNetworkingSolution
         [SerializeField] private bool forwardUnknownRPCToClient = false;
 
         protected ServerLobby lobby;
-        protected Type type;
 
         public virtual void Init(ServerLobby lobby)
         {
+            base.Init(lobby);
             this.lobby = lobby;
-            this.type = GetType();
             lobby.RegisterRpcContainer(this);
             lobby.RegisterGameEventListener(this);
         }
@@ -40,7 +39,9 @@ namespace Monstroe.CNetworkingSolution
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
                 ulong memberId = packet.ReadULong();
-                if (lobby.RpcBus.TryGetRpcMemberByInstanceAndId(this, memberId, out MemberInfo member) && member.GetCustomAttribute<ServerRpcAttribute>() != null)
+                bool validMember = lobby.RpcBus.TryGetRpcMemberByInstanceAndId(this, memberId, out MemberInfo member);
+                ServerRpcAttribute attr = member?.GetCustomAttribute<ServerRpcAttribute>();
+                if (validMember && attr != null)
                 {
                     if (member is MethodInfo method)
                     {
@@ -60,7 +61,7 @@ namespace Monstroe.CNetworkingSolution
 
                         method.Invoke(this, args);
                     }
-                    else
+                    else if (attr is ServerVarRpcAttribute varAttr)
                     {
                         Type memberType;
                         object currentValue;
@@ -78,7 +79,7 @@ namespace Monstroe.CNetworkingSolution
                                 break;
 
                             default:
-                                throw new ArgumentException($"RPC Member with ID {memberId} is not a valid RPC member on ServerBehaviour {type.Name}.");
+                                throw new ArgumentException($"RPC Member with ID {memberId} is not a valid RPC member on ServerBehaviour {type.Name}");
                         }
 
                         if (currentValue is INetSerializable serializableValue)
@@ -100,6 +101,35 @@ namespace Monstroe.CNetworkingSolution
                                     break;
                             }
                         }
+
+                        // Sync the updated value to the appropriate clients based on the SyncType specified in the ServerVarRpcAttribute
+                        // Unlike with methods, we have to automatically send the updated value to clients
+                        switch (varAttr.SyncType)
+                        {
+                            case SyncType.Lobby:
+                                lobby.SendToLobby(null, packet, varAttr.TransportMethod);
+                                break;
+                            case SyncType.LobbyExceptSelf:
+                                lobby.SendToLobby(null, packet, varAttr.TransportMethod, user);
+                                break;
+                            case SyncType.Game:
+                                lobby.SendToGame(null, packet, varAttr.TransportMethod);
+                                break;
+                            case SyncType.GameExceptSelf:
+                                lobby.SendToGame(null, packet, varAttr.TransportMethod, user);
+                                break;
+                            case SyncType.User:
+                                lobby.SendToUser(user, null, packet, varAttr.TransportMethod);
+                                break;
+                            case SyncType.None:
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException($"Invalid SyncType {varAttr.SyncType} on ServerVarRpcAttribute for member {member.Name} on ServerBehaviour {type.Name}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"<color=red><b>CNS</b></color>: Non-method RPC Member with ID {memberId} on ServerBehaviour {type.Name} does not have a valid ServerVarRpcAttribute");
                     }
                 }
                 else
@@ -110,7 +140,7 @@ namespace Monstroe.CNetworkingSolution
                     }
                     else
                     {
-                        Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member with ID {memberId} not found on ServerBehavior {type.Name}.");
+                        Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member with ID {memberId} not found on ServerBehavior {type.Name}");
                     }
                 }
             }
@@ -157,25 +187,6 @@ namespace Monstroe.CNetworkingSolution
         public virtual void LateUserLeft(UserData leftUser) { }
 
         public virtual void Tick() { }
-
-        protected (bool, ulong, MemberInfo, RpcAttribute) IsValidRpc(string memberName, RpcMemberType expectedType)
-        {
-            bool validMember = lobby.RpcBus.TryGetRpcMemberByTypeAndName(type, memberName, out ulong memberId, out MemberInfo member, out RpcMemberType memberType, out RpcAttribute attr);
-            if (!validMember)
-            {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Member {type.Name}.{memberName}");
-                return (false, 0, null, null);
-            }
-
-            bool isMethod = memberType == expectedType;
-            if (!isMethod)
-            {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member {type.Name}.{memberName} is not a valid {expectedType}");
-                return (false, 0, null, null);
-            }
-
-            return (true, memberId, member, attr);
-        }
 
         protected ServerObject InstantiateOnServer(string originalPath, byte? ownerId = null, bool initAndSendToUsers = true)
         {

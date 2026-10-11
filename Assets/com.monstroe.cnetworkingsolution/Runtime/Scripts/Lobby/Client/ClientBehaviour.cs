@@ -5,15 +5,14 @@ using UnityEngine;
 
 namespace Monstroe.CNetworkingSolution
 {
-    public abstract class ClientBehaviour : MonoBehaviour, INetRpc
+    public abstract class ClientBehaviour : NetBehavior, INetRpc
     {
         protected ClientLobby lobby;
-        protected Type type;
 
         public virtual void Init(ClientLobby lobby)
         {
+            base.Init(lobby);
             this.lobby = lobby;
-            this.type = GetType();
             lobby.RegisterRpcContainer(this);
         }
 
@@ -28,7 +27,9 @@ namespace Monstroe.CNetworkingSolution
             if ((ReservedCommandType)commandType == ReservedCommandType.RPC)
             {
                 ulong memberId = packet.ReadULong();
-                if (lobby.RpcBus.TryGetRpcMemberByInstanceAndId(this, memberId, out MemberInfo member) && member.GetCustomAttribute<ClientRpcAttribute>() != null)
+                bool validMember = lobby.RpcBus.TryGetRpcMemberByInstanceAndId(this, memberId, out MemberInfo member);
+                ClientRpcAttribute attr = member?.GetCustomAttribute<ClientRpcAttribute>();
+                if (validMember && attr != null)
                 {
                     if (member is MethodInfo method)
                     {
@@ -41,7 +42,7 @@ namespace Monstroe.CNetworkingSolution
 
                         method.Invoke(this, args);
                     }
-                    else
+                    else if (attr is ClientVarRpcAttribute)
                     {
                         Type memberType;
                         object currentValue;
@@ -82,10 +83,14 @@ namespace Monstroe.CNetworkingSolution
                             }
                         }
                     }
+                    else
+                    {
+                        Debug.LogError($"<color=red><b>CNS</b></color>: Non-method RPC Member with ID {memberId} on ClientBehaviour {type.Name} does not have a valid ClientVarRpcAttribute");
+                    }
                 }
                 else
                 {
-                    Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member with ID {memberId} not found on ClientBehaviour {type.Name}.");
+                    Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member with ID {memberId} not found on ClientBehaviour {type.Name}");
                 }
             }
             else
@@ -93,7 +98,7 @@ namespace Monstroe.CNetworkingSolution
                 packetHandled = ReceiveData(packet, commandType, transportMethod);
                 if (!packetHandled)
                 {
-                    Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
+                    Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}");
                 }
             }
 
@@ -105,7 +110,7 @@ namespace Monstroe.CNetworkingSolution
             bool packetHandled = ReceiveDataUnconnected(ipEndPoint, packet, commandType);
             if (!packetHandled)
             {
-                Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled unconnected packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}.");
+                Debug.LogError($"<color=red><b>CNS</b></color>: Unhandled unconnected packet received on ClientBehaviour {type.Name} with service ID {serviceId} and command type {commandType}");
             }
 
             return packetHandled;
@@ -114,25 +119,6 @@ namespace Monstroe.CNetworkingSolution
         public virtual bool ReceiveData(NetPacket packet, ushort commandType, TransportMethod? transportMethod) { return false; }
 
         public virtual bool ReceiveDataUnconnected(IPEndPoint ipEndPoint, NetPacket packet, ushort commandType) { return false; }
-
-        protected (bool, ulong, MemberInfo, RpcAttribute) IsValidRpc(string memberName, RpcMemberType expectedType)
-        {
-            bool validMember = lobby.RpcBus.TryGetRpcMemberByTypeAndName(type, memberName, out ulong memberId, out MemberInfo member, out RpcMemberType memberType, out RpcAttribute attr);
-            if (!validMember)
-            {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Member {type.Name}.{memberName}");
-                return (false, 0, null, null);
-            }
-
-            bool isMethod = memberType == expectedType;
-            if (!isMethod)
-            {
-                Debug.LogError($"<color=red><b>CNS</b></color>: RPC Member {type.Name}.{memberName} is not a valid {expectedType}");
-                return (false, 0, null, null);
-            }
-
-            return (true, memberId, member, attr);
-        }
 
         protected void InstantiateOnNetwork(string originalPath, Vector3 position, Quaternion rotation)
         {
@@ -148,7 +134,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError("<color=red><b>CNS</b></color>: ClientBehavior InstantiateOnNetwork could not find ClientObject component on given GameObject.");
+                Debug.LogError("<color=red><b>CNS</b></color>: ClientBehavior InstantiateOnNetwork could not find ClientObject component on given GameObject");
             }
         }
 
@@ -171,7 +157,7 @@ namespace Monstroe.CNetworkingSolution
             }
             else
             {
-                Debug.LogError("<color=red><b>CNS</b></color>: ClientBehaviour DestroyOnNetwork attempted to destroy an object not owned by the current user.");
+                Debug.LogError("<color=red><b>CNS</b></color>: ClientBehaviour DestroyOnNetwork attempted to destroy an object not owned by the current user");
             }
         }
     }

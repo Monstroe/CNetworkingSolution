@@ -2,8 +2,8 @@ using System;
 
 namespace Monstroe.CNetworkingSolution
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public sealed class ServerRpcAttribute : RpcAttribute
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false)]
+    public class ServerRpcAttribute : RpcAttribute
     {
         public ServerRpcAttribute(TransportMethod transportMethod = TransportMethod.Reliable) : base(transportMethod) { }
     }

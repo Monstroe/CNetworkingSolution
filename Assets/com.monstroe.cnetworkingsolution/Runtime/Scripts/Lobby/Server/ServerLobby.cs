@@ -7,9 +7,8 @@ using UnityEngine.SceneManagement;
 
 namespace Monstroe.CNetworkingSolution
 {
-    public class ServerLobby : MonoBehaviour
+    public class ServerLobby : NetLobby
     {
-        public LobbyData LobbyData { get; private set; } = new LobbyData();
         public ulong ServerTick { get; private set; } = 0;
         public Scene? LobbyScene { get; private set; }
         public PhysicsScene? PhysicsScene { get; private set; }
@@ -18,7 +17,6 @@ namespace Monstroe.CNetworkingSolution
         private readonly ServerServiceUtility services = new ServerServiceUtility();
         private readonly ServerServiceUtility unconnectedServices = new ServerServiceUtility();
 
-        internal RpcBus RpcBus { get; } = new RpcBus();
         private readonly GameEventBus gameEventBus = new GameEventBus();
 
         internal void Init(ITransportUtility transportUtility, Scene? scene = null)
@@ -137,30 +135,36 @@ namespace Monstroe.CNetworkingSolution
             ServerTick++;
         }
 
-        internal void SendToLobby(ulong serviceId, NetPacket packet, TransportMethod method, UserData exception = null)
+        internal void SendToLobby(ulong? serviceId, NetPacket packet, TransportMethod method, UserData exception = null)
         {
             SendToUsers(LobbyData.LobbyUsers.Where(u => u != exception).ToList(), serviceId, packet, method);
         }
 
-        internal void SendToGame(ulong serviceId, NetPacket packet, TransportMethod method, UserData exception = null)
+        internal void SendToGame(ulong? serviceId, NetPacket packet, TransportMethod method, UserData exception = null)
         {
             SendToUsers(LobbyData.GameUsers.Where(u => u != exception).ToList(), serviceId, packet, method);
         }
 
-        internal void SendToUser(UserData user, ulong serviceId, NetPacket packet, TransportMethod method)
+        internal void SendToUser(UserData user, ulong? serviceId, NetPacket packet, TransportMethod method)
         {
             if (packet != null)
             {
-                packet.Insert(0, serviceId);
+                if (serviceId != null)
+                {
+                    packet.Insert(0, serviceId.Value);
+                }
                 transportUtility.SendToRemote(user.UserId, packet, method);
             }
         }
 
-        internal void SendToUsers(List<UserData> users, ulong serviceId, NetPacket packet, TransportMethod method)
+        internal void SendToUsers(List<UserData> users, ulong? serviceId, NetPacket packet, TransportMethod method)
         {
             if (packet != null)
             {
-                packet.Insert(0, serviceId);
+                if (serviceId != null)
+                {
+                    packet.Insert(0, serviceId.Value);
+                }
                 transportUtility.SendToRemotes(users.ConvertAll(user => user.UserId), packet, method);
             }
         }
@@ -299,16 +303,6 @@ namespace Monstroe.CNetworkingSolution
                 Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ServerService with id {serviceId} not found.");
                 return null;
             }
-        }
-
-        public void RegisterRpcContainer(INetRpc rpcContainer)
-        {
-            RpcBus.RegisterRpcContainer(rpcContainer);
-        }
-
-        public void UnregisterRpcContainer(INetRpc rpcContainer)
-        {
-            RpcBus.UnregisterRpcContainer(rpcContainer);
         }
 
         public void RegisterGameEventListener(INetEvent listener)

@@ -4,17 +4,14 @@ using UnityEngine;
 
 namespace Monstroe.CNetworkingSolution
 {
-    public class ClientLobby : MonoBehaviour
+    public class ClientLobby : NetLobby
     {
-        public LobbyData LobbyData { get; internal set; } = new LobbyData();
         public UserData CurrentUser { get; internal set; } = new UserData();
         public ulong ClientTick { get; internal set; } = 0;
 
         private ITransportUtility transportUtility;
         private readonly ClientServiceUtility services = new ClientServiceUtility();
         private readonly ClientServiceUtility unconnectedServices = new ClientServiceUtility();
-
-        internal RpcBus RpcBus { get; } = new RpcBus();
 
         internal void Init(ITransportUtility transport)
         {
@@ -178,16 +175,6 @@ namespace Monstroe.CNetworkingSolution
                 Debug.LogWarning($"<color=yellow><b>CNS</b></color>: Unconnected ClientService with id {serviceId} not found.");
                 return null;
             }
-        }
-
-        public void RegisterRpcContainer(INetRpc rpcContainer)
-        {
-            RpcBus.RegisterRpcContainer(rpcContainer);
-        }
-
-        public void UnregisterRpcContainer(INetRpc rpcContainer)
-        {
-            RpcBus.UnregisterRpcContainer(rpcContainer);
         }
     }
 }
