@@ -264,14 +264,21 @@ namespace Monstroe.CNetworkingSolution
         public override void LateUserLeftGame(UserData leftUser)
         {
             base.LateUserLeftGame(leftUser);
+            List<ServerObject> objsMarkedForDestruction = new List<ServerObject>();
+
             foreach (var serverObject in ServerObjects.Values)
             {
                 serverObject.LateUserLeftGame(leftUser);
 
                 if (serverObject.DestroyOnOwnerLeftGame && serverObject.OwnerId == leftUser.PlayerId)
                 {
-                    DestroyObject(serverObject);
+                    objsMarkedForDestruction.Add(serverObject);
                 }
+            }
+
+            foreach (var serverObject in objsMarkedForDestruction)
+            {
+                DestroyObject(serverObject);
             }
         }
 
