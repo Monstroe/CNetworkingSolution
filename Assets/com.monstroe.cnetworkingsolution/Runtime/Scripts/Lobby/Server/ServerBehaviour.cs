@@ -41,7 +41,7 @@ namespace Monstroe.CNetworkingSolution
                 ulong memberId = packet.ReadULong();
                 bool validMember = lobby.RpcBus.TryGetRpcMemberByInstanceAndId(this, memberId, out MemberInfo member);
                 ServerRpcAttribute attr = member?.GetCustomAttribute<ServerRpcAttribute>();
-                if (validMember && attr != null)
+                if (validMember && attr != null && !attr.InvokeFromServerOnly)
                 {
                     if (member is MethodInfo method)
                     {

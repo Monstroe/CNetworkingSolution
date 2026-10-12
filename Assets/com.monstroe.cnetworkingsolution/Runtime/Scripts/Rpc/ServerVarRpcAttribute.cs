@@ -7,7 +7,7 @@ namespace Monstroe.CNetworkingSolution
     {
         public SyncType SyncType { get; }
 
-        public ServerVarRpcAttribute(SyncType syncType, TransportMethod transportMethod = TransportMethod.Reliable) : base(transportMethod)
+        public ServerVarRpcAttribute(SyncType syncType, bool invokeFromServerOnly = true, TransportMethod transportMethod = TransportMethod.Reliable) : base(invokeFromServerOnly, transportMethod)
         {
             SyncType = syncType;
         }
