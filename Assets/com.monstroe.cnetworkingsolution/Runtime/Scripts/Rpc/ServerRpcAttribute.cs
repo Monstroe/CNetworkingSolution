@@ -7,7 +7,7 @@ namespace Monstroe.CNetworkingSolution
     {
         public bool InvokeFromServerOnly { get; }
 
-        public ServerRpcAttribute(bool invokeFromServerOnly = true, TransportMethod transportMethod = TransportMethod.Reliable) : base(transportMethod)
+        public ServerRpcAttribute(bool invokeFromServerOnly = false, TransportMethod transportMethod = TransportMethod.Reliable) : base(transportMethod)
         {
             InvokeFromServerOnly = invokeFromServerOnly;
         }
