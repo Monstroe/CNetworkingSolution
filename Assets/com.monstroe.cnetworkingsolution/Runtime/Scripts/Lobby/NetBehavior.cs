@@ -6,18 +6,18 @@ namespace Monstroe.CNetworkingSolution
 {
     public abstract class NetBehavior : MonoBehaviour
     {
-        private NetLobby lobby;
+        private NetLobby _lobby; // Prepended with underscore to avoid "The same field name is serialized multiple times in the class or its parent class" Unity warning
         protected Type type;
 
         public void Init(NetLobby lobby)
         {
-            this.lobby = lobby;
+            this._lobby = lobby;
             this.type = GetType();
         }
 
         protected (bool, ulong, MemberInfo, RpcAttribute) IsValidRpc(string memberName, RpcMemberType expectedType)
         {
-            bool validMember = lobby.RpcBus.TryGetRpcMemberByTypeAndName(type, memberName, out ulong memberId, out MemberInfo member, out RpcMemberType memberType, out RpcAttribute attr);
+            bool validMember = _lobby.RpcBus.TryGetRpcMemberByTypeAndName(type, memberName, out ulong memberId, out MemberInfo member, out RpcMemberType memberType, out RpcAttribute attr);
             if (!validMember)
             {
                 Debug.LogError($"<color=red><b>CNS</b></color>: RPC Attribute not found on Member {type.Name}.{memberName}");
