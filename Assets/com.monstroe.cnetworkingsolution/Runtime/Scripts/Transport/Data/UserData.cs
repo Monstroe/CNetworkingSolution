@@ -13,7 +13,20 @@ namespace Monstroe.CNetworkingSolution
 
         public bool IsHost(LobbyData lobby)
         {
-            return lobby.HostUser != null && lobby.HostUser.UserId == UserId;
+            return lobby.HostUser != null && ReferenceEquals(lobby.HostUser, this);
+        }
+
+        public int GetIndexInLobby(LobbyData lobby)
+        {
+            for (int i = 0; i < lobby.LobbyUsers.Count; i++)
+            {
+                if (ReferenceEquals(lobby.LobbyUsers[i], this))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         public static UserData Deserialize(NetPacket packet)
