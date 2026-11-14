@@ -70,8 +70,7 @@ namespace Monstroe.CNetworkingSolution
                 else // If the user does not exist in the list
                 {
                     // Create a new UserData instance and add it to the back of the list
-                    UserData user = new UserData();
-                    user.DeserializeInto(packet);
+                    UserData user = UserData.Deserialize(packet);
                     lobbyUsers.Add(user);
                 }
             }
