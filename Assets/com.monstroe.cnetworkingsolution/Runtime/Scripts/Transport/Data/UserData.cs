@@ -11,6 +11,8 @@ namespace Monstroe.CNetworkingSolution
         public bool InLobby { get; internal set; } = false;
         public bool InGame { get; internal set; } = false;
 
+        internal UserData() { }
+
         public bool IsHost(LobbyData lobby)
         {
             return lobby.HostUser != null && ReferenceEquals(lobby.HostUser, this);
